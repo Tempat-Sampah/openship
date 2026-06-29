@@ -261,9 +261,20 @@ export async function onSuccess(
 
   await repos.deployment.setContainerId(dep.id, result.containerId, result.url);
   const mergedMeta = result.metaPatch ? { ...((dep.meta as DeploymentMeta | null) ?? {}), ...result.metaPatch } : ((dep.meta as DeploymentMeta | null) ?? null);
+
+  // Assign the human-friendly version NOW, on success — not at create. A version
+  // is a shipped release: only successful deploys get one, and it's per-commit
+  // (redeploying the same commit reuses its number rather than burning a new
+  // one). The one-in-flight-per-project index serializes deploys, so the
+  // MAX(ready)+1 fallback can't race.
+  const version =
+    (await repos.deployment.findReadyVersionByCommit(project.id, dep.commitSha)) ??
+    (await repos.deployment.getNextReadyVersion(project.id));
+
   await repos.deployment.updateStatus(dep.id, "ready", {
     errorMessage: null,
     meta: mergedMeta,
+    version,
   });
 
   await repos.project.setActiveDeployment(project.id, dep.id);

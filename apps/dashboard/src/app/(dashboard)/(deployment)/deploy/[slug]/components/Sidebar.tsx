@@ -1,9 +1,8 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { GitBranch, Rocket, Github, Loader2, Globe, Container, Server, Layers, Check, AlertCircle, Key, Plus } from "lucide-react";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import DomainSettings from "./DomainSettings";
 import BuildSummary from "./BuildSummary";
-import RuntimeModeModalContent from "./RuntimeModeModalContent";
 import { useCloneStrategyGate } from "./CloneStrategyNudge";
 import { DeployCredentialModal } from "@/components/deployments/DeployCredentialModal";
 import { useDeployment } from "@/context/DeploymentContext";
@@ -17,6 +16,8 @@ import { canUseCloudConnection, usePlatform } from "@/context/PlatformContext";
 import { useGitHub } from "@/context/GitHubContext";
 import { useModal } from "@/context/ModalContext";
 import { useRouter, useSearchParams } from "next/navigation";
+import { invalidateProjectCaches } from "@/hooks/useProjectEndpoints";
+import { projectsApi } from "@/lib/api";
 
 // ─── Deploy checklist for compose ────────────────────────────────────────────
 
@@ -144,13 +145,38 @@ const Sidebar: React.FC = () => {
   const { showModal, hideModal } = useModal();
   const router = useRouter();
   const isServices = usesServiceDeployment(config);
-  const isDockerRuntimeProject = config.projectType === "docker" || isServices;
   const canConnectCloud = canUseCloudConnection({ selfHosted, deployMode });
   // Clone-strategy gate - only meaningful for self-hosted server deploys
   // where we need to pick how the repo gets cloned on the remote (local
   // build vs PAT vs existing GitHub credential). Opshcloud has its own
   // connect-account flow, local builds don't need a remote credential.
   const cloneGate = useCloneStrategyGate(config.deployTarget);
+
+  // Lazy branch list. In config-edit mode the wizard hydrates from saved data
+  // with only the current branch seeded (no repo round-trip on load). The full
+  // list is fetched once, on first open of the branch dropdown — never for
+  // local-sourced projects (no remote repo to list).
+  const branchesFetchedRef = useRef(false);
+  const loadBranches = useCallback(async () => {
+    if (branchesFetchedRef.current) return;
+    if (!config.projectId || !config.owner || config.owner === "local") return;
+    // Only when the list is "thin" (config-edit seeds just the current branch);
+    // the first-deploy path already preloads the full list via prepare.
+    if (config.branches.length > 1) return;
+    branchesFetchedRef.current = true;
+    try {
+      const res = await projectsApi.getBranches(config.projectId);
+      const names: string[] = (res?.data ?? [])
+        .map((b: { name?: string }) => b?.name)
+        .filter((n: unknown): n is string => typeof n === "string" && n.length > 0);
+      if (names.length) {
+        const merged = Array.from(new Set([config.branch, ...names].filter(Boolean)));
+        updateConfig({ branches: merged });
+      }
+    } catch {
+      branchesFetchedRef.current = false; // allow a retry on next open
+    }
+  }, [config.projectId, config.owner, config.branch, config.branches.length, updateConfig]);
 
   const handleOpenEnvironmentCreator = useCallback(() => {
     if (!config.projectId) return;
@@ -163,43 +189,15 @@ const Sidebar: React.FC = () => {
     router.push(`/projects/${config.projectId}?${params.toString()}`);
   }, [config.branch, config.projectId, router]);
 
-  // Self-hosted server apps need a runtime mode choice before deploying
-  const needsRuntimeChoice =
-    config.deployTarget !== "cloud" && config.options.hasServer && !isDockerRuntimeProject;
-
-  const executeDeploy = useCallback(async (runtimeMode?: typeof config.runtimeMode) => {
-    const deploymentId = await startDeployment(
-      runtimeMode ? { runtimeMode } : undefined,
-    );
+  // Runtime isolation (Direct/Sandbox) for self-hosted server apps is now an
+  // inline setting in the target step (ServerRuntimePicker) — config.runtimeMode
+  // already carries the choice, so deploy proceeds with no interruption.
+  const continueDeploy = useCallback(async () => {
+    const deploymentId = await startDeployment();
     if (deploymentId) {
       router.push(`/build/${deploymentId}`);
     }
   }, [startDeployment, router]);
-
-  const continueDeploy = useCallback(async () => {
-    if (needsRuntimeChoice) {
-      let modalId = "";
-      modalId = showModal({
-        customContent: (
-          <RuntimeModeModalContent
-            initialRuntimeMode={config.runtimeMode}
-            serverId={config.serverId}
-            onClose={() => hideModal(modalId)}
-            onConfirm={async (runtimeMode) => {
-              updateConfig({ runtimeMode });
-              hideModal(modalId);
-              await executeDeploy(runtimeMode);
-            }}
-          />
-        ),
-        maxWidth: "420px",
-        showCloseButton: false,
-      });
-      return;
-    }
-
-    await executeDeploy();
-  }, [config.runtimeMode, config.serverId, executeDeploy, hideModal, needsRuntimeChoice, showModal, updateConfig]);
 
   const handleDeploy = useCallback(async () => {
     if (config.deployTarget === "cloud") {
@@ -333,7 +331,13 @@ const Sidebar: React.FC = () => {
     setIsSaving(true);
     try {
       const projectId = await startDeployment({ saveConfigOnly: true });
-      if (projectId) router.push(`/projects/${projectId}`);
+      if (projectId) {
+        // Bust the cached project info so the Runtime tab shows the just-saved
+        // config (it's served from infoCache and would otherwise be stale), then
+        // return to the Runtime tab the user edited from — not the default tab.
+        invalidateProjectCaches(projectId);
+        router.push(`/projects/${projectId}/runtime`);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -362,6 +366,7 @@ const Sidebar: React.FC = () => {
               <CustomSelect
                 value={config.branch}
                 onChange={(val) => updateConfig({ branch: val })}
+                onOpen={loadBranches}
                 options={config.branches.map(branch => ({
                   value: branch,
                   label: branch,

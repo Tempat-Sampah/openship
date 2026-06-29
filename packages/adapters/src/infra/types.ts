@@ -33,4 +33,12 @@ export interface SslProvider {
 
   /** Renew an existing TLS certificate */
   renewCert(domain: string): Promise<SslResult>;
+
+  /**
+   * Read-only verification: report whether a valid cert is currently present
+   * for the domain (and its expiry/issuer) WITHOUT running certbot. Powers the
+   * "Recheck SSL" action and lets a redeploy confirm an existing cert instead
+   * of mistaking a transient read failure for "no cert".
+   */
+  verifyCert(domain: string): Promise<SslResult>;
 }

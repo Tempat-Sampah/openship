@@ -29,6 +29,22 @@ type EnsureProjectBody = TCreateProjectBody & { projectId?: string };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** The deploy target + server aren't project columns — they live in the active
+ *  deployment's `meta` JSON. This is the one place that parse happens, so every
+ *  caller (enrichProject, its batch variant, getGitInfo) reads them the same
+ *  way. Server *name* resolution stays at the call site because single vs batch
+ *  fetch it differently (one `server.get` vs a prefetched map). */
+function readDeployMeta(dep: Deployment | null | undefined): {
+  deployTarget: string | null;
+  serverId: string | null;
+} {
+  const meta = (dep?.meta ?? null) as { deployTarget?: string; serverId?: string } | null;
+  return {
+    deployTarget: meta?.deployTarget ?? null,
+    serverId: meta?.serverId ?? null,
+  };
+}
+
 /** Enrich a project row with computed fields. `deployTarget` is the
  *  only signal the dashboard needs — `deployTarget === "cloud"` IS
  *  the cloud-project test; the dashboard combines it with its own
@@ -38,15 +54,15 @@ export async function enrichProject(p: Project) {
   const production = p.resources as ResourceConfig | null;
   const build = p.buildResources as ResourceConfig | null;
 
-  // Resolve deploy target + server name from the active deployment's meta
+  // Resolve deploy target + server (id + name) from the active deployment's meta
   let deployTarget: string | null = null;
+  let serverId: string | null = null;
   let serverName: string | null = null;
   if (p.activeDeploymentId) {
     const dep = await repos.deployment.findById(p.activeDeploymentId);
-    const meta = dep?.meta as { deployTarget?: string; serverId?: string } | null;
-    deployTarget = meta?.deployTarget ?? null;
-    if (meta?.serverId) {
-      const server = await repos.server.get(meta.serverId);
+    ({ deployTarget, serverId } = readDeployMeta(dep));
+    if (serverId) {
+      const server = await repos.server.get(serverId);
       serverName = server?.name || server?.sshHost || null;
     }
   }
@@ -93,13 +109,13 @@ export async function enrichProjectsBatch(
     const build = p.buildResources as ResourceConfig | null;
 
     let deployTarget: string | null = null;
+    let serverId: string | null = null;
     let serverName: string | null = null;
     if (p.activeDeploymentId) {
       const dep = deployments.get(p.activeDeploymentId);
-      const meta = dep?.meta as { deployTarget?: string; serverId?: string } | null;
-      deployTarget = meta?.deployTarget ?? null;
-      if (meta?.serverId) {
-        const server = servers.get(meta.serverId);
+      ({ deployTarget, serverId } = readDeployMeta(dep));
+      if (serverId) {
+        const server = servers.get(serverId);
         serverName = server?.name || server?.sshHost || null;
       }
     }
@@ -811,9 +827,17 @@ export async function getProjectCommitStatus(
   const latestSha = head?.sha ?? null;
   const behind = Boolean(latestSha && deployedSha && latestSha !== deployedSha);
 
+  // Is the latest commit already being deployed? If so the dashboard suppresses
+  // the "new commit available — redeploy" nudge: there's nothing to redeploy,
+  // it's in flight. (Only worth checking when we're actually behind.)
+  const latestInProgress = behind && latestSha
+    ? Boolean(await repos.deployment.findInProgressByCommit(projectId, latestSha))
+    : false;
+
   return {
     supported: true as const,
     behind,
+    latestInProgress,
     branch,
     latestSha,
     latestMessage: head?.message ?? null,
@@ -829,8 +853,7 @@ export async function getGitInfo(projectId: string, organizationId: string) {
   let deployTarget: string | null = null;
   if (p.activeDeploymentId) {
     const dep = await repos.deployment.findById(p.activeDeploymentId);
-    const meta = dep?.meta as { deployTarget?: string } | null;
-    deployTarget = meta?.deployTarget ?? null;
+    ({ deployTarget } = readDeployMeta(dep));
   }
 
   return {

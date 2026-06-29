@@ -590,6 +590,11 @@ export interface DeploymentContextType {
     path: string,
     context?: { projectId?: string },
   ) => Promise<{ success: boolean; error?: string; errorType?: string }>;
+  /** Config-edit hydration from SAVED project data — no repo re-detection. */
+  initializeFromProject: (
+    projectId: string,
+    context?: { branch?: string },
+  ) => Promise<{ success: boolean; error?: string; errorType?: string }>;
 
   // Build lifecycle
   startDeployment: (overrides?: { runtimeMode?: RuntimeMode; saveConfigOnly?: boolean }) => Promise<string | null>;

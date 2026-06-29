@@ -38,7 +38,9 @@ export const Deployments = () => {
       .getCommitStatus(projectData.id)
       .then((res) => {
         const s = res?.data;
-        if (!cancelled && s?.supported && s.behind) {
+        // Suppress the redeploy nudge while the latest commit is already
+        // building/deploying — there's nothing to redeploy, it's in flight.
+        if (!cancelled && s?.supported && s.behind && !s.latestInProgress) {
           setCommitStatus({
             behind: true,
             branch: s.branch,

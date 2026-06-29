@@ -112,6 +112,15 @@ export async function renewSsl(c: Context) {
   return c.json({ data: result });
 }
 
+/** POST /domains/:id/verify-ssl - read-only recheck that the cert is issued/valid */
+export async function verifySsl(c: Context) {
+  const ctx = getRequestContext(c);
+  const id = param(c, "id");
+  await permission.assert(getRequestContext(c), { resourceType: "domain", resourceId: id, action: "write" });
+  const result = await domainService.verifyDomainSsl(ctx, id);
+  return c.json({ data: result });
+}
+
 /** POST /domains/renew-all - batch SSL renewal for the requesting org's domains */
 export async function renewAllSsl(c: Context) {
   const ctx = getRequestContext(c);

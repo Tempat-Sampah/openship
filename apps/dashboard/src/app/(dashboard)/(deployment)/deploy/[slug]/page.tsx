@@ -55,12 +55,14 @@ const ProjectName: React.FC = () => {
 const DeployRepository: React.FC = () => {
     const params = useParams();
     const slug = params.slug as string;
-    const { config, initializeFromRepo, initializeFromLocal, updateConfig } = useDeployment();
+    const { config, initializeFromRepo, initializeFromLocal, initializeFromProject, updateConfig } = useDeployment();
     const { deployMode } = usePlatform();
     const searchParams = useSearchParams();
     const force = searchParams.get("force") || undefined;
     const projectId = searchParams.get("projectId") || undefined;
     const branch = searchParams.get("branch") || undefined;
+    // Edit-from-Runtime-tab: hydrate from SAVED settings, skip repo re-detection.
+    const isConfigEdit = searchParams.get("mode") === "config" && !!projectId;
     const isDesktop = deployMode === "desktop";
 
     // Decode the slug at render time so the skeleton can name the source
@@ -69,6 +71,11 @@ const DeployRepository: React.FC = () => {
     const decodedSource = React.useMemo(() => {
         const d = slug ? decodeSlug(slug) : null;
         if (!d) return null;
+        // Config-edit hydrates from saved data — surface that, not "Fetching from GitHub".
+        if (isConfigEdit) {
+            const label = d.kind === "local" ? d.path : `${d.owner}/${d.repo}`;
+            return { kind: "settings" as const, label };
+        }
         if (d.kind === "local") return { kind: "local" as const, path: d.path };
         return {
             kind: "repo" as const,
@@ -76,7 +83,7 @@ const DeployRepository: React.FC = () => {
             repo: d.repo,
             branch: branch ?? d.branch,
         };
-    }, [slug, branch]);
+    }, [slug, branch, isConfigEdit]);
 
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<DeployError | null>(null);
@@ -154,7 +161,14 @@ const DeployRepository: React.FC = () => {
             }
 
             let result;
-            if (decoded.kind === "local") {
+            if (isConfigEdit && projectId) {
+                // Saved-only hydration — no deployApi.prepare, no GitHub round-trip.
+                // Single-app loads instantly from getInfo+getEnv; compose/monorepo
+                // delegate to the detection path inside initializeFromProject.
+                result = await initializeFromProject(projectId, {
+                    branch: branch ?? (decoded.kind === "repo" ? decoded.branch : undefined),
+                });
+            } else if (decoded.kind === "local") {
                 result = await initializeFromLocal(decoded.path, { projectId });
             } else {
                 result = await initializeFromRepo(decoded.owner, decoded.repo, force, {
@@ -212,7 +226,7 @@ const DeployRepository: React.FC = () => {
         };
 
         initialize();
-    }, [slug, initializeFromRepo, initializeFromLocal, force, projectId, branch, toast]);
+    }, [slug, initializeFromRepo, initializeFromLocal, initializeFromProject, isConfigEdit, force, projectId, branch, toast]);
 
     if (loading) {
         return <SkeletonLoader source={decodedSource} />;
@@ -243,21 +257,16 @@ const DeployRepository: React.FC = () => {
     return (
         <PageContainer>
                 {/* Step 1: Deploy target picker - centered onboarding style (desktop only).
-                    Container widens when cloud is picked so the step's right-column
-                    power picker fits beside the deploy options without crushing them. */}
+                    DeployTargetStep owns its own max-width: it widens to two columns
+                    when a right-hand panel (cloud power / server runtime) is shown, and
+                    stays narrow single-column otherwise. The page just centers it. */}
                 {step === "target" && isDesktop && (
-                    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
-                        <div
-                            className={`w-full ${
-                                config.deployTarget === "cloud" ? "max-w-4xl" : "max-w-lg"
-                            }`}
-                        >
-                            <DeployTargetStep
-                                targets={targets}
-                                autoSkipAllowed={autoSkipTargetRef.current}
-                                onContinue={() => setStep("config")}
-                            />
-                        </div>
+                    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] py-8">
+                        <DeployTargetStep
+                            targets={targets}
+                            autoSkipAllowed={autoSkipTargetRef.current}
+                            onContinue={() => setStep("config")}
+                        />
                     </div>
                 )}
 

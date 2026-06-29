@@ -237,6 +237,8 @@ export const projectsApi = {
       data: {
         supported: boolean;
         behind?: boolean;
+        /** True when the latest commit is already building/deploying. */
+        latestInProgress?: boolean;
         branch?: string;
         latestSha?: string | null;
         latestMessage?: string | null;

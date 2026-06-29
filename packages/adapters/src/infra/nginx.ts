@@ -440,7 +440,17 @@ ${webhookLocation}
     }
   }
 
+  /**
+   * Read the on-disk cert and report its validity. Distinguishes three cases so
+   * the caller never downgrades a healthy domain on a transient hiccup:
+   *   - file present + parses  → verified, real expiry
+   *   - file ABSENT            → not verified, reason "missing"  (no cert yet)
+   *   - file present, unreadable/unparseable → not verified, reason "read_error"
+   */
   private async readCertInfo(domain: string): Promise<SslResult> {
+    if (!(await this.certsExist(domain))) {
+      return { domain, expiresAt: "", issuer: "certbot", verified: false, reason: "missing" };
+    }
     try {
       const certPath = join(this.certDir, domain, "fullchain.pem");
       const pem = await this._readFile(certPath);
@@ -450,10 +460,23 @@ ${webhookLocation}
         domain,
         expiresAt: new Date(cert.validTo).toISOString(),
         issuer: "certbot",
+        verified: true,
       };
     } catch {
-      return { domain, expiresAt: "", issuer: "certbot" };
+      // Cert file exists but couldn't be read/parsed (SSH blip, permissions,
+      // partial write). Transient — caller must NOT treat this as "no cert".
+      return { domain, expiresAt: "", issuer: "certbot", verified: false, reason: "read_error" };
     }
+  }
+
+  /**
+   * Read-only check that the Let's Encrypt cert is actually present + valid on
+   * the serving host. No certbot, no config rewrite — safe to call any time
+   * (deploy, "Recheck SSL" button).
+   */
+  async verifyCert(domain: string): Promise<SslResult> {
+    assertValidDomain(domain);
+    return this.readCertInfo(domain);
   }
 
   // ── Rate Limiting ──────────────────────────────────────────────────

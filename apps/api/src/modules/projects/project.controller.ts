@@ -1814,6 +1814,17 @@ export async function getInfo(c: Context) {
   const hasServer = project.hasServer ?? project.productionMode === "host";
   const serviceRows = await repos.service.listByProject(id);
   const serviceCount = serviceRows.length;
+  // Deployment shape, derived from the service rows (kind-discriminated) — not a
+  // project column. The dashboard's config-edit path uses this to hydrate from
+  // saved data without re-detecting the repo. Single-app → "app" (Dockerfile
+  // single-apps aren't separately signalled at the project level today).
+  const projectType: "app" | "services" | "monorepo" = serviceRows.some(
+    (s) => s.kind === "monorepo",
+  )
+    ? "monorepo"
+    : serviceRows.some((s) => s.kind === "compose")
+      ? "services"
+      : "app";
 
   // Build the "options" object the dashboard expects for build settings
   const options = {
@@ -1863,6 +1874,7 @@ export async function getInfo(c: Context) {
         domains,
         serviceCount,
         hasMultipleServices: serviceCount > 1,
+        projectType,
       },
       environments,
     },

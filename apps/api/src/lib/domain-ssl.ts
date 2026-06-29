@@ -5,7 +5,7 @@ import { repos } from "@repo/db";
 import { platform } from "./controller-helpers";
 import { resolveDeploymentPlatform, type DeploymentMeta } from "./deployment-runtime";
 
-export type DomainSslAction = "provision" | "renew";
+export type DomainSslAction = "provision" | "renew" | "verify";
 
 interface DomainSslOptions {
   action: DomainSslAction;
@@ -36,12 +36,41 @@ async function resolveAuthorizedDomain(hostname: string, opts: DomainSslOptions)
   return { domainRecord, project };
 }
 
-async function persistSslResult(domainId: string, result: SslResult) {
-  await repos.domain.updateSsl(domainId, {
-    sslStatus: result.expiresAt ? "active" : "provisioning",
-    sslIssuer: result.issuer,
-    sslExpiresAt: result.expiresAt ? new Date(result.expiresAt) : undefined,
-  });
+/**
+ * Decide how to persist an SSL outcome WITHOUT clobbering a healthy domain on a
+ * transient failure. Returns the `updateSsl` patch, or `null` meaning "leave the
+ * current row untouched". The single source of truth for SSL-status transitions,
+ * shared by the on-demand path (manageDomainSsl) and the deploy-time tracker
+ * (createTrackedSslProvider). Rules:
+ *   - verified cert read     → "active" (+ expiry, issuer)
+ *   - transient read failure → null (a redeploy that briefly can't read the cert
+ *                              must NOT downgrade a live "active" to "provisioning")
+ *   - cert genuinely missing → "provisioning" (still being issued)
+ */
+export function resolveSslPatch(
+  currentStatus: string | null | undefined,
+  result: SslResult,
+): { sslStatus: string; sslIssuer?: string; sslExpiresAt?: Date } | null {
+  if (result.verified && result.expiresAt) {
+    return {
+      sslStatus: "active",
+      sslIssuer: result.issuer,
+      sslExpiresAt: new Date(result.expiresAt),
+    };
+  }
+  if (result.reason === "read_error" && currentStatus === "active") {
+    return null;
+  }
+  return { sslStatus: "provisioning", sslIssuer: result.issuer };
+}
+
+async function persistSslResult(
+  domainId: string,
+  currentStatus: string | null | undefined,
+  result: SslResult,
+) {
+  const patch = resolveSslPatch(currentStatus, result);
+  if (patch) await repos.domain.updateSsl(domainId, patch);
 }
 
 /**
@@ -83,7 +112,14 @@ async function executeSslAction(
   hostname: string,
   action: DomainSslAction,
 ): Promise<SslResult> {
-  return action === "renew" ? ssl.renewCert(hostname) : ssl.provisionCert(hostname);
+  switch (action) {
+    case "renew":
+      return ssl.renewCert(hostname);
+    case "verify":
+      return ssl.verifyCert(hostname);
+    default:
+      return ssl.provisionCert(hostname);
+  }
 }
 
 // NOTE on the toolchain (certbot/OpenResty): we deliberately do NOT install it
@@ -102,7 +138,7 @@ export async function manageDomainSsl(
   const { domainRecord, project } = await resolveAuthorizedDomain(hostname, opts);
   const ssl = await resolveSslProvider(project);
   const result = await executeSslAction(ssl, domainRecord.hostname, opts.action);
-  await persistSslResult(domainRecord.id, result);
+  await persistSslResult(domainRecord.id, domainRecord.sslStatus, result);
 
   if (opts.includeWww) {
     const wwwHostname = `www.${domainRecord.hostname}`;
@@ -111,7 +147,7 @@ export async function manageDomainSsl(
     if (wwwRecord && wwwRecord.projectId === domainRecord.projectId && wwwRecord.verified) {
       // Same project → same host → reuse the resolved provider.
       const wwwResult = await executeSslAction(ssl, wwwRecord.hostname, opts.action);
-      await persistSslResult(wwwRecord.id, wwwResult);
+      await persistSslResult(wwwRecord.id, wwwRecord.sslStatus, wwwResult);
     }
   }
 

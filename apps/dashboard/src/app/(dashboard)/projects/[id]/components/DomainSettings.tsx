@@ -214,6 +214,8 @@ export const DomainSettings = () => {
   // renew is in flight. Per-row so multi-domain projects can renew one
   // cert without blanking the button on every other row.
   const [renewingHostname, setRenewingHostname] = useState<string | null>(null);
+  // Domain id currently running its read-only "Recheck SSL" action.
+  const [recheckingDomainId, setRecheckingDomainId] = useState<string | null>(null);
   const [dnsRecords, setDnsRecords] = useState<DnsRecord[]>([]);
   // Live preview of the DNS records the user will need to apply, derived
   // from the hostname they're typing. For self-hosted projects the
@@ -610,6 +612,33 @@ export const DomainSettings = () => {
     }
   };
 
+  // Read-only "is the cert actually issued + valid on the server?" check. No
+  // certbot, no rate-limit cost. Recovers a row stuck on "Provisioning" once the
+  // Let's Encrypt cert is in place, and confirms an existing cert after a deploy.
+  const handleRecheckSsl = async (domainId: string, hostname: string) => {
+    if (recheckingDomainId) return;
+    setRecheckingDomainId(domainId);
+    try {
+      const res = await domainsApi.verifySsl(domainId);
+      const status = res?.data?.sslStatus;
+      if (status === "active") {
+        showToast(`SSL verified for ${hostname}.`, "success", "SSL");
+      } else {
+        showToast(
+          `No valid certificate found for ${hostname} yet. If you just deployed, give Let's Encrypt a moment, then recheck.`,
+          "error",
+          "SSL",
+        );
+      }
+      invalidateProjectCaches(id);
+    } catch (error) {
+      console.error("Failed to recheck SSL:", error);
+      showToast(getApiErrorMessage(error, `Failed to recheck SSL for ${hostname}.`), "error", "SSL");
+    } finally {
+      setRecheckingDomainId(null);
+    }
+  };
+
   const handleStartEditingDomains = () => {
     setPublicEndpoints(draftPublicEndpoints);
     setIsEditingDomains(true);
@@ -984,13 +1013,27 @@ export const DomainSettings = () => {
                     disabled={isRenewing}
                   />
                 ) : null;
+              // Read-only "Recheck SSL" — confirms/recovers the cert state on the
+              // server without burning a Let's Encrypt issuance. Same rows as Renew.
+              const isRechecking = recheckingDomainId === domain.domainId;
+              const recheckAction =
+                !isManagedRow && !domain.needsVerify && domain.domainId ? (
+                  <ActionButton
+                    label={isRechecking ? "Rechecking..." : "Recheck SSL"}
+                    icon={isRechecking ? Loader2 : RefreshCw}
+                    spinning={isRechecking}
+                    onClick={() => void handleRecheckSsl(domain.domainId!, domain.hostname)}
+                    disabled={isRechecking}
+                  />
+                ) : null;
               const visitAction = domain.liveUrl ? (
                 <ActionButton href={domain.liveUrl} label="Visit" icon={ExternalLink} />
               ) : null;
-              const actions = verifyAction || renewAction || visitAction ? (
+              const actions = verifyAction || renewAction || recheckAction || visitAction ? (
                 <>
                   {verifyAction}
                   {renewAction}
+                  {recheckAction}
                   {visitAction}
                 </>
               ) : null;

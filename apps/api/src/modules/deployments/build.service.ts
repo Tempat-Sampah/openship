@@ -20,6 +20,7 @@ import {
   ForbiddenError,
   SYSTEM,
   STACKS,
+  safeErrorMessage,
   getRuntimeImage,
   type StackId,
   type DeployTarget,
@@ -221,6 +222,13 @@ export interface BuildAccessInput {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** Narrow the free-form `project.runtime_mode` text column (string | null) to
+ *  the runtime-isolation union — a validated check instead of an unchecked
+ *  `as` cast, so a stray/legacy DB value can't be mistyped as a valid mode. */
+function toRuntimeMode(value: string | null | undefined): "bare" | "docker" | undefined {
+  return value === "bare" || value === "docker" ? value : undefined;
+}
+
 /** Build a config snapshot from the project - pure pass-through, no fallbacks.
  *  All values must be set by prepare / ensureProject before this is called. */
 export function buildConfigSnapshot(
@@ -267,7 +275,7 @@ export function buildConfigSnapshot(
     // Runtime isolation mode persisted on the project (editable in the Runtime
     // tab). So a redeploy/webhook deploy respects the saved choice instead of
     // re-defaulting. The wizard's per-deploy override still wins when passed.
-    runtimeMode: (project.runtimeMode as "bare" | "docker" | null) ?? undefined,
+    runtimeMode: toRuntimeMode(project.runtimeMode),
   };
 }
 
@@ -361,9 +369,7 @@ export async function resolveSnapshotTarget(
       : undefined;
 
   const runtimeMode =
-    override?.runtimeMode ??
-    ((project.runtimeMode as "bare" | "docker" | null) ?? undefined) ??
-    (activeMeta?.runtimeMode ?? undefined);
+    override?.runtimeMode ?? toRuntimeMode(project.runtimeMode) ?? activeMeta?.runtimeMode;
 
   return { deployTarget, serverId, runtimeMode };
 }
@@ -493,9 +499,10 @@ export async function createQueuedDeployment(opts: {
     ? { ...opts.meta, targetServiceIds: opts.serviceIds }
     : opts.meta;
 
-  // Monotonic per-project version (v1, v2, …). The one-in-flight-per-project
-  // unique index below serializes concurrent creates, so MAX+1 can't collide.
-  const version = await repos.deployment.getNextVersion(opts.projectId);
+  // Version is NOT assigned here. A version number represents a shipped
+  // release (a successful deploy of a commit), so it's assigned in onSuccess —
+  // per-commit, reusing the number when the same commit is redeployed. Failed
+  // and in-flight deploys stay version=null and show no badge.
 
   let dep;
   try {
@@ -509,7 +516,6 @@ export async function createQueuedDeployment(opts: {
       environment: opts.environment,
       framework: opts.framework,
       status: "queued",
-      version,
       meta,
       envVars: opts.envVars,
       // Default to git: most projects are GitHub-backed and re-cloning
@@ -647,6 +653,24 @@ export async function requestBuildAccess(ctx: RequestContext, input: BuildAccess
   snapshot.deployTarget = resolvedTarget.deployTarget;
   snapshot.serverId = resolvedTarget.serverId;
   snapshot.runtimeMode = resolvedTarget.runtimeMode;
+
+  // Persist an EXPLICIT runtime-isolation choice (the deploy "sandbox vs direct"
+  // modal pick) onto the project so it STICKS. Without this the choice lives only
+  // in this one deployment's snapshot: the modal re-asks every deploy, a later
+  // config-save reads project.runtimeMode (still null) and writes the host
+  // default, and a redeploy then resolves to that default (bare) — silently
+  // flipping a docker/sandbox project to direct-on-host. Best-effort: a failed
+  // persist must not block the deploy. Only write when it actually changed.
+  if (
+    (runtimeMode === "bare" || runtimeMode === "docker") &&
+    runtimeMode !== project.runtimeMode
+  ) {
+    await repos.project
+      .update(project.id, { runtimeMode })
+      .catch((err) =>
+        console.warn(`[requestBuildAccess] failed to persist runtimeMode: ${safeErrorMessage(err)}`),
+      );
+  }
 
   // Resolve effective build strategy via settings service.
   // Pass deployTarget so that — absent an explicit per-deploy choice — the

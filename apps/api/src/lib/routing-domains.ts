@@ -1,8 +1,9 @@
 import { repos, type Domain, type Project, type Service } from "@repo/db";
-import type { RoutedDomainInput, SslProvider } from "@repo/adapters";
+import type { RoutedDomainInput, SslProvider, SslResult } from "@repo/adapters";
 import { SYSTEM, resolveServiceHostnameLabel } from "@repo/core";
 import { env } from "../config/env";
 import { resolveServicePort, serviceKind } from "./deployable-service";
+import { resolveSslPatch } from "./domain-ssl";
 
 export interface PlannedRouteDomain {
   hostname: string;
@@ -227,29 +228,23 @@ export function createTrackedSslProvider(
   ssl: SslProvider,
   domainByHostname: Map<string, Domain>,
 ): SslProvider {
-  const persistSslResult = async (hostname: string, result: Awaited<ReturnType<SslProvider["provisionCert"]>>) => {
+  // Persist via the shared no-clobber resolver: a verified cert → "active"; a
+  // genuinely missing cert → "provisioning"; a transient read failure leaves the
+  // row alone (so a redeploy that can't momentarily read an existing cert can't
+  // downgrade a live "active" → "provisioning"). Same rule the on-demand path uses.
+  const persist = async (hostname: string, result: SslResult) => {
     const domainRecord = domainByHostname.get(hostname.toLowerCase());
-
     if (domainRecord) {
-      await repos.domain.updateSsl(domainRecord.id, {
-        sslStatus: result.expiresAt ? "active" : "provisioning",
-        sslIssuer: result.issuer,
-        sslExpiresAt: result.expiresAt ? new Date(result.expiresAt) : undefined,
-      });
+      const patch = resolveSslPatch(domainRecord.sslStatus, result);
+      if (patch) await repos.domain.updateSsl(domainRecord.id, patch);
     }
-
     return result;
   };
 
   return {
-    provisionCert: async (hostname: string) => {
-      const result = await ssl.provisionCert(hostname);
-      return persistSslResult(hostname, result);
-    },
-    renewCert: async (hostname: string) => {
-      const result = await ssl.renewCert(hostname);
-      return persistSslResult(hostname, result);
-    },
+    provisionCert: async (hostname: string) => persist(hostname, await ssl.provisionCert(hostname)),
+    renewCert: async (hostname: string) => persist(hostname, await ssl.renewCert(hostname)),
+    verifyCert: async (hostname: string) => persist(hostname, await ssl.verifyCert(hostname)),
   };
 }
 

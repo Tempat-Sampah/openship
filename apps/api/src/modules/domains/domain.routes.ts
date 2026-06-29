@@ -26,6 +26,7 @@ r.delete("/:id", { tag: "domain:admin" }, ctrl.remove);
 r.post("/:id/verify", { tag: "domain:write" }, ctrl.verify);
 r.get("/:id/records", { tag: "domain:read" }, ctrl.records);
 r.post("/:id/renew", { tag: "domain:write" }, ctrl.renewSsl);
+r.post("/:id/verify-ssl", { tag: "domain:write" }, ctrl.verifySsl);
 r.post("/renew-all", { tag: "domain:write" }, ctrl.renewAllSsl);
 r.post("/verify-pending", { tag: "domain:write" }, ctrl.verifyPending);
 

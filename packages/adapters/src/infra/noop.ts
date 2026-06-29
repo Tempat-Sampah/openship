@@ -18,10 +18,14 @@ export class NoopInfraProvider implements RoutingProvider, SslProvider {
   }
 
   async provisionCert(domain: string): Promise<SslResult> {
-    return { domain, expiresAt: "", issuer: "none" };
+    return { domain, expiresAt: "", issuer: "none", verified: false };
   }
 
   async renewCert(domain: string): Promise<SslResult> {
-    return { domain, expiresAt: "", issuer: "none" };
+    return { domain, expiresAt: "", issuer: "none", verified: false };
+  }
+
+  async verifyCert(domain: string): Promise<SslResult> {
+    return { domain, expiresAt: "", issuer: "none", verified: false };
   }
 }

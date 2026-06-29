@@ -249,6 +249,33 @@ export async function renewDomainSsl(ctx: RequestContext, domainId: string) {
   };
 }
 
+/**
+ * Recheck SSL: a READ-ONLY verification that the Let's Encrypt cert is actually
+ * present + valid on the serving host (no certbot, no rate-limit cost). Recovers
+ * a domain stuck in "provisioning" once its cert is in place, and confirms an
+ * existing cert without re-issuing. The no-clobber persist (resolveSslPatch)
+ * means a transient read failure leaves an "active" domain untouched.
+ */
+export async function verifyDomainSsl(ctx: RequestContext, domainId: string) {
+  const { domain } = await getDomainWithAuth(domainId, ctx.organizationId);
+
+  const result = await manageDomainSsl(domain.hostname, {
+    action: "verify",
+  });
+
+  // Re-read the persisted row so the response reflects the no-clobber outcome
+  // (a transient read failure leaves an existing "active" untouched).
+  const updated = await repos.domain.findById(domainId);
+
+  return {
+    domain: domain.hostname,
+    sslStatus: updated?.sslStatus ?? (result.verified ? "active" : "provisioning"),
+    expiresAt: updated?.sslExpiresAt ?? (result.expiresAt || null),
+    issuer: updated?.sslIssuer ?? result.issuer,
+    verified: result.verified,
+  };
+}
+
 // ─── Batch pending verification ──────────────────────────────────────────────
 //
 // Cron / on-demand entrypoint that re-checks DNS for every domain still in

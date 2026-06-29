@@ -658,6 +658,19 @@ async function executeBuildAndDeploy(project: Project, dep: Deployment, buildSes
     const usesManagedRouting = resolved.usesManagedRouting;
     const targetExecutor: CommandExecutor | null = resolved.platform.executor;
 
+    // Surface the resolved deploy path so the operator can SEE where it lands —
+    // in particular the self-hosted sandbox-vs-direct runtime, the choice that
+    // could silently flip to "direct" before runtimeMode was persisted.
+    logger.log(
+      `→ Deploy target: ${resolved.effectiveTarget}` +
+        (resolved.serverId ? ` (server ${resolved.serverId.slice(0, 8)})` : "") +
+        ` · runtime: ${
+          resolved.runtimeMode === "docker"
+            ? "sandboxed (Docker container)"
+            : "direct (host process)"
+        }\n`,
+    );
+
     // ── Build phase ──────────────────────────────────────────────────
     await repos.deployment.updateBuildSession(buildSessionId, {
       status: "building",

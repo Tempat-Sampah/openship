@@ -262,8 +262,17 @@ export type RouteConfig = ProxyRouteConfig | StaticRouteConfig;
 
 export interface SslResult {
   domain: string;
+  /** ISO expiry of the issued cert. Empty when no valid cert was read. */
   expiresAt: string;
   issuer: string;
+  /**
+   * True only when a real certificate was read and parsed (expiresAt is then
+   * valid). When false, `reason` explains why — which lets the persistence
+   * layer tell "no cert yet" apart from "transient read failure" and avoid
+   * downgrading a healthy `active` domain to `provisioning`.
+   */
+  verified: boolean;
+  reason?: "issued" | "renewed" | "missing" | "read_error";
 }
 
 // ─── Log streaming callback ──────────────────────────────────────────────────

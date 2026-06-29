@@ -4,6 +4,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 type LoadingSource =
   | { kind: "repo"; owner: string; repo: string; branch?: string }
   | { kind: "local"; path: string }
+  | { kind: "settings"; label?: string }
   | null;
 
 interface SkeletonLoaderProps {
@@ -45,10 +46,15 @@ const RingSpinner = () => (
 function sourceLabel(source: LoadingSource): string | null {
   if (!source) return null;
   if (source.kind === "local") return source.path;
+  if (source.kind === "settings") return source.label ?? null;
   return source.branch ? `${source.owner}/${source.repo} · ${source.branch}` : `${source.owner}/${source.repo}`;
 }
 
 function phaseSequence(source: LoadingSource): string[] {
+  if (source?.kind === "settings") {
+    // Config-edit: hydrating from saved data, NOT touching the repo.
+    return ["Loading saved settings", "Restoring configuration"];
+  }
   if (source?.kind === "local") {
     return ["Scanning project", "Reading manifests", "Detecting framework"];
   }

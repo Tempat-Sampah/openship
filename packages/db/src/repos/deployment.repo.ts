@@ -85,16 +85,61 @@ export function createDeploymentRepo(db: Database) {
     },
 
     /**
-     * Next monotonic per-project deployment version (MAX(version)+1; 1 for the
-     * project's first). Safe against concurrent webhook races because the
-     * one-in-flight-per-project unique index serializes deployment creates.
+     * Next per-project version, counting SUCCESSFUL releases only (a version is
+     * a shipped commit, not a build attempt). Assigned in onSuccess; failed and
+     * in-flight deploys never consume a number. Safe against races because the
+     * one-in-flight-per-project unique index serializes deploys, so at most one
+     * reaches success at a time per project.
      */
-    async getNextVersion(projectId: string): Promise<number> {
+    async getNextReadyVersion(projectId: string): Promise<number> {
       const [row] = await db
         .select({ max: sql<number>`COALESCE(MAX(${deployment.version}), 0)` })
         .from(deployment)
-        .where(eq(deployment.projectId, projectId));
+        .where(and(eq(deployment.projectId, projectId), eq(deployment.status, "ready")));
       return Number(row?.max ?? 0) + 1;
+    },
+
+    /**
+     * The version already assigned to a SUCCESSFUL deploy of this exact commit,
+     * if any. Versions are per-commit: redeploying the same commit reuses its
+     * number rather than burning a new one.
+     */
+    async findReadyVersionByCommit(
+      projectId: string,
+      commitSha: string | null | undefined,
+    ): Promise<number | null> {
+      if (!commitSha) return null;
+      const [row] = await db
+        .select({ version: deployment.version })
+        .from(deployment)
+        .where(
+          and(
+            eq(deployment.projectId, projectId),
+            eq(deployment.commitSha, commitSha),
+            eq(deployment.status, "ready"),
+            sql`${deployment.version} IS NOT NULL`,
+          ),
+        )
+        .orderBy(desc(deployment.version))
+        .limit(1);
+      return row?.version ?? null;
+    },
+
+    /**
+     * The most recent in-flight (queued/building/deploying) deployment for a
+     * given commit, if any. Used to suppress the "new commit available" banner
+     * while that commit is already being deployed.
+     */
+    async findInProgressByCommit(projectId: string, commitSha: string | null | undefined) {
+      if (!commitSha) return undefined;
+      return db.query.deployment.findFirst({
+        where: and(
+          eq(deployment.projectId, projectId),
+          eq(deployment.commitSha, commitSha),
+          inArray(deployment.status, ["queued", "building", "deploying"]),
+        ),
+        orderBy: [desc(deployment.createdAt)],
+      });
     },
 
     async updateStatus(id: string, status: string, extra?: Partial<NewDeployment>) {

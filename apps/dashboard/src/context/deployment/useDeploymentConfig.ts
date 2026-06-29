@@ -141,6 +141,28 @@ function mapStoredPublicEndpoints(project: PersistedProject) {
   }));
 }
 
+/**
+ * Seed the single-app public-endpoint list: start from whatever the project
+ * already saved, then guarantee at least one primary endpoint on the free
+ * subdomain — a port for a server app, a "/" path for a static one. Shared by
+ * the prepare path (resolvePreparedRoutingState) and the saved-only config-edit
+ * path (initializeFromProject) so the two can't drift. `primaryDomain` is passed
+ * in because the prepare path also needs it for the monorepo branch.
+ */
+function buildSingleAppEndpoints(
+  project: PersistedProject,
+  primaryDomain: string,
+  hasServer: boolean,
+  port: string,
+): PublicEndpoint[] {
+  return ensurePublicEndpoints(
+    mapStoredPublicEndpoints(project),
+    hasServer
+      ? { port, domain: primaryDomain, domainType: "free" }
+      : { targetPath: "/", domain: primaryDomain, domainType: "free" },
+  );
+}
+
 function buildPreparedOptions(response: PrepareProjectResponse): DeploymentConfig["options"] {
   const hasServer = !!response.startCommand;
   const hasBuild = !!response.buildCommand;
@@ -255,20 +277,7 @@ function resolvePreparedRoutingState(
     effectiveHasServer,
     primaryPort,
     hasStoredPort,
-    publicEndpoints: ensurePublicEndpoints(
-      mapStoredPublicEndpoints(project),
-      effectiveHasServer
-        ? {
-            port: primaryPort,
-            domain: primaryDomain,
-            domainType: "free",
-          }
-        : {
-            targetPath: "/",
-            domain: primaryDomain,
-            domainType: "free",
-          },
-    ),
+    publicEndpoints: buildSingleAppEndpoints(project, primaryDomain, effectiveHasServer, primaryPort),
   };
 }
 
@@ -618,6 +627,134 @@ export function useDeploymentConfig() {
     [buildPreparedConfig],
   );
 
+  // ── Config edit: hydrate from the SAVED project, no repo re-detection ───────
+  // Used for the Runtime-tab "Edit" (mode=config). Loads the persisted settings
+  // directly (getInfo + getEnv) instead of running deployApi.prepare — so the
+  // wizard opens instantly and a fresh stack re-detection can never clobber the
+  // saved config. Compose/monorepo (whose structure is edited via the Services
+  // tab and benefits from detection) delegate to the prepare path.
+  const initializeFromProject = useCallback(
+    async (
+      projectId: string,
+      context?: { branch?: string },
+    ): Promise<{ success: boolean; error?: string; errorType?: string }> => {
+      try {
+        const res = await projectsApi.getInfo(projectId);
+        const project: PersistedProject = res?.data?.project ?? res?.project ?? null;
+        if (!project) {
+          return { success: false, error: "Project was not found", errorType: "api_error" };
+        }
+
+        const projectType = (project.projectType as DeploymentConfig["projectType"]) || "app";
+
+        // Compose / monorepo: structure is repo-derived and edited in the
+        // Services tab — keep the detection path for those. Local-sourced
+        // projects scan the folder; git-sourced ones re-detect from the repo.
+        if (projectType === "services" || projectType === "monorepo") {
+          if (project.localPath && !project.gitOwner) {
+            return initializeFromLocal(project.localPath, { projectId });
+          }
+          return initializeFromRepo(project.gitOwner || "", project.gitRepo || "", undefined, {
+            projectId,
+            branch: typeof project.gitBranch === "string" ? project.gitBranch : context?.branch,
+          });
+        }
+
+        // Single-app — hydrate purely from saved data.
+        const envRes = await projectsApi.getEnv(projectId).catch(() => null);
+        const envVars: DeploymentConfig["envVars"] = (envRes?.data ?? [])
+          .filter((v) => v.environment === "production")
+          // Secret VALUES come back masked — show blank (the env editor owns
+          // secret edits) rather than seeding the mask string.
+          .map((v) => ({ key: v.key, value: v.isSecret ? "" : v.value, visible: false }));
+
+        const framework = (typeof project.framework === "string" && project.framework
+          ? project.framework
+          : "nextjs") as FrameworkId;
+        const stackDef = STACKS[framework as keyof typeof STACKS] as StackDefinition | undefined;
+        const repoName = project.gitRepo || project.name || "project";
+        const branch =
+          typeof project.gitBranch === "string" ? project.gitBranch : (context?.branch ?? "");
+
+        // getInfo returns `options` already in DeploymentConfig.options shape.
+        const po = project.options ?? {};
+        const options: DeploymentConfig["options"] = {
+          buildCommand: po.buildCommand ?? "",
+          installCommand: po.installCommand ?? "",
+          outputDirectory: po.outputDirectory ?? "",
+          productionPaths: po.productionPaths ?? "",
+          startCommand: po.startCommand ?? "",
+          // String-guard like the prepare path: the field is typed string but the
+          // saved source is loosely typed (Record<string, any>).
+          productionPort: String(po.productionPort ?? ""),
+          rootDirectory: po.rootDirectory ?? "./",
+          // Default to true (the schema/DEFAULT_CONFIG default), matching the
+          // prepare path — never silently flip an undetermined project to static.
+          hasServer: po.hasServer ?? project.hasServer ?? true,
+          hasBuild: po.hasBuild ?? true,
+        };
+
+        const primaryDomain = project.slug || normalizeSubdomain(repoName);
+        const publicEndpoints = buildSingleAppEndpoints(
+          project,
+          primaryDomain,
+          options.hasServer,
+          options.productionPort,
+        );
+
+        setConfig((prev) => normalizePreparedConfig({
+          ...prev,
+          projectId,
+          repo: repoName,
+          // Non-empty owner keeps the page's `!config.owner` guard satisfied;
+          // local-sourced projects use the "local" sentinel (matches initializeFromLocal).
+          owner: project.gitOwner || (project.localPath ? "local" : repoName),
+          localPath: project.localPath || undefined,
+          projectName: project.name || repoName,
+          projectType: "app",
+          serviceDeploymentMode: "single",
+          composeDefaults: undefined,
+          singleAppCandidate: undefined,
+          monorepoApps: undefined,
+          monorepoWorkspace: undefined,
+          modeSnapshots: undefined,
+          framework,
+          detectedFramework: framework,
+          buildStrategy: normalizeBuildStrategy("app", stackDef),
+          // Saved runtime isolation; default to Sandbox (docker) when unset rather
+          // than the bare host default — so an un-chosen project doesn't show Direct.
+          runtimeMode:
+            project.runtimeMode === "bare" || project.runtimeMode === "docker"
+              ? project.runtimeMode
+              : "docker",
+          packageManager: project.packageManager || "npm",
+          buildImage: project.buildImage || "node:22",
+          branch,
+          branches: branch ? [branch] : [],
+          services: [],
+          publicEndpoints,
+          rootEnvVars: [],
+          // Only mark the port "touched" for a server app — a static project has
+          // no port, so leaving this false lets the env-PORT auto-detect kick in
+          // if the user later flips hasServer on.
+          productionPortTouched: options.hasServer && hasSavedProjectPort(project),
+          lastAutoDetectedEnvPort: null,
+          envVars,
+          options,
+        }));
+
+        return { success: true };
+      } catch (err) {
+        return {
+          success: false,
+          error: getApiErrorMessage(err, "Failed to load project settings"),
+          errorType: err instanceof ApiError ? "api_error" : "network_error",
+        };
+      }
+    },
+    [initializeFromRepo, initializeFromLocal, normalizeBuildStrategy, normalizePreparedConfig],
+  );
+
   return {
     config,
     setConfig,
@@ -625,5 +762,6 @@ export function useDeploymentConfig() {
     updateOptions,
     initializeFromRepo,
     initializeFromLocal,
+    initializeFromProject,
   };
 }

@@ -9,6 +9,14 @@ export interface DomainVerifyResult {
   sslStatus?: string;
 }
 
+export interface DomainSslVerifyResult {
+  domain: string;
+  sslStatus: string;
+  expiresAt?: string | null;
+  issuer?: string | null;
+  verified: boolean;
+}
+
 export const domainsApi = {
   /** Get DNS records preview for a hostname (no domain creation needed). */
   previewRecords: (hostname: string) =>
@@ -38,4 +46,12 @@ export const domainsApi = {
       throw err;
     }
   },
+
+  /**
+   * Recheck SSL: read-only verification that the Let's Encrypt cert is actually
+   * issued + valid on the serving host. No certbot / rate-limit cost. Recovers a
+   * domain stuck in "provisioning" once its cert is in place.
+   */
+  verifySsl: (domainId: string) =>
+    api.post<{ data: DomainSslVerifyResult }>(endpoints.domains.verifySsl(domainId)),
 };

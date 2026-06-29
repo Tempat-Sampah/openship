@@ -15,6 +15,7 @@ import { useModal } from "@/context/ModalContext";
 import type { DeployTarget, BuildStrategy } from "@/context/deployment/types";
 import { createPersistedValue, createPersistedFlag } from "@/lib/persisted-value";
 import { AddServerModal } from "./AddServerModal";
+import ServerRuntimePicker from "./ServerRuntimePicker";
 
 // ─── Option card ─────────────────────────────────────────────────────────────
 
@@ -696,7 +697,6 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
             hideModal(id);
             refreshServers();
             updateConfig({ deployTarget: "server", serverId: server.id });
-            lastPickStore.write({ target: "server", serverId: server.id });
           }}
         />
       ),
@@ -847,28 +847,36 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
     }
   }, [isSingleServer, config.deployTarget, config.serverId, servers, updateConfig]);
 
+  // Remember the last server actually chosen so flipping cloud↔server doesn't
+  // lose it (and the runtime panel that depends on serverId). Tracks whatever
+  // path set it — manual pick, single-server auto-select, add-server, default.
+  const lastServerIdRef = useRef<string | undefined>(config.serverId || undefined);
+  useEffect(() => {
+    if (config.deployTarget === "server" && config.serverId) {
+      lastServerIdRef.current = config.serverId;
+    }
+  }, [config.deployTarget, config.serverId]);
+
   const handleDeployTargetChange = (target: DeployTarget) => {
     const updates: Partial<typeof config> = { deployTarget: target };
     if (target === "cloud") {
       updates.serverId = undefined;
       updates.buildStrategy = "server";
     }
-    if (target === "server" && isSingleServer) {
-      updates.serverId = servers[0].id;
+    if (target === "server") {
+      // Restore the previously-chosen server (or auto-pick the only one) so the
+      // runtime panel reappears instead of vanishing until a manual re-pick.
+      updates.serverId =
+        config.serverId ?? lastServerIdRef.current ?? (isSingleServer ? servers[0].id : undefined);
     }
+    // Selection is tentative — it only updates local config. The soft "remember
+    // this for next time" memory is persisted on Continue (handleContinue), not
+    // on every click, so glancing at another target doesn't silently stick.
     updateConfig(updates);
-    // Soft memory: remember this choice for next deployment. For "server"
-    // without a resolved serverId yet, store null and let the next
-    // handleServerSelect refine it.
-    lastPickStore.write({
-      target,
-      serverId: target === "server" ? (updates.serverId ?? null) : null,
-    });
   };
 
   const handleServerSelect = (server: ServerInfo) => {
     updateConfig({ deployTarget: "server", serverId: server.id });
-    lastPickStore.write({ target: "server", serverId: server.id });
   };
 
   // Build the deploy target options
@@ -1041,25 +1049,44 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
     // Mark the build hint as seen - future deploys get the full Build picker.
     buildHintFlag.set();
 
+    // Persist the soft "remember this target for next time" memory now — on
+    // commit, not on every tentative click. This is what lets a returning user
+    // skip straight to config next deploy.
+    lastPickStore.write({
+      target: config.deployTarget,
+      serverId: config.deployTarget === "server" ? (config.serverId ?? null) : null,
+    });
+
     void persistDefault();
     onContinue();
   };
 
-  // When cloud is the picked target, lay out the step as 2 columns:
-  // existing flow on the left, power picker on the right. Anything else
-  // (server, local, compact summary, loading) stays single-column. The
-  // parent page widens its container to match — see page.tsx.
+  // Right-column "how it runs" panel: cloud → power/resource picker; a
+  // self-hosted SERVER app → runtime-isolation (Sandbox/Direct) picker. Both
+  // lay the step out as 2 columns (existing flow left, panel right). Anything
+  // else (local, static, docker/compose, compact summary, loading) stays
+  // single-column. This component owns its own max-width (below) so the parent
+  // page just centers it — the two-column layout needs the wide track, the
+  // single-column onboarding stays narrow.
   const showCloudPicker = showFullPicker && config.deployTarget === "cloud";
+  const showServerRuntime =
+    showFullPicker &&
+    config.deployTarget === "server" &&
+    !!config.serverId &&
+    config.options.hasServer &&
+    config.projectType !== "docker" &&
+    !isServiceDeployment;
+  const showRightPanel = showCloudPicker || showServerRuntime;
 
   return (
     <div
       className={
-        showCloudPicker
-          ? "grid grid-cols-1 lg:grid-cols-[1fr_1px_320px] gap-0 items-start"
-          : ""
+        showRightPanel
+          ? "mx-auto w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_1px_320px] gap-0 items-start"
+          : "mx-auto w-full max-w-lg"
       }
     >
-    <div className={`space-y-8 ${showCloudPicker ? "lg:pr-6" : ""}`}>
+    <div className={`space-y-8 ${showRightPanel ? "lg:pr-6" : ""}`}>
       {showLoading && (
         <div className="space-y-3">
           <div>
@@ -1319,7 +1346,7 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         <ArrowRight className="size-4" />
       </button>
     </div>
-    {showCloudPicker && (
+    {showRightPanel && (
       <>
         {/* Vertical divider line between the two columns. Sits in its
             own 1px-wide grid track so the column widths stay clean and
@@ -1327,10 +1354,9 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
             mobile where the layout collapses to a single column. */}
         <div className="hidden lg:block w-px bg-border self-stretch" />
         {/* Slide-in keyed on deployTarget so the animation re-fires
-            each time the user flips back to "cloud" (not only on the
-            first selection). */}
+            each time the user flips targets (not only on first selection). */}
         <div key={config.deployTarget} className="lg:pl-6 animate-slide-in-right">
-          <CloudPowerPicker />
+          {showCloudPicker ? <CloudPowerPicker /> : <ServerRuntimePicker />}
         </div>
       </>
     )}
