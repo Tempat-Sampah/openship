@@ -220,10 +220,14 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
   const handleRetryFailed = React.useCallback(async () => {
     if (retryInFlightRef.current) return; // one retry press = one POST
     // Rebuild ONLY the failed services — the successful ones carry forward on
-    // their existing containers (compose carry-forward).
-    const failedIds = state.serviceStatuses
+    // their existing containers (compose carry-forward). Prefer the live
+    // per-service statuses, but after a refresh the build session (and those
+    // statuses) is gone — fall back to the server's authoritative failed list
+    // from the held decision so Retry still works instead of silently no-op'ing.
+    const liveFailedIds = state.serviceStatuses
       .filter((s) => s.status === "failed" && s.serviceId)
       .map((s) => s.serviceId);
+    const failedIds = liveFailedIds.length > 0 ? liveFailedIds : state.decisionFailedServiceIds;
     if (failedIds.length === 0 || !state.projectId) {
       setDecisionResolved(true);
       setDecisionModalOpen(false);
@@ -248,7 +252,7 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
     } finally {
       retryInFlightRef.current = false;
     }
-  }, [state.serviceStatuses, state.projectId, router, showToast]);
+  }, [state.serviceStatuses, state.decisionFailedServiceIds, state.projectId, router, showToast]);
 
   // Auto-open the decision dialog once per deployment when a partial failure is
   // awaiting a decision. Closing it leaves the persistent banner in place, so the

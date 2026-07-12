@@ -278,6 +278,7 @@ export function useDeploymentBuild(
         // hold it for an explicit keep/reject decision. The server flag takes
         // over on refresh (loadBuildSession) — false once the user keeps it.
         decisionPending: data?.decisionPending ?? !!warningMessage,
+        decisionFailedServiceIds: data?.partial?.failed ?? prev.decisionFailedServiceIds,
         screenshots: data?.screenshots || prev.screenshots,
         projectId: data?.project_id || prev.projectId,
         phaseDurations: nextDurations,
@@ -532,6 +533,7 @@ export function useDeploymentBuild(
         failureMessage: "",
         warningMessage: "",
         decisionPending: false,
+        decisionFailedServiceIds: [],
         errorCode: "",
         errorDetails: null,
         pendingPrompt: null,
@@ -901,6 +903,7 @@ export function useDeploymentBuild(
                 failureMessage: data.failureMessage || prev.failureMessage,
                 warningMessage: data.warningMessage || prev.warningMessage,
                 decisionPending: !!data.decisionPending,
+                decisionFailedServiceIds: data.partial?.failed ?? prev.decisionFailedServiceIds,
                 errorCode: data.errorCode || prev.errorCode,
               }
             : {}),
@@ -1069,6 +1072,7 @@ export function useDeploymentBuild(
           failureMessage: !isActive ? (data.failureMessage || "") : "",
           warningMessage: !isActive ? (data.warningMessage || "") : "",
           decisionPending: !isActive ? !!data.decisionPending : false,
+          decisionFailedServiceIds: !isActive ? (data.partial?.failed ?? []) : [],
           errorCode: !isActive ? (data.errorCode || "") : "",
           errorDetails: null,
           buildLogs,
@@ -1216,6 +1220,7 @@ export function useDeploymentBuild(
           failureMessage: "",
           warningMessage: "",
           decisionPending: false,
+          decisionFailedServiceIds: [],
           errorCode: "",
           errorDetails: null,
           pendingPrompt: null,

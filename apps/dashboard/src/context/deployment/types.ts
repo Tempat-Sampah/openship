@@ -554,6 +554,13 @@ export interface DeploymentState {
    * Required" banner + modal reappear after a refresh, until the user acts.
    */
   decisionPending: boolean;
+  /**
+   * Service IDs that failed in a held partial-failure deploy — the AUTHORITATIVE
+   * list from the server decision (getBuildStatus.partial.failed), so "Retry
+   * failed" works after a refresh even once the live build session (and its
+   * transient `serviceStatuses`) is gone.
+   */
+  decisionFailedServiceIds: string[];
   errorCode: string;
   errorDetails: Record<string, unknown> | null;
   buildLogs: BuildLog[];
@@ -604,6 +611,7 @@ export const INITIAL_STATE: DeploymentState = {
   failureMessage: "",
   warningMessage: "",
   decisionPending: false,
+  decisionFailedServiceIds: [],
   errorCode: "",
   errorDetails: null,
   buildLogs: [],
