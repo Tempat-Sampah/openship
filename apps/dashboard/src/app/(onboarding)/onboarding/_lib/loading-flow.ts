@@ -5,11 +5,16 @@ import {
 import { api, getApiBaseUrl } from "@/lib/api";
 import { buildDesktopAuthorizeUrl, preparePkceFlow, startDesktopCloudAuth } from "@/lib/cloud-auth";
 import type { OnboardingState } from "@repo/onboarding";
+import type { Dictionary } from "@/i18n";
 
 export type LoadingStatus = {
   title: string;
   message: string;
 };
+
+/** Localized loading-screen copy, threaded in from the consuming component
+ *  (`t.onboarding.loading`) so this module stays hook-free. */
+export type LoadingLabels = Dictionary["onboarding"]["loading"];
 
 export type LoadingResult =
   | { ok: true }
@@ -28,10 +33,11 @@ async function runDesktopCloudAuth(
   desktop: DesktopBridge,
   setStatus: (status: LoadingStatus) => void,
   isCancelled: () => boolean,
+  labels: LoadingLabels,
 ): Promise<LoadingResult> {
   setStatus({
-    title: "Opening Openship Cloud\u2026",
-    message: "Waiting for authentication to complete",
+    title: labels.openingCloud,
+    message: labels.waitingAuth,
   });
 
   const result = await startDesktopCloudAuth({ desktop, isCancelled });
@@ -39,17 +45,17 @@ async function runDesktopCloudAuth(
     return {
       ok: false,
       status: {
-        title: result.reason === "start_failed" ? "Could not start cloud authentication" : "Cloud authentication failed",
+        title: result.reason === "start_failed" ? labels.couldNotStartAuthTitle : labels.authFailedTitle,
         message: result.reason === "start_failed"
-          ? "The desktop auth flow could not be started."
-          : "Please try again and finish sign-in in your browser.",
+          ? labels.couldNotStartAuthMsg
+          : labels.authFailedMsg,
       },
     };
   }
 
   setStatus({
-    title: "Completing sign-in\u2026",
-    message: "Returning to Openship",
+    title: labels.completingSignIn,
+    message: labels.returningToOpenship,
   });
   return { ok: true };
 }
@@ -58,22 +64,26 @@ async function runCloudFlow(
   cloudAuthUrl: string | undefined,
   setStatus: (status: LoadingStatus) => void,
   isCancelled: () => boolean,
+  labels: LoadingLabels,
 ): Promise<LoadingResult> {
   const desktop = window.desktop;
   if (desktop?.onboarding) {
-    return runDesktopCloudAuth(desktop, setStatus, isCancelled);
+    return runDesktopCloudAuth(desktop, setStatus, isCancelled, labels);
   }
 
   setStatus({
-    title: "Redirecting to Openship Cloud\u2026",
-    message: "You\u2019ll complete sign-in in a new tab",
+    title: labels.redirectingCloud,
+    message: labels.newTabSignIn,
   });
   const cloudLoginUrl = await getCloudLoginUrl(cloudAuthUrl);
   window.open(cloudLoginUrl, "_blank");
   return { ok: true };
 }
 
-async function runSelfHostedFlow(state: OnboardingState): Promise<LoadingResult> {
+async function runSelfHostedFlow(
+  state: OnboardingState,
+  labels: LoadingLabels,
+): Promise<LoadingResult> {
   const system = state.ssh ? buildSshSettings(state.ssh) : undefined;
   const payload = buildSetupPayload({
     system,
@@ -88,8 +98,8 @@ async function runSelfHostedFlow(state: OnboardingState): Promise<LoadingResult>
     return {
       ok: false,
       status: {
-        title: "Could not save configuration",
-        message: "The API didn\u2019t respond. Make sure services are running.",
+        title: labels.couldNotSaveTitle,
+        message: labels.couldNotSaveMsg,
       },
     };
   }
@@ -104,26 +114,27 @@ export async function runLoadingFlow(options: {
   cloudAuthUrl?: string;
   setStatus: (status: LoadingStatus) => void;
   isCancelled: () => boolean;
+  labels: LoadingLabels;
 }): Promise<LoadingResult> {
-  const { state, cloudAuthUrl, setStatus, isCancelled } = options;
+  const { state, cloudAuthUrl, setStatus, isCancelled, labels } = options;
 
   if (state.path === "cloud") {
-    return runCloudFlow(cloudAuthUrl, setStatus, isCancelled);
+    return runCloudFlow(cloudAuthUrl, setStatus, isCancelled, labels);
   }
 
   setStatus({
-    title: "Saving configuration\u2026",
-    message: "Almost there",
+    title: labels.savingConfig,
+    message: labels.almostThere,
   });
 
-  const result = await runSelfHostedFlow(state);
+  const result = await runSelfHostedFlow(state, labels);
   if (!result.ok || isCancelled()) {
     return result;
   }
 
   setStatus({
-    title: "Setting up your account\u2026",
-    message: "Creating your session",
+    title: labels.settingUpAccount,
+    message: labels.creatingSession,
   });
 
   return result;

@@ -3,9 +3,9 @@
 #
 #   curl -fsSL https://get.openship.io | sh
 #
-# Installs the Openship CLI, which sets up and runs the self-hosted server
-# (`openship init`, `openship server`). No Node or npm required — Openship
-# runs on Bun, and this script installs Bun for you if it's missing.
+# Installs the Openship CLI. Then `openship up` runs Openship locally (API +
+# dashboard), or `openship install` fetches the desktop app. Bun is the runtime;
+# this script installs it for you if it's missing (no Node or npm needed).
 #
 # Env overrides:
 #   OPENSHIP_VERSION=0.1.9   pin a specific CLI version (default: latest)
@@ -37,15 +37,30 @@ PKG="openship"
 info "Installing the Openship CLI (${PKG})…"
 bun add -g "$PKG"
 
-# 3. Next steps.
 BUN_BIN="${BUN_INSTALL:-$HOME/.bun}/bin"
+
+# 3. Bun-only fallback. The published CLI carries a Node shebang
+#    (#!/usr/bin/env node), so on a box with no Node the global shim can't
+#    launch. Point it at a launcher that runs the CLI under Bun instead (Bun
+#    executes the Node-target bundle fine) — so `openship` works Node-free.
+if ! command -v node >/dev/null 2>&1; then
+  BUN_PATH="$(command -v bun)"
+  CLI_JS="${BUN_INSTALL:-$HOME/.bun}/install/global/node_modules/openship/dist/index.js"
+  if [ -n "$BUN_PATH" ] && [ -f "$CLI_JS" ]; then
+    info "Node not found — wiring 'openship' to run under Bun."
+    printf '#!/bin/sh\nexec "%s" "%s" "$@"\n' "$BUN_PATH" "$CLI_JS" > "$BUN_BIN/openship"
+    chmod +x "$BUN_BIN/openship"
+  fi
+fi
+
+# 4. Next steps.
 cat <<EOF
 
 $(printf '\033[32m✔\033[0m') Openship installed.
 
-  openship init       # configure your self-hosted server
-  openship server     # run it
-  openship --help     # everything else
+  openship up         # run Openship locally (API + dashboard)
+  openship install    # or install the desktop app
+  openship --help     # all commands
 
 If 'openship' isn't found, add Bun's global bin to your PATH:
   export PATH="${BUN_BIN}:\$PATH"

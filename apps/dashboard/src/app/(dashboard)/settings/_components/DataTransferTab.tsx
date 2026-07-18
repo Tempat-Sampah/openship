@@ -18,6 +18,7 @@ import { SettingsSection } from "./SettingsSection";
 import { Modal } from "@/components/ui/Modal";
 import { useSession, authClient } from "@/lib/auth-client";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import {
   dataTransferApi,
   getApiErrorMessage,
@@ -75,6 +76,7 @@ type Toast = (message: string, type: "success" | "error", title?: string) => voi
 /* ── Export ──────────────────────────────────────────────────────── */
 
 function ExportCard({ onToast }: { onToast: Toast }) {
+  const { t } = useI18n();
   const [passphrase, setPassphrase] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -95,65 +97,62 @@ function ExportCard({ onToast }: { onToast: Toast }) {
       URL.revokeObjectURL(url);
       onToast(
         passphrase
-          ? "Export downloaded. Keep the passphrase safe — you'll need it to import."
-          : "Export downloaded. Secrets were NOT included (no passphrase set).",
+          ? t.settings.dataTransfer.export.toastWithSecrets
+          : t.settings.dataTransfer.export.toastNoSecrets,
         "success",
-        "Export",
+        t.settings.common.toast.export,
       );
     } catch (err) {
-      onToast(getApiErrorMessage(err, "Export failed."), "error", "Export");
+      onToast(getApiErrorMessage(err, t.settings.dataTransfer.export.toastFailed), "error", t.settings.common.toast.export);
     } finally {
       setBusy(false);
     }
-  }, [passphrase, passphraseMismatch, onToast]);
+  }, [passphrase, passphraseMismatch, onToast, t]);
 
   return (
     <SettingsSection
       icon={Download}
-      title="Export data"
-      description="Download the entire instance database as a file."
+      title={t.settings.dataTransfer.export.title}
+      description={t.settings.dataTransfer.export.description}
       iconBg="bg-primary/10"
       iconColor="text-primary"
     >
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Creates a portable snapshot of everything — projects, servers, deployments, settings.
-          Set a passphrase to include your secrets (env vars, tokens, SSH credentials); they are
-          re-encrypted under it, so the file is safe to move. Leave it blank to export without
-          secrets.
+          {t.settings.dataTransfer.export.intro}
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              Passphrase (optional)
+              {t.settings.dataTransfer.export.passphraseLabel}
             </label>
             <input
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               autoComplete="new-password"
-              placeholder="Protects your secrets"
+              placeholder={t.settings.dataTransfer.export.passphrasePlaceholder}
               className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              Confirm passphrase
+              {t.settings.dataTransfer.export.confirmLabel}
             </label>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
-              placeholder="Repeat it"
+              placeholder={t.settings.dataTransfer.export.confirmPlaceholder}
               className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60"
             />
           </div>
         </div>
 
         {passphraseMismatch && (
-          <p className="text-xs text-red-500">Passphrases don't match.</p>
+          <p className="text-xs text-red-500">{t.settings.dataTransfer.export.mismatch}</p>
         )}
 
         <button
@@ -163,7 +162,7 @@ function ExportCard({ onToast }: { onToast: Toast }) {
           className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-          {busy ? "Exporting…" : "Export & download"}
+          {busy ? t.settings.dataTransfer.export.exporting : t.settings.dataTransfer.export.exportDownload}
         </button>
       </div>
     </SettingsSection>
@@ -173,20 +172,20 @@ function ExportCard({ onToast }: { onToast: Toast }) {
 /* ── Import ──────────────────────────────────────────────────────── */
 
 function ImportCard({ onToast }: { onToast: Toast }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
     <SettingsSection
       icon={Upload}
-      title="Import data"
-      description="Restore an exported file onto this instance."
+      title={t.settings.dataTransfer.import.title}
+      description={t.settings.dataTransfer.import.description}
       iconBg="bg-primary/10"
       iconColor="text-primary"
     >
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Load a file exported from another Openship install. Enter the passphrase used when it was
-          exported to restore secrets too.
+          {t.settings.dataTransfer.import.intro}
         </p>
         <button
           type="button"
@@ -194,7 +193,7 @@ function ImportCard({ onToast }: { onToast: Toast }) {
           className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
         >
           <Upload className="size-4" />
-          Import from file…
+          {t.settings.dataTransfer.import.importFromFile}
         </button>
       </div>
 
@@ -212,6 +211,7 @@ function ImportModal({
   onClose: () => void;
   onToast: Toast;
 }) {
+  const { t } = useI18n();
   const [file, setFile] = useState<DataTransferFile | null>(null);
   const [fileName, setFileName] = useState("");
   const [fileHasSecrets, setFileHasSecrets] = useState(false);
@@ -236,7 +236,7 @@ function ImportModal({
     try {
       const parsed = JSON.parse(await f.text()) as DataTransferFile;
       if (parsed?.kind !== "openship-instance-export") {
-        setError("That doesn't look like an Openship export file.");
+        setError(t.settings.dataTransfer.import.notExport);
         setFile(null);
         return;
       }
@@ -244,7 +244,7 @@ function ImportModal({
       setFileName(f.name);
       setFileHasSecrets(!!parsed.secrets);
     } catch {
-      setError("Could not read that file — is it a valid export?");
+      setError(t.settings.dataTransfer.import.cantRead);
       setFile(null);
     }
   };
@@ -252,9 +252,7 @@ function ImportModal({
   const handleImport = async () => {
     if (!file) return;
     if (mode === "wipe") {
-      const ok = window.confirm(
-        "Replace ALL data on this instance with the imported snapshot? This cannot be undone, and you'll be signed out.",
-      );
+      const ok = window.confirm(t.settings.dataTransfer.import.confirmWipe);
       if (!ok) return;
     }
     setBusy(true);
@@ -266,12 +264,12 @@ function ImportModal({
         mode,
       )) as ImportResult;
 
-      const parts = [`${result.rowsRestored} rows restored`];
-      if (result.secretsRehydrated > 0) parts.push(`${result.secretsRehydrated} secrets restored`);
+      const parts = [interpolate(t.settings.dataTransfer.import.rowsRestored, { count: String(result.rowsRestored) })];
+      if (result.secretsRehydrated > 0) parts.push(interpolate(t.settings.dataTransfer.import.secretsRestored, { count: String(result.secretsRehydrated) }));
       if (result.secretsSkipped && fileHasSecrets) {
-        parts.push("secrets NOT restored (no/incorrect passphrase) — re-enter credentials");
+        parts.push(t.settings.dataTransfer.import.secretsNotRestored);
       }
-      onToast(parts.join(" · "), "success", "Import complete");
+      onToast(parts.join(" · "), "success", t.settings.common.toast.importComplete);
 
       onClose();
       reset();
@@ -281,7 +279,7 @@ function ImportModal({
         setTimeout(() => window.location.reload(), 800);
       }
     } catch (err) {
-      setError(getApiErrorMessage(err, "Import failed."));
+      setError(getApiErrorMessage(err, t.settings.dataTransfer.import.importFailed));
     } finally {
       setBusy(false);
     }
@@ -304,26 +302,26 @@ function ImportModal({
             <DatabaseBackup className="size-5" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-foreground">Import instance data</h2>
-            <p className="text-xs text-muted-foreground">Restore an exported snapshot.</p>
+            <h2 className="text-base font-semibold text-foreground">{t.settings.dataTransfer.import.modalTitle}</h2>
+            <p className="text-xs text-muted-foreground">{t.settings.dataTransfer.import.modalSubtitle}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              Export file
+              {t.settings.dataTransfer.import.exportFile}
             </label>
             <input
               type="file"
               accept="application/json,.json"
               onChange={handleFile}
-              className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted/70"
+              className="block w-full text-sm text-muted-foreground file:me-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted/70"
             />
             {fileName && (
               <p className="mt-1 text-xs text-muted-foreground">
                 {fileName}
-                {fileHasSecrets ? " · contains secrets (passphrase required)" : " · no secrets included"}
+                {fileHasSecrets ? t.settings.dataTransfer.import.fileContainsSecrets : t.settings.dataTransfer.import.fileNoSecrets}
               </p>
             )}
           </div>
@@ -331,33 +329,33 @@ function ImportModal({
           {fileHasSecrets && (
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Passphrase
+                {t.settings.dataTransfer.import.passphrase}
               </label>
               <input
                 type="password"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
                 autoComplete="off"
-                placeholder="The passphrase set when exporting"
+                placeholder={t.settings.dataTransfer.import.passphrasePlaceholder}
                 className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60"
               />
             </div>
           )}
 
           <div>
-            <label className="mb-2 block text-xs font-medium text-muted-foreground">Mode</label>
+            <label className="mb-2 block text-xs font-medium text-muted-foreground">{t.settings.dataTransfer.import.mode}</label>
             <div className="space-y-2">
               <ModeOption
                 selected={mode === "wipe"}
                 onSelect={() => setMode("wipe")}
-                title="Replace everything"
-                description="Wipe this instance and restore the snapshot exactly. Recommended for migrating to a new machine."
+                title={t.settings.dataTransfer.import.modeReplaceTitle}
+                description={t.settings.dataTransfer.import.modeReplaceDesc}
               />
               <ModeOption
                 selected={mode === "merge"}
                 onSelect={() => setMode("merge")}
-                title="Merge into existing"
-                description="Keep current data and add the imported data. Your own account and settings are preserved."
+                title={t.settings.dataTransfer.import.modeMergeTitle}
+                description={t.settings.dataTransfer.import.modeMergeDesc}
               />
             </div>
           </div>
@@ -366,7 +364,7 @@ function ImportModal({
             <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-3">
               <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600" />
               <p className="text-xs text-amber-700 dark:text-amber-500">
-                This erases all current data on this instance and signs you out.
+                {t.settings.dataTransfer.import.wipeWarn}
               </p>
             </div>
           )}
@@ -384,7 +382,7 @@ function ImportModal({
               disabled={busy}
               className="rounded-lg bg-foreground/[0.06] px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/[0.1] disabled:opacity-50"
             >
-              Cancel
+              {t.settings.common.cancel}
             </button>
             <button
               type="button"
@@ -393,7 +391,7 @@ function ImportModal({
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {busy && <Loader2 className="size-4 animate-spin" />}
-              {busy ? "Importing…" : "Import"}
+              {busy ? t.settings.dataTransfer.import.importing : t.settings.dataTransfer.import.import}
             </button>
           </div>
         </div>
@@ -417,7 +415,7 @@ function ModeOption({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-xl border p-3 text-left transition-colors ${
+      className={`w-full rounded-xl border p-3 text-start transition-colors ${
         selected ? "border-primary/60 bg-primary/[0.05]" : "border-border/50 hover:bg-foreground/[0.03]"
       }`}
     >
@@ -431,7 +429,7 @@ function ModeOption({
         </span>
         <span className="text-sm font-medium text-foreground">{title}</span>
       </div>
-      <p className="mt-1 pl-6 text-xs text-muted-foreground">{description}</p>
+      <p className="mt-1 ps-6 text-xs text-muted-foreground">{description}</p>
     </button>
   );
 }

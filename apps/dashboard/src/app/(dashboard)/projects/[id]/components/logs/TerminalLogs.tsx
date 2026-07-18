@@ -10,6 +10,7 @@ import { useToast } from "@/context/ToastContext";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { useTheme } from "@/components/theme-provider";
 import { api } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface TerminalLogsProps {
     projectId: string;
@@ -56,6 +57,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
     onLogsChange,
 }) => {
     const { showToast } = useToast();
+    const { t } = useI18n();
     const {
         terminalLogsData,
         addTerminalLog,
@@ -170,7 +172,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                     // Clear the selection after copying
                     xterm.clearSelection();
                     // Show visual feedback
-                    showToast('Copied to clipboard', 'success');
+                    showToast(t.projectDetail.logs.terminal.copiedToClipboard, 'success');
                 }).catch(err => {
                     console.error('Failed to copy text:', err);
                 });
@@ -425,13 +427,13 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
             },
             onError: (message) => {
                 console.error('Terminal logs error:', message);
-                showToast(message, 'error', 'Logs Error');
+                showToast(message, 'error', t.projectDetail.logs.terminal.logsErrorTitle);
             },
             onContainerExit: (exitCode, message) => {
                 console.log('Container exited:', exitCode, message);
                 setTerminalStreaming(false);
                 if (exitCode !== 0) {
-                    showToast(message || `Container exited with code ${exitCode}`, 'error', 'Container Stopped');
+                    showToast(message || interpolate(t.projectDetail.logs.terminal.containerExited, { code: String(exitCode) }), 'error', t.projectDetail.logs.terminal.containerStoppedTitle);
                 }
             },
         },
@@ -445,7 +447,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
         onError: (error) => {
             console.error('Terminal logs stream error:', error);
             setTerminalStreaming(false);
-            showToast('Failed to connect to terminal logs, make sure your project is running', 'error', 'Failed to connect to terminal logs');
+            showToast(t.projectDetail.logs.terminal.connectFailed, 'error', t.projectDetail.logs.terminal.connectFailedTitle);
         },
     });
 
@@ -630,17 +632,17 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                                     <div className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-sm"></div>
                                 </div>
                                 <TerminalIcon className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm font-medium text-foreground/80">{projectName || 'Terminal'}</span>
+                                <span className="text-sm font-medium text-foreground/80">{projectName || t.projectDetail.logs.terminal.fallbackName}</span>
                             </div>
 
                             {/* Search Input */}
                             <div className="flex-1 max-w-md">
                                 <div className="flex items-center gap-2">
                                     <div className="relative flex-1">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/70" />
+                                        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/70" />
                                         <input
                                             type="text"
-                                            placeholder="Search in logs..."
+                                            placeholder={t.projectDetail.logs.terminal.searchPlaceholder}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             onKeyDown={(e) => {
@@ -653,7 +655,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                                                     }
                                                 }
                                             }}
-                                            className="w-full pl-9 pr-8 py-1.5 bg-muted border-border text-foreground placeholder:text-muted-foreground/70 focus:bg-card border rounded-lg text-xs focus:outline-none transition-all"
+                                            className="w-full ps-9 pe-8 py-1.5 bg-muted border-border text-foreground placeholder:text-muted-foreground/70 focus:bg-card border rounded-lg text-xs focus:outline-none transition-all"
                                         />
                                         {searchQuery && (
                                             <button
@@ -661,7 +663,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                                                     setSearchQuery("");
                                                     setHasMatches(false);
                                                 }}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                                                className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground/70 hover:text-muted-foreground transition-colors"
                                             >
                                                 <X className="w-3.5 h-3.5" />
                                             </button>
@@ -676,7 +678,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                                                     onClick={handleSearchPrevious}
                                                     disabled={!hasMatches || isSearching}
                                                     className="p-1 bg-muted hover:bg-muted/80 border-border disabled:opacity-30 disabled:cursor-not-allowed rounded border transition-colors"
-                                                    title="Previous match (Shift+Enter)"
+                                                    title={t.projectDetail.logs.terminal.previousMatch}
                                                 >
                                                     <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
                                                 </button>
@@ -684,7 +686,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                                                     onClick={handleSearchNext}
                                                     disabled={!hasMatches || isSearching}
                                                     className="p-1 bg-muted hover:bg-muted/80 border-border disabled:opacity-30 disabled:cursor-not-allowed rounded border transition-colors"
-                                                    title="Next match (Enter)"
+                                                    title={t.projectDetail.logs.terminal.nextMatch}
                                                 >
                                                     <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                                                 </button>
@@ -697,7 +699,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <div className="flex items-center gap-2">
                                     <div className={`w-2 h-2 rounded-full ${terminalLogsData.isStreaming ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/30'}`}></div>
-                                    <span className="text-xs text-muted-foreground font-mono hidden sm:inline">{terminalLogsData.logs.length} lines</span>
+                                    <span className="text-xs text-muted-foreground font-mono hidden sm:inline">{interpolate(t.projectDetail.logs.terminal.lines, { count: String(terminalLogsData.logs.length) })}</span>
                                 </div>
 
                                 <button
@@ -710,12 +712,12 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                                     {terminalLogsData.isStreaming ? (
                                         <>
                                             <Pause className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Stop</span>
+                                            <span className="hidden sm:inline">{t.projectDetail.logs.terminal.stop}</span>
                                         </>
                                     ) : (
                                         <>
                                             <Play className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Start</span>
+                                            <span className="hidden sm:inline">{t.projectDetail.logs.terminal.start}</span>
                                         </>
                                     )}
                                 </button>
@@ -729,7 +731,7 @@ export const TerminalLogs: React.FC<TerminalLogsProps> = ({
                         {terminalLogsData.logs.length === 0 && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
                                 <p className="text-sm text-muted-foreground/50">
-                                    {terminalLogsData.isStreaming ? 'Waiting for logs…' : 'Press Start to begin streaming logs'}
+                                    {terminalLogsData.isStreaming ? t.projectDetail.logs.terminal.waitingForLogs : t.projectDetail.logs.terminal.pressStart}
                                 </p>
                             </div>
                         )}

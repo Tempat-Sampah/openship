@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { XCircle, RotateCcw, ArrowDown, Trash2 } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface LogEntry {
   stepId: number;
@@ -47,6 +48,7 @@ export function MailProgress({
   onResume,
   onReset,
 }: MailProgressProps) {
+  const { t } = useI18n();
   // Auto-scroll-to-tail behavior is opt-in based on user position: if the
   // user scrolls up from the bottom we STOP yanking them back. They can
   // click the "Jump to latest" button (or scroll back themselves) to re-arm.
@@ -107,9 +109,12 @@ export function MailProgress({
       <div className="relative bg-card rounded-2xl border border-border/50 overflow-hidden">
         <div className="px-5 py-3 border-b border-border/50 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <h3 className="text-sm font-medium text-foreground">Live logs</h3>
+            <h3 className="text-sm font-medium text-foreground">{t.emails.progress.liveLogs}</h3>
             <span className="text-xs text-muted-foreground/70 tabular-nums">
-              {logs.length} {logs.length === 1 ? "line" : "lines"}
+              {interpolate(
+                logs.length === 1 ? t.emails.progress.lineOne : t.emails.progress.lineOther,
+                { count: String(logs.length) },
+              )}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -119,7 +124,7 @@ export function MailProgress({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
               >
                 <XCircle className="size-3.5" />
-                Cancel
+                {t.emails.progress.cancel}
               </button>
             ) : (
               canReset && (
@@ -130,10 +135,10 @@ export function MailProgress({
                       ? "bg-red-500 text-white hover:bg-red-500/90"
                       : "border border-red-500/30 text-red-500 hover:bg-red-500/10"
                   }`}
-                  title="Wipe install state on the server and start fresh"
+                  title={t.emails.progress.resetTitle}
                 >
                   <Trash2 className="size-3.5" />
-                  {confirmReset ? "Click again to confirm" : "Reset"}
+                  {confirmReset ? t.emails.progress.confirmReset : t.emails.progress.reset}
                 </button>
               )
             )}
@@ -147,10 +152,10 @@ export function MailProgress({
           {logs.length === 0 ? (
             <div className="flex items-center justify-center h-full text-xs text-muted-foreground/60">
               {running
-                ? "Waiting for output…"
+                ? t.emails.progress.waiting
                 : error
-                  ? "No buffered output for this run."
-                  : "Logs will stream here once setup starts."}
+                  ? t.emails.progress.noBuffered
+                  : t.emails.progress.willStream}
             </div>
           ) : (
             <div className="space-y-0.5 font-mono text-xs">
@@ -184,7 +189,7 @@ export function MailProgress({
             className="absolute left-1/2 -translate-x-1/2 bottom-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-foreground text-background shadow-lg hover:bg-foreground/90 transition-colors"
           >
             <ArrowDown className="size-3.5" />
-            Jump to latest
+            {t.emails.progress.jumpToLatest}
           </button>
         )}
       </div>
@@ -197,7 +202,7 @@ export function MailProgress({
             <XCircle className="size-5 text-red-500 mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                Setup failed
+                {t.emails.progress.setupFailed}
               </p>
               <p className="text-xs text-muted-foreground mt-1 break-words">{error}</p>
               {resumeStep && (
@@ -206,7 +211,7 @@ export function MailProgress({
                   className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   <RotateCcw className="size-3.5" />
-                  Retry from step {resumeStep}
+                  {interpolate(t.emails.progress.retryFromStep, { resumeStep: String(resumeStep) })}
                 </button>
               )}
             </div>

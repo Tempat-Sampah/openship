@@ -22,6 +22,7 @@ import { useCallback } from "react";
 import { ExternalLink, Loader2, Cloud, CircleAlert } from "lucide-react";
 import { useCloud } from "@/context/CloudContext";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n-provider";
 
 export type BillingUnavailableReason =
   | "saas-not-enabled"
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function BillingUnavailable({ reason }: Props) {
+  const { t } = useI18n();
   const { startConnect, connecting, refresh } = useCloud();
 
   const handleConnect = useCallback(() => {
@@ -55,11 +57,10 @@ export function BillingUnavailable({ reason }: Props) {
           <Cloud className="size-6 text-primary" />
         </div>
         <h2 className="text-base font-semibold text-foreground">
-          Connect to Openship Cloud to manage billing
+          {t.billing.unavailable.notConnected.title}
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Your local instance isn't connected to Openship Cloud yet. Connect to
-          view subscription state, usage, invoices, and top-ups.
+          {t.billing.unavailable.notConnected.description}
         </p>
         <div className="mt-5 flex justify-center">
           <Button onClick={handleConnect} disabled={connecting}>
@@ -68,7 +69,9 @@ export function BillingUnavailable({ reason }: Props) {
             ) : (
               <ExternalLink className="size-4" />
             )}
-            {connecting ? "Waiting for sign in…" : "Connect to Openship Cloud"}
+            {connecting
+              ? t.billing.unavailable.notConnected.connecting
+              : t.billing.unavailable.notConnected.connect}
           </Button>
         </div>
       </div>
@@ -82,11 +85,10 @@ export function BillingUnavailable({ reason }: Props) {
           <CircleAlert className="size-6 text-amber-500" />
         </div>
         <h2 className="text-base font-semibold text-foreground">
-          Your Openship Cloud session expired
+          {t.billing.unavailable.sessionExpired.title}
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          You're still linked, but the session token Openship Cloud issued is
-          no longer valid. Reconnect to refresh it — no need to disconnect first.
+          {t.billing.unavailable.sessionExpired.description}
         </p>
         <div className="mt-5 flex justify-center">
           <Button onClick={handleConnect} disabled={connecting}>
@@ -95,7 +97,9 @@ export function BillingUnavailable({ reason }: Props) {
             ) : (
               <ExternalLink className="size-4" />
             )}
-            {connecting ? "Waiting for sign in…" : "Reconnect to Openship Cloud"}
+            {connecting
+              ? t.billing.unavailable.sessionExpired.connecting
+              : t.billing.unavailable.sessionExpired.reconnect}
           </Button>
         </div>
       </div>
@@ -109,15 +113,14 @@ export function BillingUnavailable({ reason }: Props) {
           <CircleAlert className="size-6 text-destructive" />
         </div>
         <h2 className="text-base font-semibold text-foreground">
-          Couldn't reach Openship Cloud billing
+          {t.billing.unavailable.unreachable.title}
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Your cloud session may have expired or the cloud is temporarily
-          unavailable. Try again, or reconnect from Settings → Cloud.
+          {t.billing.unavailable.unreachable.description}
         </p>
         <div className="mt-5 flex justify-center gap-2">
           <Button variant="outline" onClick={handleRetry}>
-            Try again
+            {t.billing.unavailable.unreachable.tryAgain}
           </Button>
           <Button onClick={handleConnect} disabled={connecting}>
             {connecting ? (
@@ -125,7 +128,7 @@ export function BillingUnavailable({ reason }: Props) {
             ) : (
               <ExternalLink className="size-4" />
             )}
-            Reconnect
+            {t.billing.unavailable.unreachable.reconnect}
           </Button>
         </div>
       </div>
@@ -136,11 +139,10 @@ export function BillingUnavailable({ reason }: Props) {
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-8 text-center">
       <h2 className="text-base font-semibold text-foreground">
-        Billing is not enabled for this organization
+        {t.billing.unavailable.notEnabled.title}
       </h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Billing is configured but not active for this organization. Contact
-        your administrator to enable it.
+        {t.billing.unavailable.notEnabled.description}
       </p>
     </div>
   );

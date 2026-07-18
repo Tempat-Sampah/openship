@@ -19,6 +19,7 @@ import { useSearchParams } from "next/navigation";
 import { usePlatform } from "@/context/PlatformContext";
 import { useCloud } from "@/context/CloudContext";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 
 import { BuildPreferences } from "./_components/BuildPreferences";
 import { DeployDefaults } from "./_components/DeployDefaults";
@@ -28,6 +29,8 @@ import { CloneCredentials } from "./_components/CloneCredentials";
 import { PersonalAccessTokens } from "./_components/PersonalAccessTokens";
 import { McpConnection } from "./_components/McpConnection";
 import { InstanceInfo } from "./_components/InstanceInfo";
+import { LanguageSetting } from "./_components/LanguageSetting";
+import { UpdatesTab } from "./_components/UpdatesTab";
 import { TeamTab } from "./_components/TeamTab";
 import { NotificationsTab } from "./_components/NotificationsTab";
 import { AuditTab } from "./_components/AuditTab";
@@ -54,9 +57,10 @@ export default function SettingsPage() {
 }
 
 function SettingsPageInner() {
-  const { selfHosted } = usePlatform();
+  const { selfHosted, deployMode } = usePlatform();
   const { refresh } = useCloud();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const { activeTab } = useSettingsTabs();
 
@@ -69,10 +73,10 @@ function SettingsPageInner() {
   useEffect(() => {
     if (searchParams.get("cloud") === "connected") {
       refresh();
-      showToast("Connected to Openship Cloud", "success", "Cloud");
+      showToast(t.settings.page.cloudConnectedToast, "success", t.settings.common.toast.cloud);
       window.history.replaceState({}, "", "/settings?tab=cloud");
     }
-  }, [searchParams, showToast, refresh]);
+  }, [searchParams, showToast, refresh, t]);
 
   return (
     <PageContainer>
@@ -81,10 +85,10 @@ function SettingsPageInner() {
           className="text-2xl font-medium text-foreground/80"
           style={{ letterSpacing: "-0.2px" }}
         >
-          Settings
+          {t.settings.page.title}
         </h1>
         <p className="text-sm text-muted-foreground/70 mt-1">
-          Manage your preferences, team, and instance configuration
+          {t.settings.page.subtitle}
         </p>
       </div>
 
@@ -98,6 +102,7 @@ function SettingsPageInner() {
               <GitHubConnection />
               {showDeployDefaults && <DeployDefaults />}
               {showBuildPreferences && <BuildPreferences />}
+              <LanguageSetting />
             </>
           )}
 
@@ -121,8 +126,11 @@ function SettingsPageInner() {
           {activeTab === "instance" && (
             <>
               <InstanceInfo />
-              {/* Full-DB export/import lives here (owner-gated inside the
-                  component); self-hosted only — SaaS has no portable DB. */}
+              {/* Updates live under Instance (the "this install" home). Not on
+                  the SaaS — the managed cloud has nothing for the user to update. */}
+              {(selfHosted || deployMode === "desktop") && <UpdatesTab />}
+              {/* Full-DB export/import (owner-gated inside the component);
+                  self-hosted only — SaaS has no portable DB. */}
               {selfHosted && <DataTransferTab />}
             </>
           )}

@@ -33,6 +33,7 @@ import { useProjectInfo } from "@/hooks/useProjectEndpoints";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { ApiError, getApiErrorMessage, projectsApi } from "@/lib/api";
 import ErrorState from "@/components/shared/ErrorState";
 import { PageContainer } from "@/components/ui/PageContainer";
@@ -49,6 +50,7 @@ const branchToEnvironmentName = (branch: string) =>
 
 const EnvironmentSwitcher = () => {
   const { projectData, environments, createEnvironment, activeTab } = useProjectSettings();
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -71,7 +73,7 @@ const EnvironmentSwitcher = () => {
       : [
           {
             id: projectData.id,
-            name: projectData.environmentName || "Production",
+            name: projectData.environmentName || t.projects.env.productionFallback,
             slug: projectData.environmentSlug || "production",
             type: projectData.environmentType || "production",
             gitBranch: projectData.gitBranch || "main",
@@ -186,8 +188,8 @@ const EnvironmentSwitcher = () => {
       })
       .catch((error) => {
         if (branchRequestId.current !== requestId) return;
-        const message = error instanceof Error ? error.message : "Failed to load branches";
-        showToast(message, "error", "Branches");
+        const message = error instanceof Error ? error.message : t.projects.env.failedLoadBranches;
+        showToast(message, "error", t.projects.env.toastBranchesTitle);
       })
       .finally(() => {
         if (branchRequestId.current !== requestId) return;
@@ -234,8 +236,8 @@ const EnvironmentSwitcher = () => {
         router.push(`/projects/${created.id}/${activeTab}`);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create environment";
-      showToast(message, "error", "Environment");
+      const message = error instanceof Error ? error.message : t.projects.env.failedCreateEnvironment;
+      showToast(message, "error", t.projects.env.toastEnvironmentTitle);
     } finally {
       setIsCreating(false);
       setCreatingBranch(null);
@@ -262,8 +264,8 @@ const EnvironmentSwitcher = () => {
         router.push(`/projects/${created.id}/${activeTab}`);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create environment";
-      showToast(message, "error", "Environment");
+      const message = error instanceof Error ? error.message : t.projects.env.failedCreateEnvironment;
+      showToast(message, "error", t.projects.env.toastEnvironmentTitle);
     } finally {
       setIsCreating(false);
     }
@@ -281,7 +283,7 @@ const EnvironmentSwitcher = () => {
         type="button"
         onClick={openSwitcher}
         className="inline-flex h-9 max-w-[260px] items-center gap-2 rounded-full border border-border/50 bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
-        aria-label="Switch environment"
+        aria-label={t.projects.env.switchAria}
       >
         <span className="truncate">{currentEnvironment.name}</span>
         <span className="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
@@ -294,14 +296,14 @@ const EnvironmentSwitcher = () => {
         type="button"
         onClick={openBranchCreator}
         className="inline-flex size-9 items-center justify-center rounded-full border border-border/50 bg-card text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-        aria-label="Add branch"
+        aria-label={t.projects.env.addBranchAria}
       >
         {isAdding ? <X className="size-4" /> : <Plus className="size-4" />}
       </button>
 
       {isOpen && (
         <div
-          className="absolute right-11 top-full z-40 mt-2 w-[320px] overflow-hidden rounded-lg border border-border/50 shadow-xl"
+          className="absolute end-11 top-full z-40 mt-2 w-[320px] overflow-hidden rounded-lg border border-border/50 shadow-xl"
           style={{ backgroundColor: "var(--th-card-bg-solid, var(--card))" }}
         >
           <div className="max-h-[320px] overflow-y-auto p-1">
@@ -313,7 +315,7 @@ const EnvironmentSwitcher = () => {
                   key={env.id}
                   type="button"
                   onClick={() => handleSwitch(env.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-start transition-colors hover:bg-muted/50"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium text-foreground">{env.name}</span>
@@ -332,14 +334,14 @@ const EnvironmentSwitcher = () => {
 
       {isAdding && (
         <div
-          className="absolute right-0 top-full z-40 mt-2 w-[340px] rounded-lg border border-border/50 p-2 shadow-xl"
+          className="absolute end-0 top-full z-40 mt-2 w-[340px] rounded-lg border border-border/50 p-2 shadow-xl"
           style={{ backgroundColor: "var(--th-card-bg-solid, var(--card))" }}
         >
           <div className="space-y-2">
             <input
               value={branchQuery}
               onChange={(event) => setBranchQuery(event.target.value)}
-              placeholder="Search branches"
+              placeholder={t.projects.env.searchBranches}
               className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/40"
             />
             <div className="max-h-[280px] overflow-y-auto">
@@ -358,7 +360,7 @@ const EnvironmentSwitcher = () => {
                       type="button"
                       onClick={() => handleAddBranch(branchOption.name)}
                       disabled={isCreating && !creating}
-                      className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-start transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         <GitBranch className="size-4 shrink-0 text-muted-foreground" />
@@ -385,7 +387,7 @@ const EnvironmentSwitcher = () => {
                 })
               ) : (
                 <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                  No branches found
+                  {t.projects.env.noBranches}
                 </div>
               )}
             </div>
@@ -395,13 +397,13 @@ const EnvironmentSwitcher = () => {
                   <input
                     value={manualEnvironmentName}
                     onChange={(event) => setManualEnvironmentName(event.target.value)}
-                    placeholder="Environment name"
+                    placeholder={t.projects.env.environmentName}
                     className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/40"
                   />
                   <input
                     value={manualBranch}
                     onChange={(event) => setManualBranch(event.target.value)}
-                    placeholder="Branch label"
+                    placeholder={t.projects.env.branchLabel}
                     className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary/40"
                   />
                   <div className="flex items-center justify-end gap-2">
@@ -410,7 +412,7 @@ const EnvironmentSwitcher = () => {
                       onClick={() => setManualMode(false)}
                       className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                     >
-                      Cancel
+                      {t.projects.env.cancel}
                     </button>
                     <button
                       type="button"
@@ -419,7 +421,7 @@ const EnvironmentSwitcher = () => {
                       className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isCreating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-                      Create
+                      {t.projects.env.create}
                     </button>
                   </div>
                 </div>
@@ -427,10 +429,10 @@ const EnvironmentSwitcher = () => {
                 <button
                   type="button"
                   onClick={() => setManualMode(true)}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
                 >
                   <FilePlus2 className="size-4 text-muted-foreground" />
-                  Manual environment
+                  {t.projects.env.manualEnvironment}
                 </button>
               )}
             </div>
@@ -456,6 +458,7 @@ const ProjectSettingsContent = () => {
   // know enough about the project to even render its tabs.
   const { isLoading: isLoadingProjectInfo, error: projectInfoError } = useProjectInfo(id);
 
+  const { t } = useI18n();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -486,13 +489,13 @@ const ProjectSettingsContent = () => {
         const orphanCount = Array.isArray(response.orphaned) ? response.orphaned.length : 0;
         if (orphanCount > 0) {
           showToast(
-            `Project deleted. ${orphanCount} remote resource(s) will be cleaned up when the server is reachable.`,
+            interpolate(t.projects.delete.orphanCleanup, { count: String(orphanCount) }),
             "success",
-            "Deleted (cleanup pending)",
+            t.projects.delete.orphanCleanupTitle,
           );
         } else {
           showToast(
-            deleteApp ? "Project deleted successfully" : "Environment deleted successfully",
+            deleteApp ? t.projects.delete.successProject : t.projects.delete.successEnvironment,
             "success",
           );
         }
@@ -505,9 +508,11 @@ const ProjectSettingsContent = () => {
       if (Array.isArray(response.unrecoverable) && response.unrecoverable.length > 0) {
         console.warn("[delete-project] partial cleanup", response.unrecoverable);
         showToast(
-          `Project deleted, but ${response.unrecoverable.length} cleanup step(s) failed. Ops will need to verify.`,
+          interpolate(t.projects.delete.partialCleanup, {
+            count: String(response.unrecoverable.length),
+          }),
           "success",
-          "Partial cleanup",
+          t.projects.delete.partialCleanupTitle,
         );
         router.push("/");
         return;
@@ -515,9 +520,9 @@ const ProjectSettingsContent = () => {
       // Defensive: 2xx with ok=false but no unrecoverable list. Treat as failure.
       setProjectData((prev: any) => ({ ...prev, deletedAt: null }));
       showToast(
-        response.message || response.error || "Failed to delete project",
+        response.message || response.error || t.projects.delete.failed,
         "error",
-        "Failed to delete project",
+        t.projects.delete.failed,
       );
     } catch (err) {
       // Always revert optimistic deletion on any failure - project still exists.
@@ -540,22 +545,22 @@ const ProjectSettingsContent = () => {
         // work can't loop.
         if (body.code === "PROJECT_HAS_ACTIVE_WORK") {
           if (!force) {
-            showToast("Cancelling active work, then deleting…", "success", "Cleaning up");
+            showToast(t.projects.delete.cancellingActiveWork, "success", t.projects.delete.cleaningUpTitle);
             void handleDeleteProject(deleteApp, wipeVolumes, true, forceOrphan);
             return;
           }
           showToast(
-            body.error ?? "Project has active work — try again in a moment",
+            body.error ?? t.projects.delete.hasActiveWork,
             "error",
-            "Cannot delete",
+            t.projects.delete.cannotDeleteTitle,
           );
           return;
         }
         if (body.code === "PROJECT_DELETION_IN_PROGRESS") {
           showToast(
-            "Another delete is already running for this project",
+            t.projects.delete.deletionInProgress,
             "error",
-            "Deletion in progress",
+            t.projects.delete.deletionInProgressTitle,
           );
           return;
         }
@@ -567,38 +572,36 @@ const ProjectSettingsContent = () => {
         console.error("[delete-project] teardown failed", body.unrecoverable);
         if (
           body.canForceOrphan &&
-          window.confirm(
-            "Some resources couldn't be removed from the server. Delete the project anyway and clean them up automatically later?",
-          )
+          window.confirm(t.projects.delete.confirmForceOrphan)
         ) {
           void handleDeleteProject(deleteApp, wipeVolumes, force, true);
           return;
         }
         showToast(
           reasons
-            ? `Teardown failed at: ${reasons}. Retry, or force-delete to orphan them.`
-            : body.message || body.error || "Teardown failed",
+            ? interpolate(t.projects.delete.teardownFailedAt, { reasons })
+            : body.message || body.error || t.projects.delete.teardownFailed,
           "error",
-          "Cleanup failed",
+          t.projects.delete.cleanupFailedTitle,
         );
         return;
       }
 
       // 404: someone else already deleted the project in another tab.
       if (err instanceof ApiError && err.status === 404) {
-        showToast("Project already deleted", "success");
+        showToast(t.projects.delete.alreadyDeleted, "success");
         router.push("/");
         return;
       }
 
-      showToast(getApiErrorMessage(err, "Failed to delete project"), "error", "Failed to delete project");
+      showToast(getApiErrorMessage(err, t.projects.delete.failed), "error", t.projects.delete.failed);
     }
   };
 
   const helpMenuActions: MenuAction[] = [
     {
       id: "support",
-      label: "Contact Support",
+      label: t.projects.help.contactSupport,
       icon: <HelpCircle className="w-4 h-4" />,
       onClick: () => {
         window.open("https://oblien.com/support", "_blank");
@@ -606,7 +609,7 @@ const ProjectSettingsContent = () => {
     },
     {
       id: "report-issue",
-      label: "Report Issue",
+      label: t.projects.help.reportIssue,
       icon: <Bug className="w-4 h-4" />,
       onClick: () => {
         window.open("https://github.com/oblien/deployments/issues/new", "_blank");
@@ -614,7 +617,7 @@ const ProjectSettingsContent = () => {
     },
     {
       id: "feedback",
-      label: "Send Feedback",
+      label: t.projects.help.sendFeedback,
       icon: <MessageSquare className="w-4 h-4" />,
       onClick: () => {
         window.open("https://oblien.com/feedback", "_blank");
@@ -626,7 +629,7 @@ const ProjectSettingsContent = () => {
     },
     {
       id: "documentation",
-      label: "Documentation",
+      label: t.projects.help.documentation,
       icon: <BookOpen className="w-4 h-4" />,
       onClick: () => {
         window.open("https://oblien.com/docs", "_blank");
@@ -634,7 +637,7 @@ const ProjectSettingsContent = () => {
     },
     {
       id: "community",
-      label: "Join Community",
+      label: t.projects.help.joinCommunity,
       icon: <ExternalLink className="w-4 h-4" />,
       onClick: () => {
         window.open("https://discord.gg/oblien", "_blank");
@@ -688,7 +691,7 @@ const ProjectSettingsContent = () => {
     return (
       <PageContainer>
         <div className="mb-6">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-muted-foreground mb-2">
             <div className="h-3 w-20 bg-muted/60 rounded animate-pulse" />
             <span>/</span>
             <div className="h-3 w-32 bg-muted/60 rounded animate-pulse" />
@@ -760,15 +763,15 @@ const ProjectSettingsContent = () => {
     return (
       <PageContainer>
         <div className="mb-6">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-muted-foreground mb-2">
             <Link href="/" className="hover:text-foreground transition-colors font-medium">
-              Dashboard
+              {t.projects.detail.breadcrumbDashboard}
             </Link>
             <span>/</span>
-            <span className="text-foreground font-medium">{projectData.name || "Project"}</span>
+            <span className="text-foreground font-medium">{projectData.name || t.projects.detail.projectFallback}</span>
           </div>
           <h1 className="text-2xl font-semibold text-foreground truncate">
-            {projectData.name || "Project"}
+            {projectData.name || t.projects.detail.projectFallback}
           </h1>
         </div>
         <DraftProjectView onDeleteProject={() => handleDeleteProject()} />
@@ -780,22 +783,22 @@ const ProjectSettingsContent = () => {
     <PageContainer>
       {/* Compact Header */}
       <div className="mb-6">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
+        <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-muted-foreground mb-2">
           <Link href="/" className="hover:text-foreground transition-colors font-medium">
-            Dashboard
+            {t.projects.detail.breadcrumbDashboard}
           </Link>
           <span>/</span>
           <Link
             href={`/projects/${projectData.id || "projectId"}/overview`}
             className="hover:text-foreground transition-colors font-medium"
           >
-            {projectData.name || "Project"}
+            {projectData.name || t.projects.detail.projectFallback}
           </Link>
           {activeTab !== "overview" && (
             <>
               <span>/</span>
               <span className="text-foreground font-medium">
-                {tabs.find((t) => t.id === activeTab)?.label}
+                {tabs.find((tab) => tab.id === activeTab)?.label}
               </span>
             </>
           )}
@@ -804,7 +807,7 @@ const ProjectSettingsContent = () => {
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-foreground truncate">
-              {tabs.find((t) => t.id === activeTab)?.label || "Overview"}
+              {tabs.find((tab) => tab.id === activeTab)?.label || t.projects.detail.overviewFallback}
             </h1>
           </div>
 

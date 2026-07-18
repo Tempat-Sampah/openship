@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Loader2, X } from 'lucide-react';
 import { iconsApi } from '@/lib/api';
 import generateIcon from '@/utils/icons';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface IconResult {
     url: string;
@@ -24,8 +25,11 @@ export function IconPickerModal({
     onClose,
     onSelectIcon,
     currentIcon,
-    title = "Choose Icon"
+    title
 }: IconPickerModalProps) {
+    const { t } = useI18n();
+    const ip = t.misc.iconPicker;
+    const resolvedTitle = title ?? ip.chooseIcon;
     const [searchTerm, setSearchTerm] = useState('');
     const [icons, setIcons] = useState<IconResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -143,18 +147,18 @@ export function IconPickerModal({
             <div className="px-6 py-4 border-b border-border/50 flex-shrink-0">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex-1">
-                        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+                        <h2 className="text-lg font-semibold text-foreground">{resolvedTitle}</h2>
                     </div>
 
                     {/* Search Box - inline with header */}
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search icons..."
-                            className="w-full pl-9 pr-4 py-2 bg-muted/50 border border-border/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
+                            placeholder={ip.searchPlaceholder}
+                            className="w-full ps-9 pe-4 py-2 bg-muted/50 border border-border/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
                             autoFocus
                         />
                     </div>
@@ -162,7 +166,7 @@ export function IconPickerModal({
                     <div className="flex items-center gap-3">
                         {total > 0 && (
                             <p className="text-xs text-muted-foreground whitespace-nowrap">
-                                {offset} of {total}
+                                {interpolate(ip.count, { offset: String(offset), total: String(total) })}
                             </p>
                         )}
                         <button
@@ -186,21 +190,21 @@ export function IconPickerModal({
                         <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center mb-3">
                             <Search className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-base font-medium text-muted-foreground mb-1">Start Searching</h3>
-                        <p className="text-sm text-muted-foreground">Enter a keyword to find icons</p>
+                        <h3 className="text-base font-medium text-muted-foreground mb-1">{ip.startSearching}</h3>
+                        <p className="text-sm text-muted-foreground">{ip.startSearchingHint}</p>
                     </div>
                 ) : isSearching && icons.length === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                         <Loader2 className="w-8 h-8 text-muted-foreground animate-spin mb-3" />
-                        <p className="text-sm text-muted-foreground">Searching for icons...</p>
+                        <p className="text-sm text-muted-foreground">{ip.searching}</p>
                     </div>
                 ) : icons.length === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
                         <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center mb-3">
                             <Search className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-base font-medium text-muted-foreground mb-1">No Icons Found</h3>
-                        <p className="text-sm text-muted-foreground">Try a different search term</p>
+                        <h3 className="text-base font-medium text-muted-foreground mb-1">{ip.noIconsFound}</h3>
+                        <p className="text-sm text-muted-foreground">{ip.noIconsHint}</p>
                     </div>
                 ) : (
                     <div className="p-6">
@@ -235,14 +239,14 @@ export function IconPickerModal({
                         {isSearching && icons.length > 0 && (
                             <div className="flex justify-center items-center py-6">
                                 <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
-                                <span className="ml-2 text-xs text-muted-foreground">Loading more...</span>
+                                <span className="ms-2 text-xs text-muted-foreground">{ip.loadingMore}</span>
                             </div>
                         )}
 
                         {/* No More Results */}
                         {!hasMore && icons.length > 0 && (
                             <div className="text-center py-6">
-                                <p className="text-xs text-muted-foreground">No more results</p>
+                                <p className="text-xs text-muted-foreground">{ip.noMoreResults}</p>
                             </div>
                         )}
                     </div>
@@ -255,14 +259,14 @@ export function IconPickerModal({
                     onClick={handleClose}
                     className="flex-1 px-4 py-3 text-sm font-medium text-foreground bg-muted hover:bg-muted/80 rounded-xl transition-colors"
                 >
-                    Cancel
+                    {ip.cancel}
                 </button>
                 <button
                     onClick={handleConfirm}
                     disabled={!selectedIcon}
                     className="flex-1 px-4 py-3 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {selectedIcon ? 'Select Icon' : 'Choose an icon'}
+                    {selectedIcon ? ip.selectIcon : ip.chooseAnIcon}
                 </button>
             </div>
         </div>

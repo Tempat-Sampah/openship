@@ -31,7 +31,7 @@ import type {
 
 import { LocalExecutor, wrapLocalBuildCommand } from "../system/executor";
 import { execReliable } from "../system/remote-journal";
-import { STACKS, TRANSFER_EXCLUDES, safeErrorMessage, type StackId, type StackDefinition } from "@repo/core";
+import { STACKS, TRANSFER_EXCLUDES, safeErrorMessage, missingOutputDirectoryMessage, type StackId, type StackDefinition } from "@repo/core";
 import { checkToolchainForStack, installTools } from "../toolchain";
 import type {
   RuntimeAdapter,
@@ -521,7 +521,7 @@ export class BareRuntime implements RuntimeAdapter {
       if (workDir !== stagedDir) {
         await this.executor.rm(workDir).catch(() => {});
       }
-      throw new Error(`Static output directory does not exist: ${staticRoot}`);
+      throw new Error(missingOutputDirectoryMessage(config.outputDirectory));
     }
 
     return {

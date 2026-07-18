@@ -10,6 +10,7 @@
 import { Oblien } from "oblien";
 import type { WorkspaceHandle } from "oblien";
 import type { ExecStreamEvent } from "oblien";
+import type { RoutesInput, RoutesResult } from "oblien";
 import { readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
 
@@ -65,7 +66,7 @@ import { transferLocalDirectory } from "./transfer";
 import { checkGit } from "../system/checks";
 import { installGit } from "../system/installer";
 import { isRuntimeNotFoundError } from "../system/errors";
-import { STACKS, TRANSFER_EXCLUDES, SYSTEM, safeErrorMessage, type StackId, type StackDefinition, type ComposeAdvanced } from "@repo/core";
+import { STACKS, TRANSFER_EXCLUDES, SYSTEM, safeErrorMessage, missingOutputDirectoryMessage, type StackId, type StackDefinition, type ComposeAdvanced } from "@repo/core";
 
 type CloudWorkspaceRuntime = Awaited<ReturnType<WorkspaceHandle["runtime"]>>;
 const DOCKERFILE_SOURCE_IMAGE = "node:22";
@@ -1629,6 +1630,29 @@ fi`;
     const pageSlug = primarySlug ?? fallbackRuntimeName(config);
     const wantFree = !primaryCustomDomain && !!primarySlug;
 
+    // A clear, Vercel-style error for output-directory problems instead of
+    // leaking the raw "path is required (folder inside VM to export)" from the
+    // Pages API. Shared wording with the self-hosted path (see @repo/core).
+    const outputDirError = (): Error =>
+      new Error(missingOutputDirectoryMessage(config.outputDirectory, pageSlug));
+    const isOutputPathError = (err: unknown): boolean => {
+      const msg = safeErrorMessage(err).toLowerCase();
+      return (
+        msg.includes("path is required") ||
+        msg.includes("folder inside vm") ||
+        msg.includes("no such") ||
+        msg.includes("not found") ||
+        msg.includes("does not exist")
+      );
+    };
+
+    // Fail fast with the friendly message when no output folder is configured -
+    // the Pages API would otherwise reject an empty path with a cryptic error.
+    const trimmedOutput = config.outputDirectory?.trim();
+    if (!trimmedOutput || trimmedOutput === "/") {
+      throw outputDirError();
+    }
+
     // Create a brand-new page bound the way this deploy wants. Free subdomains
     // live on the shared `.opsh.io` zone (an account-level op): a namespace
     // runtime (self-host) hands off to the SaaS via adminProxy, the SaaS master
@@ -1645,6 +1669,7 @@ fi`;
           });
           pg = result.page;
         } catch (err) {
+          if (isOutputPathError(err)) throw outputDirError();
           throw new Error(
             `Failed to create static page for slug "${pageSlug}" with custom domain "${primaryCustomDomain}": ${safeErrorMessage(err)}`,
           );
@@ -1670,6 +1695,7 @@ fi`;
           });
           return result.page;
         } catch (err) {
+          if (isOutputPathError(err)) throw outputDirError();
           throw new Error(
             `Failed to create static page for slug "${pageSlug}" (${pageSlug}.opsh.io): ${safeErrorMessage(err)}`,
           );
@@ -1686,6 +1712,7 @@ fi`;
         });
         pg = result.page;
       } catch (err) {
+        if (isOutputPathError(err)) throw outputDirError();
         throw new Error(`Failed to create static page for slug "${pageSlug}": ${safeErrorMessage(err)}`);
       }
       return { ...pg, url: undefined };
@@ -2322,6 +2349,20 @@ fi`;
         txt: result.required_records.txt,
       },
     };
+  }
+
+  // ── Edge routing ───────────────────────────────────────────────────────
+
+  /**
+   * Atomically set a hostname's edge routing table — the CLOUD counterpart to
+   * the self-hosted OpenResty route registration. Compile a project's
+   * `RoutingConfig` with `compileRoutingToOblien` (static Page at `/`, backend
+   * workspace proxied at `/api/*`, redirects/headers), then hand the result
+   * here. Versioned + applied with no redeploy, so it also backs live edits
+   * from the Routing/Domains tab.
+   */
+  async setDomainRoutes(hostname: string, input: RoutesInput): Promise<RoutesResult> {
+    return this.client.routes.set(hostname, input);
   }
 
   // ── Private helpers ────────────────────────────────────────────────────

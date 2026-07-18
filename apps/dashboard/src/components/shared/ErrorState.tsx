@@ -11,61 +11,11 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { useI18n } from "@/components/i18n-provider";
 
 /* ── Error type configs ─────────────────────────────────────────────── */
 
-const ERROR_CONFIGS = {
-  "repo-not-found": {
-    icon: GitBranch,
-    iconColor: "text-destructive",
-    iconBg: "bg-destructive/10",
-    title: "Repository Not Found",
-    subtitle: "We couldn't find the repository you're looking for.",
-    hints: [
-      "Repository is private and you haven't granted access",
-      "Repository name or owner is misspelled",
-      "Repository has been deleted or moved",
-      "Your GitHub connection has expired",
-    ],
-    actions: [
-      { label: "Back to Library", icon: ArrowLeft, variant: "secondary" as const, path: "/library" },
-      { label: "Import Repository", icon: Plus, variant: "primary" as const, path: "/library" },
-    ],
-  },
-  "project-not-found": {
-    icon: AlertTriangle,
-    iconColor: "text-destructive",
-    iconBg: "bg-destructive/10",
-    title: "Project Not Found",
-    subtitle: "The project you are looking for does not exist or has been deleted.",
-    hints: [
-      "Project has been deleted",
-      "You don't have access to this project",
-      "The project URL is incorrect",
-    ],
-    actions: [
-      { label: "Back to Dashboard", icon: ArrowLeft, variant: "secondary" as const, path: "/" },
-      { label: "Create New Project", icon: Plus, variant: "primary" as const, path: "/library" },
-    ],
-  },
-  "access-denied": {
-    icon: Lock,
-    iconColor: "text-orange-500",
-    iconBg: "bg-orange-500/10",
-    title: "Access Denied",
-    subtitle: "You don't have permission to access this resource.",
-    hints: [
-      "You are not the project owner",
-      "Your account doesn't have the required permissions",
-      "Your team membership has changed",
-    ],
-    actions: [
-      { label: "Back to Dashboard", icon: ArrowLeft, variant: "secondary" as const, path: "/" },
-    ],
-  },
-} as const;
-
-type ErrorType = keyof typeof ERROR_CONFIGS;
+type ErrorType = "repo-not-found" | "project-not-found" | "access-denied";
 
 interface ErrorStateProps {
   type?: ErrorType;
@@ -79,6 +29,47 @@ interface ErrorStateProps {
 
 export default function ErrorState({ error = {}, type = "repo-not-found" }: ErrorStateProps) {
   const router = useRouter();
+  const { t } = useI18n();
+  const w = t.widgets.shared.errorState;
+
+  const ERROR_CONFIGS = {
+    "repo-not-found": {
+      icon: GitBranch,
+      iconColor: "text-destructive",
+      iconBg: "bg-destructive/10",
+      title: w.repoNotFound.title,
+      subtitle: w.repoNotFound.subtitle,
+      hints: w.repoNotFound.hints,
+      actions: [
+        { label: w.repoNotFound.backToLibrary, icon: ArrowLeft, variant: "secondary" as const, path: "/library" },
+        { label: w.repoNotFound.importRepository, icon: Plus, variant: "primary" as const, path: "/library" },
+      ],
+    },
+    "project-not-found": {
+      icon: AlertTriangle,
+      iconColor: "text-destructive",
+      iconBg: "bg-destructive/10",
+      title: w.projectNotFound.title,
+      subtitle: w.projectNotFound.subtitle,
+      hints: w.projectNotFound.hints,
+      actions: [
+        { label: w.projectNotFound.backToDashboard, icon: ArrowLeft, variant: "secondary" as const, path: "/" },
+        { label: w.projectNotFound.createNewProject, icon: Plus, variant: "primary" as const, path: "/library" },
+      ],
+    },
+    "access-denied": {
+      icon: Lock,
+      iconColor: "text-orange-500",
+      iconBg: "bg-orange-500/10",
+      title: w.accessDenied.title,
+      subtitle: w.accessDenied.subtitle,
+      hints: w.accessDenied.hints,
+      actions: [
+        { label: w.accessDenied.backToDashboard, icon: ArrowLeft, variant: "secondary" as const, path: "/" },
+      ],
+    },
+  };
+
   const config = ERROR_CONFIGS[type] ?? ERROR_CONFIGS["repo-not-found"];
   const Icon = config.icon;
 
@@ -109,9 +100,9 @@ export default function ErrorState({ error = {}, type = "repo-not-found" }: Erro
               {/* Hints */}
               {config.hints.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-2.5">Common causes</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-2.5">{w.commonCauses}</h3>
                   <ul className="space-y-1.5">
-                    {config.hints.map((hint, i) => (
+                    {config.hints.map((hint: string, i: number) => (
                       <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                         <span className="mt-1.5 size-1 rounded-full bg-muted-foreground/40 shrink-0" />
                         {hint}
@@ -135,7 +126,7 @@ export default function ErrorState({ error = {}, type = "repo-not-found" }: Erro
                           : "bg-muted/60 text-foreground hover:bg-muted"
                       }`}
                     >
-                      <ActionIcon className="size-4" />
+                      <ActionIcon className={`size-4 ${ActionIcon === ArrowLeft ? "rtl:rotate-180" : ""}`} />
                       {action.label}
                     </button>
                   );
@@ -151,9 +142,9 @@ export default function ErrorState({ error = {}, type = "repo-not-found" }: Erro
                 <HelpCircle className="size-[18px] text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-foreground mb-1">Need help?</h3>
+                <h3 className="text-sm font-medium text-foreground mb-1">{w.needHelp}</h3>
                 <p className="text-xs text-muted-foreground/70 mb-2.5">
-                  Check the documentation or reach out if the issue persists.
+                  {w.needHelpDesc}
                 </p>
                 <div className="flex gap-4">
                   <a
@@ -162,7 +153,7 @@ export default function ErrorState({ error = {}, type = "repo-not-found" }: Erro
                     rel="noopener noreferrer"
                     className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
                   >
-                    Documentation <ExternalLink className="size-3" />
+                    {w.documentation} <ExternalLink className="size-3" />
                   </a>
                 </div>
               </div>

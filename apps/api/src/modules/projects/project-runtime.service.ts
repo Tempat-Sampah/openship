@@ -7,6 +7,8 @@ import { NotFoundError, ValidationError } from "@repo/core";
 import type { LogEntry } from "@repo/adapters";
 import { resolveDeploymentRuntime } from "../../lib/deployment-runtime";
 import { assertResourceInOrg } from "../../lib/controller-helpers";
+import { syncManagedEdgeRoutes, edgeUnsyncedWarning } from "../../lib/managed-edge-proxy";
+import { resolveManagedHostname } from "../../lib/routing-domains";
 
 // ─── Runtime logs ────────────────────────────────────────────────────────────
 
@@ -90,6 +92,64 @@ export async function disableProject(projectId: string, organizationId: string) 
   const { runtime } = await resolveDeploymentRuntime(dep);
   await runtime.stop(dep.containerId);
   return { success: true, message: "Project disabled" };
+}
+
+/**
+ * Retry the managed free-domain (*.opsh.io) edge-proxy sync WITHOUT a rebuild.
+ *
+ * A deploy can come up live on the server yet fail to wire its free .opsh.io
+ * URL through Openship Cloud's edge (target unreachable on :80, ownership not
+ * yet verified, slug taken). That's surfaced as "Action Required"
+ * (`meta.edgeUnsynced`); this re-runs just the edge sync for the project's
+ * managed domains and, on full success, clears the warning so the project reads
+ * "Live" again. Best-effort per domain — returns the failures instead of
+ * throwing so the UI can re-surface the same guidance.
+ */
+export async function retryProjectRouting(
+  projectId: string,
+  organizationId: string,
+): Promise<{ ok: boolean; warning?: string }> {
+  const p = await repos.project.findById(projectId);
+  assertResourceInOrg(p, "Project", organizationId, projectId);
+
+  const dep = p.activeDeploymentId
+    ? await repos.deployment.findById(p.activeDeploymentId)
+    : null;
+  const serverId = (dep?.meta as { serverId?: string } | null)?.serverId ?? undefined;
+
+  const targets = (await repos.domain.listByProject(projectId))
+    .map((d) => ({ hostname: d.hostname, ...resolveManagedHostname(d.hostname) }))
+    .filter((m) => m.isManaged && m.subdomain)
+    .map((m) => ({ hostname: m.hostname, subdomain: m.subdomain! }));
+
+  // No free .opsh.io routes → nothing to sync; treat as resolved.
+  if (targets.length === 0) {
+    await clearRoutingWarning(dep);
+    return { ok: true };
+  }
+
+  // Same edge sync the deploy pipeline runs — re-invoking it is idempotent
+  // (the SaaS upserts the slug→target route), so a retry can't duplicate routes.
+  const { failures } = await syncManagedEdgeRoutes(targets, { organizationId, serverId });
+  if (failures.length > 0) {
+    return { ok: false, warning: edgeUnsyncedWarning(failures, "retry") };
+  }
+
+  await clearRoutingWarning(dep);
+  return { ok: true };
+}
+
+/** Drop the routing-unsynced markers from the active deployment's meta so the
+ *  project no longer reads "Action Required" after a successful re-sync. */
+async function clearRoutingWarning(
+  dep: Awaited<ReturnType<typeof repos.deployment.findById>> | null,
+): Promise<void> {
+  if (!dep) return;
+  const meta = { ...((dep.meta as Record<string, unknown> | null) ?? {}) };
+  if (!("edgeUnsynced" in meta) && !("deployWarning" in meta)) return;
+  delete meta.edgeUnsynced;
+  delete meta.deployWarning;
+  await repos.deployment.updateStatus(dep.id, dep.status, { meta });
 }
 
 

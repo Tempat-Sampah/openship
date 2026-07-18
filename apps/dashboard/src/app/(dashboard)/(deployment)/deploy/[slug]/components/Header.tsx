@@ -1,10 +1,14 @@
+"use client";
+
 import React from "react";
 import { ArrowLeft, GitBranch, Globe, Lock } from "lucide-react";
 import { HeaderProps } from "@/components/import-project/types";
 import Link from "next/link";
 import { generateIcon } from "@/utils/icons";
+import { useI18n } from "@/components/i18n-provider";
 
 const Header: React.FC<HeaderProps> = ({ repoData }) => {
+  const { t } = useI18n();
   return (
     <div className="mb-6 relative mt-10">
       <div className="flex items-center justify-between">
@@ -27,12 +31,12 @@ const Header: React.FC<HeaderProps> = ({ repoData }) => {
               {repoData.private ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 ring-1 ring-amber-500/20 font-semibold text-xs">
                   <Lock className="w-3 h-3" />
-                  Private
+                  {t.deploy.header.private}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20 font-semibold text-xs">
                   <Globe className="w-3 h-3" />
-                  Public
+                  {t.deploy.header.public}
                 </span>
               )}
               <span className="text-gray-300">•</span>
@@ -49,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({ repoData }) => {
           type="button"
         >
           {generateIcon('help%20sign-50-1658435663.png', 16, 'currentColor')}
-          <span>Help</span>
+          <span>{t.deploy.header.help}</span>
         </button>
       </div>
       

@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Github, Loader2, Terminal, Settings, ArrowRight } from "lucide-react";
 import type { CliAction } from "@/context/GitHubContext";
+import { useI18n } from "@/components/i18n-provider";
 
 /* ── Shared SVG illustration ──────────────────────────────────────── */
 
@@ -76,6 +77,7 @@ export function ConnectPrompt({
   /** Start the Openship Cloud connect flow (needed before the App on self-hosted). */
   onConnectCloud: () => void;
 }) {
+  const { t } = useI18n();
   // Terminal instruction (e.g. `gh auth login` or env var)
   if (cliAction?.type === "terminal") {
     return (
@@ -85,7 +87,7 @@ export function ConnectPrompt({
             <GitHubConnectSvg />
           </div>
           <h3 className="text-lg font-medium text-foreground/80 mb-2">
-            Connect GitHub
+            {t.library.connect.terminal.title}
           </h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4 leading-relaxed">
             {cliAction.message}
@@ -98,11 +100,11 @@ export function ConnectPrompt({
               onClick={onRefresh}
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
             >
-              Check Connection
+              {t.library.connect.terminal.checkConnection}
             </button>
           </div>
           <p className="text-xs text-muted-foreground/60 mt-6">
-            After logging in, click &quot;Check Connection&quot; to continue.
+            {t.library.connect.terminal.afterLogin}
           </p>
         </div>
       </div>
@@ -118,13 +120,13 @@ export function ConnectPrompt({
             <GitHubConnectSvg />
           </div>
           <h3 className="text-lg font-medium text-foreground/80 mb-2">
-            Enter this code on GitHub
+            {t.library.connect.deviceFlow.title}
           </h3>
           <code className="inline-block px-6 py-3 bg-muted rounded-lg text-2xl font-mono font-bold tracking-widest text-foreground mb-4">
             {cliAction.userCode}
           </code>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-            Go to{" "}
+            {t.library.connect.deviceFlow.goToPrefix}{" "}
             <a
               href={cliAction.verificationUri}
               target="_blank"
@@ -133,11 +135,11 @@ export function ConnectPrompt({
             >
               {cliAction.verificationUri}
             </a>
-            {" "}and enter the code above.
+            {" "}{t.library.connect.deviceFlow.goToSuffix}
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Waiting for authorization…
+            {t.library.connect.deviceFlow.waiting}
           </div>
         </div>
       </div>
@@ -153,18 +155,18 @@ export function ConnectPrompt({
         </div>
 
         <h3 className="text-lg font-medium text-foreground/85 mb-1.5">
-          Connect GitHub to deploy
+          {t.library.connect.default.title}
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto mb-7 leading-relaxed">
           {selfHosted
-            ? "Pick how Openship reaches your repositories."
-            : "Link your GitHub account to browse repos and deploy on every push."}
+            ? t.library.connect.default.descSelfHosted
+            : t.library.connect.default.descSaas}
         </p>
 
         {selfHosted ? (
           // Self-hosted: two real paths — the Cloud App (remote deploys, needs a
           // cloud connection first) and the local gh CLI (local builds only).
-          <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto text-left">
+          <div className="grid sm:grid-cols-2 gap-3 max-w-xl mx-auto text-start">
             <button
               onClick={() => (cloudConnected ? onConnect("oauth") : onConnectCloud())}
               disabled={connecting}
@@ -175,16 +177,16 @@ export function ConnectPrompt({
                   <Github className="size-[18px] text-foreground/70" />
                 </span>
                 <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  Recommended
+                  {t.library.connect.default.recommended}
                 </span>
               </div>
-              <p className="text-sm font-medium text-foreground">Openship Cloud App</p>
+              <p className="text-sm font-medium text-foreground">{t.library.connect.default.cloudApp}</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Deploy to remote servers with short-lived tokens.
+                {t.library.connect.default.cloudAppDesc}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-primary mt-3">
-                {cloudConnected ? "Connect GitHub" : "Connect Openship Cloud"}
-                <ArrowRight className="size-3.5" />
+                {cloudConnected ? t.library.connect.connectGithub : t.library.connect.default.connectCloud}
+                <ArrowRight className="size-3.5 rtl:rotate-180" />
               </span>
             </button>
 
@@ -198,16 +200,16 @@ export function ConnectPrompt({
                   <Terminal className="size-[18px] text-foreground/70" />
                 </span>
                 <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Local builds
+                  {t.library.connect.default.localBuilds}
                 </span>
               </div>
-              <p className="text-sm font-medium text-foreground">Log in with gh CLI</p>
+              <p className="text-sm font-medium text-foreground">{t.library.connect.default.ghCli}</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Use your machine&apos;s GitHub login. No cloud needed.
+                {t.library.connect.default.ghCliDesc}
               </p>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-primary mt-3">
-                Use gh CLI
-                <ArrowRight className="size-3.5" />
+                {t.library.connect.default.useGhCli}
+                <ArrowRight className="size-3.5 rtl:rotate-180" />
               </span>
             </button>
           </div>
@@ -222,12 +224,12 @@ export function ConnectPrompt({
               {connecting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Connecting…
+                  {t.library.connect.default.connecting}
                 </>
               ) : (
                 <>
                   <Github className="size-4" />
-                  Connect GitHub
+                  {t.library.connect.connectGithub}
                 </>
               )}
             </button>
@@ -240,7 +242,7 @@ export function ConnectPrompt({
             className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <Settings className="size-3.5" />
-            Manage in Settings
+            {t.library.connect.manageInSettings}
           </Link>
         </div>
       </div>

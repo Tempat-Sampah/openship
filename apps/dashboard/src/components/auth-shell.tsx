@@ -3,13 +3,12 @@
 import { useTheme } from "@/components/theme-provider";
 import { useI18n } from "@/components/i18n-provider";
 import { Logo } from "@/components/logo";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Moon, Sun } from "lucide-react";
 
 /**
  * Shared wrapper for auth pages (login, register, forgot-password, etc.).
- * Provides centered layout, brand, theme toggle, and language switcher.
+ * Provides centered layout, brand, and theme toggle.
  */
 export function AuthShell({
   children,
@@ -38,9 +37,9 @@ export function AuthShell({
               size="icon"
               onClick={onBack}
               aria-label={t.auth.back ?? "Back"}
-              className="mr-1"
+              className="me-1"
             >
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-4 rtl:rotate-180" />
             </Button>
           )}
           <Logo size={24} />
@@ -49,7 +48,6 @@ export function AuthShell({
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <LanguageSwitcher />
           <Button
             variant="ghost"
             size="icon"

@@ -5,16 +5,7 @@ import { Shield, Plus, X, Loader2, Check, RefreshCw } from "lucide-react";
 import { systemApi, type ServerRateLimitConfig } from "@/lib/api/system";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { useToast } from "@/context/ToastContext";
-
-function formatPolicySummary(config: ServerRateLimitConfig): string {
-  const base = `${config.rps} req/s, burst ${config.burst}`;
-
-  if (config.whitelist.length === 0) {
-    return base;
-  }
-
-  return `${base}, ${config.whitelist.length} whitelisted`;
-}
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 function arraysEqual(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
@@ -30,6 +21,22 @@ function getAutoBurst(rps: number): number {
 
 export function RateLimitSettings({ serverId }: { serverId: string }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
+
+  const formatPolicySummary = (config: ServerRateLimitConfig): string => {
+    const base = interpolate(t.servers.security.policyBase, {
+      rps: String(config.rps),
+      burst: String(config.burst),
+    });
+    if (config.whitelist.length === 0) {
+      return base;
+    }
+    return interpolate(t.servers.security.policyWhitelisted, {
+      base,
+      count: String(config.whitelist.length),
+    });
+  };
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -60,11 +67,11 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
       syncDraftFromConfig(res.config);
       setIsEditing(res.config.rps === 0);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to read OpenResty config");
+      setLoadError(err instanceof Error ? err.message : t.servers.security.failedReadConfig);
     } finally {
       setLoading(false);
     }
-  }, [serverId, syncDraftFromConfig]);
+  }, [serverId, syncDraftFromConfig, t]);
 
   useEffect(() => {
     void fetchConfig();
@@ -143,15 +150,18 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
         setIsEditing(res.config.rps === 0);
         setNewIp("");
         showToast(
-          `Rate limit updated: ${previousSummary} -> ${formatPolicySummary(res.config)}`,
+          interpolate(t.servers.security.toastRateLimitUpdated, {
+            from: previousSummary,
+            to: formatPolicySummary(res.config),
+          }),
           "success",
-          "Security",
+          t.servers.toastTitles.security,
         );
       } else {
-        showToast(res.error || "Failed to apply", "error", "Security");
+        showToast(res.error || t.servers.security.toastFailedApply, "error", t.servers.toastTitles.security);
       }
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to save rate limit settings"), "error", "Security");
+      showToast(getApiErrorMessage(err, t.servers.security.toastFailedSave), "error", t.servers.toastTitles.security);
     } finally {
       setSaving(false);
     }
@@ -175,12 +185,12 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
         syncDraftFromConfig(res.config);
         setIsEditing(true);
         setNewIp("");
-        showToast("Rate limit removed", "success", "Security");
+        showToast(t.servers.security.toastRemoved, "success", t.servers.toastTitles.security);
       } else {
-        showToast(res.error || "Failed to remove rate limit", "error", "Security");
+        showToast(res.error || t.servers.security.toastFailedRemove, "error", t.servers.toastTitles.security);
       }
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to remove rate limit"), "error", "Security");
+      showToast(getApiErrorMessage(err, t.servers.security.toastFailedRemove), "error", t.servers.toastTitles.security);
     } finally {
       setSaving(false);
     }
@@ -191,11 +201,11 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
     if (!cidr) return;
     const normalized = cidr.includes("/") ? cidr : `${cidr}/32`;
     if (!/^[\da-fA-F.:]+\/\d{1,3}$/.test(normalized)) {
-      showToast("Invalid IP/CIDR format", "error");
+      showToast(t.servers.security.toastInvalidIp, "error");
       return;
     }
     if (draftWhitelist.includes(normalized)) {
-      showToast("Already in whitelist", "error");
+      showToast(t.servers.security.toastAlreadyWhitelisted, "error");
       return;
     }
     setDraftWhitelist([...draftWhitelist, normalized]);
@@ -221,14 +231,14 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
               <Shield className="size-[18px] text-orange-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground text-[15px]">Rate Limiting</h2>
-              <p className="text-xs text-muted-foreground">OpenResty request rate limiting for this server</p>
+              <h2 className="font-semibold text-foreground text-[15px]">{t.servers.security.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.servers.security.subtitle}</p>
             </div>
           </div>
         </div>
         <div className="p-5 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          Loading...
+          {t.servers.security.loading}
         </div>
       </div>
     );
@@ -243,17 +253,17 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
               <Shield className="size-[18px] text-orange-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground text-[15px]">Rate Limiting</h2>
-              <p className="text-xs text-muted-foreground">OpenResty request rate limiting for this server</p>
+              <h2 className="font-semibold text-foreground text-[15px]">{t.servers.security.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.servers.security.subtitle}</p>
             </div>
           </div>
         </div>
         <div className="p-5">
           <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-3 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-foreground">Couldn't read OpenResty rate limit config</p>
+              <p className="text-sm font-medium text-foreground">{t.servers.security.couldntRead}</p>
               <p className="mt-1 text-[12px] text-muted-foreground">
-                Retry after confirming OpenResty is installed and reachable on this server.
+                {t.servers.security.retryHint}
               </p>
             </div>
             <button
@@ -262,7 +272,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
               className="inline-flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
             >
               <RefreshCw className="size-3.5" />
-              Retry
+              {t.servers.security.retry}
             </button>
           </div>
         </div>
@@ -278,8 +288,8 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
             <Shield className="size-[18px] text-orange-500" />
           </div>
           <div>
-            <h2 className="font-semibold text-foreground text-[15px]">Rate Limiting</h2>
-            <p className="text-xs text-muted-foreground">OpenResty request rate limiting for this server</p>
+            <h2 className="font-semibold text-foreground text-[15px]">{t.servers.security.title}</h2>
+            <p className="text-xs text-muted-foreground">{t.servers.security.subtitle}</p>
           </div>
         </div>
         <button
@@ -288,7 +298,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
           className="inline-flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
         >
           <RefreshCw className="size-3.5" />
-          Refresh
+          {t.servers.security.refresh}
         </button>
       </div>
       <div className="p-5 space-y-5">
@@ -297,7 +307,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
             <div>
               <p className="text-sm font-medium text-foreground">{formatPolicySummary(currentConfig)}</p>
               <p className="mt-1 text-[12px] text-muted-foreground">
-                Loaded from the live OpenResty config. Press edit to change it.
+                {t.servers.security.loadedFromLive}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -306,7 +316,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                 onClick={handleStartEditing}
                 className="inline-flex items-center rounded-lg bg-background px-3 py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
               >
-                Edit
+                {t.servers.security.edit}
               </button>
               <button
                 type="button"
@@ -314,7 +324,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                 disabled={saving}
                 className="inline-flex items-center rounded-lg px-3 py-2 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Remove
+                {t.servers.security.remove}
               </button>
             </div>
           </div>
@@ -323,8 +333,8 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
             <div className="flex items-start justify-between gap-3">
               <p className="text-[12px] text-muted-foreground">
                 {hasExistingLimit
-                  ? "Edit the live OpenResty rate limit for this server."
-                  : "No rate limit is active yet. Set requests per second to create one."}
+                  ? t.servers.security.editLiveHint
+                  : t.servers.security.noLimitHint}
               </p>
               <div className="flex items-center gap-2">
                 {hasChanges && (
@@ -333,7 +343,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                     onClick={resetDraft}
                     className="rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
-                    Reset draft
+                    {t.servers.security.resetDraft}
                   </button>
                 )}
                 {hasExistingLimit && (
@@ -342,7 +352,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                     onClick={handleCancelEditing}
                     className="rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
-                    Cancel
+                    {t.servers.security.cancel}
                   </button>
                 )}
               </div>
@@ -350,7 +360,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
 
             <div>
               <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">
-                Requests / second
+                {t.servers.security.requestsPerSecond}
               </label>
               <input
                 type="number"
@@ -361,17 +371,17 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
               />
               <p className="mt-1 text-sm text-muted-foreground">
                 {useAutomaticBurst
-                  ? `Burst is calculated automatically: ${effectiveBurst}`
-                  : `Custom burst override is active: ${draftBurst}`}
+                  ? interpolate(t.servers.security.burstAuto, { burst: String(effectiveBurst) })
+                  : interpolate(t.servers.security.burstCustom, { burst: String(draftBurst) })}
               </p>
             </div>
 
             <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Advanced</p>
+                  <p className="text-sm font-medium text-foreground">{t.servers.security.advanced}</p>
                   <p className="mt-0.5 text-[12px] text-muted-foreground">
-                    Override the automatic burst calculation when you need finer control.
+                    {t.servers.security.advancedHint}
                   </p>
                 </div>
                 <button
@@ -379,7 +389,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                   onClick={() => setShowAdvanced((value) => !value)}
                   className="rounded-lg bg-background px-3 py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
                 >
-                  {showAdvanced ? "Hide advanced" : "Show advanced"}
+                  {showAdvanced ? t.servers.security.hideAdvanced : t.servers.security.showAdvanced}
                 </button>
               </div>
 
@@ -387,9 +397,9 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                 <div className="mt-4 space-y-4 border-t border-border/40 pt-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[12px] font-medium text-foreground">Burst mode</p>
+                      <p className="text-[12px] font-medium text-foreground">{t.servers.security.burstMode}</p>
                       <p className="mt-0.5 text-sm text-muted-foreground">
-                        Auto keeps burst in sync with requests per second. Manual lets you override it.
+                        {t.servers.security.burstModeHint}
                       </p>
                     </div>
                     <button
@@ -397,13 +407,13 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                       onClick={handleToggleAutomaticBurst}
                       className="rounded-lg bg-background px-3 py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
                     >
-                      {useAutomaticBurst ? "Switch to manual" : "Use automatic burst"}
+                      {useAutomaticBurst ? t.servers.security.switchToManual : t.servers.security.useAutomaticBurst}
                     </button>
                   </div>
 
                   <div>
                     <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Burst allowance
+                      {t.servers.security.burstAllowance}
                     </label>
                     <input
                       type="number"
@@ -414,7 +424,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                       className="mt-1.5 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Extra requests queued with nodelay.
+                      {t.servers.security.burstAllowanceHint}
                     </p>
                   </div>
                 </div>
@@ -423,10 +433,10 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
 
             <div>
               <label className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">
-                Whitelisted IPs
+                {t.servers.security.whitelistedIps}
               </label>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                These IPs bypass rate limiting. Loopback (127.0.0.1, ::1) is always whitelisted.
+                {t.servers.security.whitelistHint}
               </p>
 
               {draftWhitelist.length > 0 && (
@@ -440,7 +450,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                       <button
                         type="button"
                         onClick={() => removeIp(cidr)}
-                        className="ml-0.5 rounded p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        className="ms-0.5 rounded p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       >
                         <X className="size-3" />
                       </button>
@@ -454,7 +464,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                   type="text"
                   value={newIp}
                   onChange={(e) => setNewIp(e.target.value)}
-                  placeholder="e.g. 145.223.101.50 or 10.0.0.0/8"
+                  placeholder={t.servers.security.ipPlaceholder}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addIp())}
                   className="flex-1 rounded-lg border border-border/60 bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none transition-colors focus:border-primary/50"
                 />
@@ -464,7 +474,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                   className="inline-flex items-center gap-1 rounded-lg bg-muted/50 px-3 py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   <Plus className="size-3.5" />
-                  Add
+                  {t.servers.security.add}
                 </button>
               </div>
             </div>
@@ -478,8 +488,10 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                 />
                 <span className="text-muted-foreground">
                   {hasChanges
-                    ? `Draft changes: ${formatPolicySummary({ rps: draftRps, burst: effectiveBurst, whitelist: draftWhitelist })}`
-                    : "No draft changes"}
+                    ? interpolate(t.servers.security.draftChanges, {
+                        summary: formatPolicySummary({ rps: draftRps, burst: effectiveBurst, whitelist: draftWhitelist }),
+                      })
+                    : t.servers.security.noDraftChanges}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -490,7 +502,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                     disabled={saving}
                     className="inline-flex items-center rounded-xl px-4 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Remove rate limit
+                    {t.servers.security.removeRateLimit}
                   </button>
                 )}
                 <button
@@ -504,7 +516,7 @@ export function RateLimitSettings({ serverId }: { serverId: string }) {
                   ) : (
                     <Check className="size-3.5" />
                   )}
-                  {hasExistingLimit ? "Save changes" : "Apply rate limit"}
+                  {hasExistingLimit ? t.servers.security.saveChanges : t.servers.security.applyRateLimit}
                 </button>
               </div>
             </div>

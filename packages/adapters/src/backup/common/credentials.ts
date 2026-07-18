@@ -17,8 +17,21 @@ const ALGORITHM = "aes-256-gcm" as const;
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
+// The AES key secret. The app injects its already-resolved BETTER_AUTH_SECRET
+// once at boot (setBackupCredentialSecret) so this low-level package derives the
+// SAME key the API's encryptor used — including the app's config default —
+// instead of independently reading process.env (which zod's `.default()` never
+// populates, causing encrypt/decrypt to disagree). process.env is only a
+// fallback for entrypoints that don't inject (e.g. isolated tests).
+let injectedSecret: string | undefined;
+
+/** Inject the API-resolved BETTER_AUTH_SECRET. Call once at app boot. */
+export function setBackupCredentialSecret(secret: string | undefined): void {
+  injectedSecret = secret || undefined;
+}
+
 function deriveKey(): Buffer {
-  const secret = process.env.BETTER_AUTH_SECRET;
+  const secret = injectedSecret ?? process.env.BETTER_AUTH_SECRET;
   if (!secret) {
     throw new Error(
       "BETTER_AUTH_SECRET is not set — cannot decrypt backup destination credentials.",

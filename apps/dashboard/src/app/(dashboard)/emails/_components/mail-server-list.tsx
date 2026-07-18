@@ -1,6 +1,7 @@
 "use client";
 
 import { Mail, Plus, ChevronRight, Globe, Trash2 } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 export interface MailServerListItem {
   id: string;
@@ -29,17 +30,18 @@ export function MailServerList({
   onAddNew: () => void;
   onRemove: (server: MailServerListItem) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-base font-semibold text-foreground">Mail servers</h2>
+        <h2 className="text-base font-semibold text-foreground">{t.emails.serverList.title}</h2>
         <button
           type="button"
           onClick={onAddNew}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <Plus className="size-4" />
-          Add mail server
+          {t.emails.serverList.addServer}
         </button>
       </div>
 
@@ -52,7 +54,7 @@ export function MailServerList({
             <button
               type="button"
               onClick={() => onOpen(s.id)}
-              className="flex min-w-0 flex-1 items-center gap-4 rounded-l-2xl p-5 text-left transition-colors hover:bg-foreground/[0.02]"
+              className="flex min-w-0 flex-1 items-center gap-4 rounded-s-2xl p-5 text-start transition-colors hover:bg-foreground/[0.02]"
             >
               <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
                 <Mail className="size-5 text-primary" />
@@ -71,15 +73,15 @@ export function MailServerList({
                 </div>
               </div>
 
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
             </button>
 
             <button
               type="button"
               onClick={() => onRemove(s)}
-              title="Remove from list"
-              aria-label={`Remove ${s.domain || s.name} from the mail list`}
-              className="mr-3 flex size-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground/40 transition-colors hover:bg-red-500/10 hover:text-red-600"
+              title={t.emails.serverList.removeFromList}
+              aria-label={interpolate(t.emails.serverList.removeAria, { name: s.domain || s.name })}
+              className="me-3 flex size-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground/40 transition-colors hover:bg-red-500/10 hover:text-red-600"
             >
               <Trash2 className="size-4" />
             </button>
@@ -91,11 +93,12 @@ export function MailServerList({
 }
 
 function StatusPill({ completed, active }: { completed: boolean; active: boolean }) {
+  const { t } = useI18n();
   const s = active
-    ? { dot: "bg-amber-500", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400", label: "Installing" }
+    ? { dot: "bg-amber-500", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400", label: t.emails.serverList.installing }
     : completed
-      ? { dot: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", label: "Running" }
-      : { dot: "bg-muted-foreground/30", badge: "bg-muted/60 text-muted-foreground/70", label: "Incomplete" };
+      ? { dot: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", label: t.emails.serverList.running }
+      : { dot: "bg-muted-foreground/30", badge: "bg-muted/60 text-muted-foreground/70", label: t.emails.serverList.incomplete };
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${s.badge}`}>
       <span className={`size-1.5 rounded-full ${s.dot}`} />

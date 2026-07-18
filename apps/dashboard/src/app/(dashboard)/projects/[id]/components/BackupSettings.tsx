@@ -19,6 +19,7 @@ import {
   Unlock,
 } from "lucide-react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
+import { useI18n } from "@/components/i18n-provider";
 import {
   backupDestinationsApi,
   backupsApi,
@@ -77,6 +78,7 @@ function SectionCard({
 
 export function BackupSettings(): React.JSX.Element {
   const { projectData, servicesData } = useProjectSettings();
+  const { t } = useI18n();
   const projectId = String(projectData.id);
 
   const [destinations, setDestinations] = useState<BackupDestinationSummary[]>([]);
@@ -122,18 +124,18 @@ export function BackupSettings(): React.JSX.Element {
         setActiveRunId(res.data.runId);
         await reload();
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Backup run failed"));
+        window.alert(getApiErrorMessage(err, t.projectSettings.backup.toast.runFailed));
       }
     },
-    [reload],
+    [reload, t],
   );
 
   return (
     <div className="space-y-5">
       {activeRunId && (
         <SectionCard
-          title="Live backup"
-          description="Real-time progress for the run you just kicked off. Survives page refresh."
+          title={t.projectSettings.backup.live.title}
+          description={t.projectSettings.backup.live.description}
           icon={Activity}
           iconTone="primary"
           actions={
@@ -141,7 +143,7 @@ export function BackupSettings(): React.JSX.Element {
               onClick={() => setActiveRunId(null)}
               className="rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs hover:bg-muted"
             >
-              Dismiss
+              {t.projectSettings.backup.live.dismiss}
             </button>
           }
         >
@@ -177,8 +179,8 @@ export function BackupSettings(): React.JSX.Element {
       )}
 
       <SectionCard
-        title="Backup destinations"
-        description="Per-user storage targets. Add S3-compatible buckets, SFTP servers, or local disks."
+        title={t.projectSettings.backup.destinations.title}
+        description={t.projectSettings.backup.destinations.description}
         icon={HardDrive}
         iconTone="primary"
         actions={
@@ -186,15 +188,15 @@ export function BackupSettings(): React.JSX.Element {
             href="/backups"
             className="inline-flex items-center gap-1 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-foreground/80 hover:bg-muted"
           >
-            Manage <ExternalLink className="size-3" />
+            {t.projectSettings.backup.destinations.manage} <ExternalLink className="size-3" />
           </Link>
         }
       >
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{t.projectSettings.backup.destinations.loading}</p>
         ) : destinations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No destinations yet. <Link href="/backups" className="text-primary hover:underline">Create one</Link> to start backing up.
+            {t.projectSettings.backup.destinations.emptyPrefix}<Link href="/backups" className="text-primary hover:underline">{t.projectSettings.backup.destinations.emptyLink}</Link>{t.projectSettings.backup.destinations.emptySuffix}
           </p>
         ) : (
           <ul className="space-y-1.5">
@@ -205,17 +207,17 @@ export function BackupSettings(): React.JSX.Element {
               >
                 <div>
                   <span className="font-medium text-foreground">{d.name}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">{d.kind}</span>
+                  <span className="ms-2 text-xs text-muted-foreground">{d.kind}</span>
                 </div>
                 {d.lastVerifiedAt ? (
                   <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="size-3" />
-                    Verified
+                    {t.projectSettings.backup.destinations.verified}
                   </span>
                 ) : d.lastVerifyError ? (
                   <span className="inline-flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
                     <XCircle className="size-3" />
-                    Failed
+                    {t.projectSettings.backup.destinations.failed}
                   </span>
                 ) : null}
               </li>
@@ -225,8 +227,8 @@ export function BackupSettings(): React.JSX.Element {
       </SectionCard>
 
       <SectionCard
-        title="Services + policies"
-        description="Each service can have its own backup policy (schedule + destination). Project-level defaults land in Chunk 2."
+        title={t.projectSettings.backup.services.title}
+        description={t.projectSettings.backup.services.description}
         icon={DatabaseBackup}
         iconTone="emerald"
         actions={
@@ -235,13 +237,13 @@ export function BackupSettings(): React.JSX.Element {
             className="inline-flex items-center gap-1 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-foreground/80 hover:bg-muted"
           >
             <RefreshCw className="size-3" />
-            Refresh
+            {t.projectSettings.backup.services.refresh}
           </button>
         }
       >
         {servicesData.services.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            This project has no services yet. Service-level backups appear here once you add some.
+            {t.projectSettings.backup.services.empty}
           </p>
         ) : (
           <ul className="divide-y divide-border/40">
@@ -253,8 +255,8 @@ export function BackupSettings(): React.JSX.Element {
                     <p className="text-sm font-medium text-foreground">{svc.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {policy
-                        ? `Policy: ${policy.payloadKind}${policy.cronExpression ? ` · cron ${policy.cronExpression}` : " · manual only"}${policy.triggerOnPreDeploy ? " · pre-deploy" : ""}${policy.webhookToken ? " · webhook" : ""}`
-                        : "No policy"}
+                        ? `${t.projectSettings.backup.services.policyLabel} ${policy.payloadKind}${policy.cronExpression ? ` · cron ${policy.cronExpression}` : ` · ${t.projectSettings.backup.services.manualOnly}`}${policy.triggerOnPreDeploy ? ` · ${t.projectSettings.backup.services.preDeploy}` : ""}${policy.webhookToken ? ` · ${t.projectSettings.backup.services.webhook}` : ""}`
+                        : t.projectSettings.backup.services.noPolicy}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -265,7 +267,7 @@ export function BackupSettings(): React.JSX.Element {
                           className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                         >
                           <PlayCircle className="size-3" />
-                          Backup now
+                          {t.projectSettings.backup.services.backupNow}
                         </button>
                         <button
                           onClick={() =>
@@ -276,7 +278,7 @@ export function BackupSettings(): React.JSX.Element {
                             })
                           }
                           className="inline-flex items-center gap-1 rounded-lg bg-muted/50 px-2 py-1.5 text-xs font-medium hover:bg-muted"
-                          title="Edit policy"
+                          title={t.projectSettings.backup.services.editPolicy}
                         >
                           <Settings className="size-3" />
                         </button>
@@ -293,13 +295,13 @@ export function BackupSettings(): React.JSX.Element {
                         disabled={destinations.length === 0}
                         title={
                           destinations.length === 0
-                            ? "Add a destination first"
-                            : "Create a backup policy for this service"
+                            ? t.projectSettings.backup.services.addDestinationFirst
+                            : t.projectSettings.backup.services.createPolicyHint
                         }
                         className="inline-flex items-center gap-1 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus className="size-3" />
-                        Create policy
+                        {t.projectSettings.backup.services.createPolicy}
                       </button>
                     )}
                   </div>
@@ -311,15 +313,15 @@ export function BackupSettings(): React.JSX.Element {
       </SectionCard>
 
       <SectionCard
-        title="Recent backups"
-        description="The 25 most recent runs across all services in this project."
+        title={t.projectSettings.backup.recent.title}
+        description={t.projectSettings.backup.recent.description}
         icon={DatabaseBackup}
         iconTone="muted"
       >
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{t.projectSettings.backup.recent.loading}</p>
         ) : runs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No backups yet.</p>
+          <p className="text-sm text-muted-foreground">{t.projectSettings.backup.recent.empty}</p>
         ) : (
           <ul className="divide-y divide-border/40">
             {runs.map((run) => {
@@ -341,10 +343,10 @@ export function BackupSettings(): React.JSX.Element {
                       {isProtected && (
                         <span
                           className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 dark:text-amber-400"
-                          title="Protected from retention prune"
+                          title={t.projectSettings.backup.recent.protectedTitle}
                         >
                           <Lock className="size-2.5" />
-                          Protected
+                          {t.projectSettings.backup.recent.protected}
                         </span>
                       )}
                     </div>
@@ -358,7 +360,7 @@ export function BackupSettings(): React.JSX.Element {
                     {isSucceeded && (
                       <button
                         onClick={() => setRestoreFromRun(run)}
-                        title="Restore from this backup"
+                        title={t.projectSettings.backup.recent.restoreTitle}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <RotateCcw className="size-3.5" />
@@ -373,16 +375,16 @@ export function BackupSettings(): React.JSX.Element {
                             });
                             await reload();
                           } catch (err) {
-                            window.alert(getApiErrorMessage(err, "Failed to toggle protection"));
+                            window.alert(getApiErrorMessage(err, t.projectSettings.backup.toast.toggleProtectionFailed));
                           }
                         }}
-                        title={isProtected ? "Allow retention to prune" : "Protect from retention"}
+                        title={isProtected ? t.projectSettings.backup.recent.allowPrune : t.projectSettings.backup.recent.protectFrom}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         {isProtected ? <Unlock className="size-3.5" /> : <Lock className="size-3.5" />}
                       </button>
                     )}
-                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground ml-1">
+                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground ms-1">
                       {run.triggeredBy}
                     </span>
                   </div>

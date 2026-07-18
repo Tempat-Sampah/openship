@@ -17,6 +17,7 @@ import {
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { DeletionModal } from "./DeletionModal";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 import { projectsApi } from "@/lib/api";
 
 interface Props {
@@ -28,6 +29,10 @@ const ICON_TONES = {
   amber: "bg-amber-500/10 text-amber-500",
   red: "bg-red-500/10 text-red-500",
 } as const;
+
+// Cache and Transfer & Clone are mock UI — not wired to real actions yet.
+// Flip to true to reveal them once the backend is ready.
+const SHOW_MOCK_ADVANCED = false;
 
 function SectionCard({
   title,
@@ -60,6 +65,7 @@ function SectionCard({
 
 export const AdvancedSettings = ({ onDeleteProject }: Props) => {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const { projectData } = useProjectSettings();
   const [isProjectActive, setIsProjectActive] = useState(projectData?.active ?? true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -77,7 +83,7 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
     if (response.success) {
       setIsProjectActive(!isProjectActive);
     } else {
-      showToast(response.message, "error", "Failed to toggle project");
+      showToast(response.message, "error", t.projectSettings.advanced.toast.toggleFailed);
     }
     setLoading((s) => ({ ...s, disableProject: false }));
   };
@@ -87,7 +93,7 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
     setLoading((s) => ({ ...s, clearInstallCache: true }));
     const response = await projectsApi.clearCache(projectData.id);
     if (!response.success) {
-      showToast(response.message, "error", "Failed to clear install cache");
+      showToast(response.message, "error", t.projectSettings.advanced.toast.clearInstallFailed);
     }
     setLoading((s) => ({ ...s, clearInstallCache: false }));
   };
@@ -97,7 +103,7 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
     setLoading((s) => ({ ...s, clearBuildCache: true }));
     const response = await projectsApi.clearBuild(projectData.id);
     if (!response.success) {
-      showToast(response.message, "error", "Failed to clear build cache");
+      showToast(response.message, "error", t.projectSettings.advanced.toast.clearBuildFailed);
     }
     setLoading((s) => ({ ...s, clearBuildCache: false }));
   };
@@ -111,22 +117,22 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
             <Settings2 className="size-4 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-foreground">Project Info</h3>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">Current configuration summary</p>
+            <h3 className="text-[14px] font-semibold text-foreground">{t.projectSettings.advanced.projectInfo.title}</h3>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">{t.projectSettings.advanced.projectInfo.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-6 px-5 py-4">
-          <MetricRow label="Status" value={isProjectActive ? "Active" : "Disabled"} />
-          <MetricRow label="Project" value={projectData?.name || "-"} />
+          <MetricRow label={t.projectSettings.advanced.metric.status} value={isProjectActive ? t.projectSettings.advanced.statusActive : t.projectSettings.advanced.statusDisabled} />
+          <MetricRow label={t.projectSettings.advanced.metric.project} value={projectData?.name || "-"} />
           {projectData?.deployTarget && (
             <MetricRow
-              label="Hosted On"
+              label={t.projectSettings.advanced.metric.hostedOn}
               value={
                 projectData.deployTarget === "cloud"
-                  ? "Openship Cloud"
+                  ? t.projectSettings.advanced.hostedCloud
                   : projectData.deployTarget === "server"
-                    ? projectData.serverName || "Server"
-                    : "Local"
+                    ? projectData.serverName || t.projectSettings.advanced.hostedServer
+                    : t.projectSettings.advanced.hostedLocal
               }
             />
           )}
@@ -135,8 +141,8 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
 
       {/* Project Status */}
       <SectionCard
-        title="Project Status"
-        description="Control whether the project is live or paused"
+        title={t.projectSettings.advanced.projectStatus.title}
+        description={t.projectSettings.advanced.projectStatus.description}
         icon={Settings2}
         iconTone="primary"
       >
@@ -151,10 +157,10 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
               </div>
               <div>
                 <p className="text-[13px] font-medium text-foreground">
-                  {isProjectActive ? "Project Active" : "Project Disabled"}
+                  {isProjectActive ? t.projectSettings.advanced.projectStatus.active : t.projectSettings.advanced.projectStatus.disabled}
                 </p>
                 <p className="text-[12px] text-muted-foreground">
-                  {isProjectActive ? "Live and accessible" : "Paused and not accessible"}
+                  {isProjectActive ? t.projectSettings.advanced.projectStatus.liveAccessible : t.projectSettings.advanced.projectStatus.pausedInaccessible}
                 </p>
               </div>
             </div>
@@ -170,18 +176,19 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
               {loading.disableProject ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : isProjectActive ? (
-                "Disable"
+                t.projectSettings.advanced.projectStatus.disable
               ) : (
-                "Enable"
+                t.projectSettings.advanced.projectStatus.enable
               )}
             </button>
           </div>
         </SectionCard>
 
-        {/* Cache Management */}
+        {/* Cache Management (mock — hidden until wired) */}
+        {SHOW_MOCK_ADVANCED && (
         <SectionCard
-          title="Cache"
-          description="Clear cached build artifacts and dependency installs"
+          title={t.projectSettings.advanced.cache.title}
+          description={t.projectSettings.advanced.cache.description}
           icon={Package}
           iconTone="amber"
         >
@@ -189,39 +196,41 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
             <button
               onClick={handleClearInstallCache}
               disabled={loading.clearInstallCache}
-              className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-start transition-colors hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Package className="size-4 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground">Clear Install Cache</p>
-                <p className="text-[12px] text-muted-foreground">Remove cached node_modules</p>
+                <p className="text-[13px] font-medium text-foreground">{t.projectSettings.advanced.cache.clearInstall}</p>
+                <p className="text-[12px] text-muted-foreground">{t.projectSettings.advanced.cache.clearInstallDesc}</p>
               </div>
-              {loading.clearInstallCache && <Loader2 className="ml-auto size-4 animate-spin text-muted-foreground" />}
+              {loading.clearInstallCache && <Loader2 className="ms-auto size-4 animate-spin text-muted-foreground" />}
             </button>
 
             <button
               onClick={handleClearBuildCache}
               disabled={loading.clearBuildCache}
-              className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-start transition-colors hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Hammer className="size-4 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground">Clear Build Cache</p>
-                <p className="text-[12px] text-muted-foreground">Remove cached build output</p>
+                <p className="text-[13px] font-medium text-foreground">{t.projectSettings.advanced.cache.clearBuild}</p>
+                <p className="text-[12px] text-muted-foreground">{t.projectSettings.advanced.cache.clearBuildDesc}</p>
               </div>
-              {loading.clearBuildCache && <Loader2 className="ml-auto size-4 animate-spin text-muted-foreground" />}
+              {loading.clearBuildCache && <Loader2 className="ms-auto size-4 animate-spin text-muted-foreground" />}
             </button>
           </div>
         </SectionCard>
+        )}
 
-        {/* Transfer & Clone */}
+        {/* Transfer & Clone (mock — hidden until wired) */}
+        {SHOW_MOCK_ADVANCED && (
         <SectionCard
-          title="Transfer & Clone"
-          description="Move or duplicate this project to a different environment"
+          title={t.projectSettings.advanced.transfer.title}
+          description={t.projectSettings.advanced.transfer.description}
           icon={ArrowRightLeft}
           iconTone="primary"
         >
@@ -230,6 +239,7 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
             currentServer={projectData?.serverName}
           />
         </SectionCard>
+        )}
 
         {/* Danger Zone */}
         <div className="overflow-hidden rounded-2xl border border-red-500/20 bg-card">
@@ -238,20 +248,20 @@ export const AdvancedSettings = ({ onDeleteProject }: Props) => {
               <AlertTriangle className="size-4 text-red-500" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[14px] font-semibold text-red-600 dark:text-red-400">Danger Zone</h3>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">Irreversible actions for this project</p>
+              <h3 className="text-[14px] font-semibold text-red-600 dark:text-red-400">{t.projectSettings.advanced.danger.title}</h3>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">{t.projectSettings.advanced.danger.description}</p>
             </div>
           </div>
           <div className="px-5 py-4">
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              Deleting this project will permanently remove all deployments, custom domains, environment variables, and analytics data.
+              {t.projectSettings.advanced.danger.body}
             </p>
             <button
               onClick={() => setShowDeleteModal(true)}
               className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-red-600 px-4 text-[13px] font-medium text-white transition-colors hover:bg-red-700"
             >
               <Trash2 className="size-3.5" />
-              Delete Project
+              {t.projectSettings.advanced.danger.delete}
             </button>
           </div>
         </div>
@@ -271,17 +281,17 @@ function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-[13px] text-muted-foreground">{label}</span>
-      <span className="max-w-[180px] truncate text-right text-[13px] font-medium text-foreground">{value}</span>
+      <span className="max-w-[180px] truncate text-end text-[13px] font-medium text-foreground">{value}</span>
     </div>
   );
 }
 
 /* ── Transfer & Clone ─────────────────────────────────────────────── */
 
-const TARGET_META: Record<string, { label: string; icon: React.ReactNode }> = {
-  local: { label: "Local Machine", icon: <HardDrive className="size-4" /> },
-  server: { label: "Self-Hosted Server", icon: <Server className="size-4" /> },
-  cloud: { label: "Openship Cloud", icon: <Cloud className="size-4" /> },
+const TARGET_META: Record<string, { icon: React.ReactNode }> = {
+  local: { icon: <HardDrive className="size-4" /> },
+  server: { icon: <Server className="size-4" /> },
+  cloud: { icon: <Cloud className="size-4" /> },
 };
 
 function TransferOptions({
@@ -291,6 +301,12 @@ function TransferOptions({
   currentTarget?: string | null;
   currentServer?: string | null;
 }) {
+  const { t } = useI18n();
+  const targetLabels: Record<string, string> = {
+    local: t.projectSettings.advanced.transfer.targetLocal,
+    server: t.projectSettings.advanced.transfer.targetServer,
+    cloud: t.projectSettings.advanced.transfer.targetCloud,
+  };
   const current = TARGET_META[currentTarget ?? ""];
 
   // Build transfer options - everything except the current target
@@ -307,14 +323,14 @@ function TransferOptions({
             {current.icon}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium text-foreground">{current.label}</p>
+            <p className="text-[13px] font-medium text-foreground">{targetLabels[currentTarget ?? ""]}</p>
             {currentTarget === "server" && currentServer && (
               <p className="text-[12px] text-muted-foreground">{currentServer}</p>
             )}
           </div>
           <span className="inline-flex items-center gap-1 shrink-0 text-[12px] text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Current
+            {t.projectSettings.advanced.transfer.current}
           </span>
         </div>
       )}
@@ -324,27 +340,27 @@ function TransferOptions({
         {transferTargets.map(([key, meta]) => (
           <button
             key={key}
-            className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-left transition-colors hover:border-border hover:bg-muted/40"
+            className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-start transition-colors hover:border-border hover:bg-muted/40"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
               {meta.icon}
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-foreground">Transfer</p>
-              <p className="text-[12px] text-muted-foreground">{meta.label}</p>
+              <p className="text-[13px] font-medium text-foreground">{t.projectSettings.advanced.transfer.transfer}</p>
+              <p className="text-[12px] text-muted-foreground">{targetLabels[key]}</p>
             </div>
           </button>
         ))}
 
         <button
-          className="flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/10 px-4 py-3 text-left transition-colors hover:border-border hover:bg-muted/30"
+          className="flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-muted/10 px-4 py-3 text-start transition-colors hover:border-border hover:bg-muted/30"
         >
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <Copy className="size-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground">Clone</p>
-            <p className="text-[12px] text-muted-foreground">Another server</p>
+            <p className="text-[13px] font-medium text-foreground">{t.projectSettings.advanced.transfer.clone}</p>
+            <p className="text-[12px] text-muted-foreground">{t.projectSettings.advanced.transfer.anotherServer}</p>
           </div>
         </button>
       </div>

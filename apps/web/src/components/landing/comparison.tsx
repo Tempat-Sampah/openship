@@ -59,7 +59,7 @@ const ROWS: Row[] = [
   },
   {
     feature: "Source",
-    openship: { text: "Open source, AGPL-3, fork-friendly", status: "win" },
+    openship: { text: "Open source, Apache 2.0, fork-friendly", status: "win" },
     managed:  { text: "Closed source",                      status: "loss" },
     selfhost: { text: "Mixed licenses",                     status: "neutral" },
   },

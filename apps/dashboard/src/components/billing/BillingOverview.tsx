@@ -6,6 +6,7 @@ import { ArrowUpRight, Loader2, Sparkles } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { PLANS } from "@repo/core";
 import { api } from "@/lib/api/client";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { BillingState } from "@/lib/api/billing";
 
 export type { BillingState };
@@ -185,6 +186,7 @@ export function UpgradeButton({ children, onClick, className = "" }: {
 /* ------------------------------------------------------------------ */
 
 function BalanceHero({ state }: { state: BillingState }) {
+  const { t } = useI18n();
   const { quotaLimit, quotaUsed, quotaRemaining } = state.balance;
   const pct = pctUsed(quotaUsed, quotaLimit);
   const days = daysUntil(state.currentPeriod.end);
@@ -202,7 +204,7 @@ function BalanceHero({ state }: { state: BillingState }) {
               {formatCredits(quotaRemaining)}
             </span>
             <span className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              credits left
+              {t.billing.overview.creditsLeft}
             </span>
           </RingGauge>
         </div>
@@ -210,7 +212,7 @@ function BalanceHero({ state }: { state: BillingState }) {
         {/* Summary */}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-foreground">{planName} plan</h2>
+            <h2 className="text-lg font-semibold text-foreground">{interpolate(t.billing.overview.planLabel, { name: planName })}</h2>
             <span
               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium capitalize ${statusPillClass(state.status)}`}
             >
@@ -221,23 +223,26 @@ function BalanceHero({ state }: { state: BillingState }) {
           <div className="grid grid-cols-2 gap-4 sm:max-w-md">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Used this period
+                {t.billing.overview.usedThisPeriod}
               </p>
               <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">
                 {formatCredits(quotaUsed)}
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                <span className="ms-1 text-xs font-normal text-muted-foreground">
                   / {formatCredits(quotaLimit)}
                 </span>
               </p>
             </div>
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Resets
+                {t.billing.overview.resets}
               </p>
               <p className="mt-1 text-sm font-semibold text-foreground">
                 {days !== null
-                  ? `In ${days} day${days === 1 ? "" : "s"}`
-                  : "—"}
+                  ? interpolate(
+                      days === 1 ? t.billing.overview.resetsInDay : t.billing.overview.resetsInDays,
+                      { n: String(days) },
+                    )
+                  : t.billing.overview.none}
               </p>
             </div>
           </div>
@@ -251,7 +256,7 @@ function BalanceHero({ state }: { state: BillingState }) {
               <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-primary/90" />
               <span className="relative flex items-center gap-1.5">
                 <Sparkles className="size-3.5" />
-                Upgrade to Pro
+                {t.billing.overview.upgradeToPro}
               </span>
             </Link>
           )}
@@ -266,6 +271,7 @@ function BalanceHero({ state }: { state: BillingState }) {
 /* ------------------------------------------------------------------ */
 
 function RecentActivityCard() {
+  const { t } = useI18n();
   const [buckets, setBuckets] = useState<UsageBucket[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -285,7 +291,7 @@ function RecentActivityCard() {
         if (cancelled) return;
         setBuckets(res.data.usage?.buckets ?? []);
       } catch {
-        if (!cancelled) setError("Failed to load usage");
+        if (!cancelled) setError(t.billing.overview.usageError);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -305,14 +311,14 @@ function RecentActivityCard() {
     <div className="rounded-2xl border border-border/50 bg-card p-6">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Recent activity</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">Last 7 days</p>
+          <h3 className="text-sm font-semibold text-foreground">{t.billing.overview.recentActivity}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t.billing.overview.last7Days}</p>
         </div>
         <Link
           href="/billing/usage"
           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
-          View full usage
+          {t.billing.overview.viewFullUsage}
           <ArrowUpRight className="size-3" />
         </Link>
       </div>
@@ -328,7 +334,7 @@ function RecentActivityCard() {
           </div>
         ) : data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-            No usage yet
+            {t.billing.overview.noUsageYet}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -360,6 +366,7 @@ function RecentActivityCard() {
 /* ------------------------------------------------------------------ */
 
 function BuyCreditsCard() {
+  const { t } = useI18n();
   const [packs, setPacks] = useState<TopupPack[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -374,7 +381,7 @@ function BuyCreditsCard() {
         const sorted = [...res.data].sort((a, b) => a.sortOrder - b.sortOrder);
         setPacks(sorted.slice(0, 2));
       } catch {
-        if (!cancelled) setError("Failed to load packs");
+        if (!cancelled) setError(t.billing.overview.packsError);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -391,7 +398,7 @@ function BuyCreditsCard() {
       const res = await api.post<TopupCheckoutResponse>("billing/topup", { packId });
       window.location.href = res.data.checkoutUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start checkout");
+      setError(err instanceof Error ? err.message : t.billing.overview.checkoutError);
       setBuyingPackId(null);
     }
   }
@@ -400,16 +407,16 @@ function BuyCreditsCard() {
     <div className="rounded-2xl border border-border/50 bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Need more credits?</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t.billing.overview.needMoreCredits}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            One-time top-ups, no subscription change
+            {t.billing.overview.oneTimeTopups}
           </p>
         </div>
         <Link
           href="/billing/topups"
           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
-          See all packs
+          {t.billing.overview.seeAllPacks}
           <ArrowUpRight className="size-3" />
         </Link>
       </div>
@@ -421,7 +428,7 @@ function BuyCreditsCard() {
       ) : error ? (
         <p className="py-4 text-xs text-muted-foreground">{error}</p>
       ) : !packs || packs.length === 0 ? (
-        <p className="py-4 text-xs text-muted-foreground">No top-up packs available.</p>
+        <p className="py-4 text-xs text-muted-foreground">{t.billing.overview.noPacks}</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {packs.map((pack) => {
@@ -431,22 +438,22 @@ function BuyCreditsCard() {
                 key={pack.id}
                 onClick={() => handleBuy(pack.id)}
                 disabled={buyingPackId !== null}
-                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-start transition-colors hover:border-primary/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground">
-                    {formatCredits(pack.credits_milli)} credits
+                    {interpolate(t.billing.overview.creditsAmount, { n: formatCredits(pack.credits_milli) })}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {formatDollars(pack.price_cents)} one-time
+                    {interpolate(t.billing.overview.oneTime, { price: formatDollars(pack.price_cents) })}
                   </p>
                 </div>
-                <span className="ml-3 inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
+                <span className="ms-3 inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
                   {isBuying ? (
                     <Loader2 className="size-3.5 animate-spin" />
                   ) : (
                     <>
-                      Buy
+                      {t.billing.overview.buy}
                       <ArrowUpRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </>
                   )}

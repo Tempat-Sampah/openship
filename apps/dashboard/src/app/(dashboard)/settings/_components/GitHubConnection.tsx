@@ -22,6 +22,7 @@ import { useModal } from "@/context/ModalContext";
 import { usePlatform } from "@/context/PlatformContext";
 import { githubApi } from "@/lib/api";
 import { SettingsSection } from "./SettingsSection";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 const EMPTY_STATE: GitHubConnectionState = {
   sources: { openshipApp: { connected: false }, ghCli: { available: false } },
@@ -35,6 +36,7 @@ export function GitHubConnection() {
   // installations happens on THIS page only, never on a plain library browse.
   // Actions (connect/disconnect/connecting) still come from the shared context.
   const { connecting, connect: ctxConnect, disconnect: ctxDisconnect } = useGitHub();
+  const { t } = useI18n();
 
   const [state, setState] = useState<GitHubConnectionState>(EMPTY_STATE);
   const [accounts, setAccounts] = useState<GitHubAccount[]>([]);
@@ -119,12 +121,12 @@ export function GitHubConnection() {
     body: string,
   ) => {
     const modalId = showModal({
-      title: `Disconnect ${label}`,
+      title: interpolate(t.settings.github.disconnectTitle, { label }),
       message: body,
       buttons: [
-        { label: "Cancel", variant: "secondary", onClick: () => hideModal(modalId) },
+        { label: t.settings.common.cancel, variant: "secondary", onClick: () => hideModal(modalId) },
         {
-          label: "Disconnect",
+          label: t.settings.github.disconnect,
           variant: "danger",
           onClick: async () => {
             hideModal(modalId);
@@ -168,15 +170,17 @@ export function GitHubConnection() {
           without cloud minting tokens for the local instance.            */}
       <SettingsSection
         icon={Github}
-        title={appConnected && appLogin ? `GitHub · @${appLogin}` : "GitHub"}
+        title={appConnected && appLogin ? interpolate(t.settings.github.titleWithLogin, { login: appLogin }) : t.settings.github.title}
         description={
           appConnected
             ? hasInstallations
-              ? `Connected · ${appAccounts.length} installation${appAccounts.length > 1 ? "s" : ""}`
-              : "Connected · No installations yet"
+              ? appAccounts.length === 1
+                ? t.settings.github.connectedOne
+                : interpolate(t.settings.github.connectedMany, { count: String(appAccounts.length) })
+              : t.settings.github.noInstallations
             : isSelfHosted && !cloudConnected
-              ? "Requires Openship Cloud — the App is owned by openship.io"
-              : "Connect your GitHub account to deploy repositories"
+              ? t.settings.github.requiresCloud
+              : t.settings.github.connectPrompt
         }
         iconBg="bg-foreground/5"
         iconColor="text-foreground"
@@ -184,7 +188,7 @@ export function GitHubConnection() {
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-            Checking connection…
+            {t.settings.github.checkingConnection}
           </div>
         ) : appConnected ? (
           <div className="space-y-4">
@@ -212,7 +216,7 @@ export function GitHubConnection() {
                       </p>
                     </div>
                     <span className="text-[10px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                      {acct.type === "Organization" ? "Org" : "User"}
+                      {acct.type === "Organization" ? t.settings.github.orgBadge : t.settings.github.userBadge}
                     </span>
                   </div>
                 ))}
@@ -231,7 +235,7 @@ export function GitHubConnection() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-foreground bg-muted/40 hover:bg-muted/60 rounded-lg border border-border/50 transition-colors"
                 >
                   <Download className="size-3.5" />
-                  {hasInstallations ? "Add account" : "Install GitHub App"}
+                  {hasInstallations ? t.settings.github.addAccount : t.settings.github.installApp}
                 </a>
               )}
               <a
@@ -240,21 +244,21 @@ export function GitHubConnection() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted/60 rounded-lg border border-border/50 transition-colors"
               >
-                Manage on GitHub
+                {t.settings.github.manageOnGithub}
                 <ExternalLink className="size-3" />
               </a>
               <button
                 onClick={() =>
                   promptDisconnect(
                     "oauth",
-                    "Openship GitHub App",
-                    "This removes the Openship OAuth account row. The GitHub App installation stays until you uninstall it on GitHub.",
+                    t.settings.github.disconnectAppLabel,
+                    t.settings.github.disconnectAppBody,
                   )
                 }
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-500/5 hover:bg-red-500/10 rounded-lg border border-red-500/15 hover:border-red-500/25 transition-colors"
               >
                 <Unplug className="size-3.5" />
-                Disconnect
+                {t.settings.github.disconnect}
               </button>
             </div>
           </div>
@@ -265,23 +269,20 @@ export function GitHubConnection() {
              card flips to the standard not-yet-OAuth'd state. */
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              The Openship GitHub App is owned by openship.io. Connect your
-              instance to Openship Cloud to use scoped install tokens for
-              cloning private repos (works for local AND remote deploys).
+              {t.settings.github.cloudExplainer}
             </p>
             <button
               onClick={startCloudConnect}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-xl transition-colors"
             >
               <Cloud className="size-4" />
-              Connect Openship Cloud
+              {t.settings.github.connectCloud}
             </button>
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Link your GitHub account to import repositories, enable auto-deploy
-              on push, and manage branches directly from the dashboard.
+              {t.settings.github.linkExplainer}
             </p>
             <button
               onClick={() => connect("oauth")}
@@ -291,12 +292,12 @@ export function GitHubConnection() {
               {connecting ? (
                 <>
                   <RefreshCw className="size-4 animate-spin" />
-                  Connecting…
+                  {t.settings.github.connecting}
                 </>
               ) : (
                 <>
                   <Github className="size-4" />
-                  Connect GitHub
+                  {t.settings.github.connect}
                 </>
               )}
             </button>
@@ -340,14 +341,15 @@ function GhCliCard(props: {
   connecting: boolean;
 }) {
   const { available, login, avatarUrl, active, onConnect, connecting } = props;
+  const { t } = useI18n();
   return (
     <SettingsSection
       icon={Terminal}
-      title="gh CLI"
+      title={t.settings.github.ghCli.title}
       description={
         available && login
-          ? `Logged in as @${login}`
-          : "Optional local-build fallback for repos outside your App installations"
+          ? interpolate(t.settings.github.ghCli.loggedInAs, { login })
+          : t.settings.github.ghCli.fallbackDesc
       }
       iconBg="bg-foreground/5"
       iconColor="text-foreground"
@@ -357,17 +359,17 @@ function GhCliCard(props: {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400"
-            title="Refused at deploy time for remote-server builds. The App or a per-project clone token is required for remote deploys."
+            title={t.settings.github.ghCli.localOnlyTitle}
           >
             <AlertTriangle className="size-2.5" />
-            Local builds only
+            {t.settings.github.ghCli.localOnly}
           </span>
           {active && (
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/15 text-primary"
-              title="No cloud connection — gh CLI is the primary source for everything right now"
+              title={t.settings.github.ghCli.usedForDeploysTitle}
             >
-              Used for deploys
+              {t.settings.github.ghCli.usedForDeploys}
             </span>
           )}
         </div>
@@ -388,9 +390,8 @@ function GhCliCard(props: {
             Fires when CLI is the ONLY source (no cloud connection).  */}
         {active && (
           <p className="text-sm text-amber-600 dark:text-amber-400 leading-relaxed">
-            <span className="font-medium">gh CLI is the active source.</span>{" "}
-            Deploys to remote servers will be refused — connect the Openship App
-            or set a per-project clone token to deploy to remote targets.
+            <span className="font-medium">{t.settings.github.ghCli.activeWarnStrong}</span>{" "}
+            {t.settings.github.ghCli.activeWarnRest}
           </p>
         )}
         {/* Cloud-app mode + CLI available: it's a real fallback now.
@@ -400,22 +401,21 @@ function GhCliCard(props: {
             route through the App regardless. */}
         {!active && available && (
           <p className="text-sm text-muted-foreground leading-relaxed">
-            <ShieldCheck className="size-3.5 inline-block align-text-bottom mr-1" />
-            Openship App is the primary source. gh CLI fills in for{" "}
-            <span className="text-foreground font-medium">local builds</span> against
-            repos outside your App installations.
+            <ShieldCheck className="size-3.5 inline-block align-text-bottom me-1" />
+            {t.settings.github.ghCli.primaryNotePrefix}{" "}
+            <span className="text-foreground font-medium">{t.settings.github.ghCli.primaryNoteStrong}</span>{" "}
+            {t.settings.github.ghCli.primaryNoteSuffix}
           </p>
         )}
         {/* CLI not yet authed but App is connected — explain why
             setting up gh CLI is still useful. */}
         {!active && !available && (
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Optional. Run{" "}
+            {t.settings.github.ghCli.optionalPrefix}{" "}
             <code className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground font-mono text-xs">
               gh auth login
             </code>{" "}
-            on this machine to enable local-build clones of repos outside your
-            App installations. Remote deploys always route through the App.
+            {t.settings.github.ghCli.optionalSuffix}
           </p>
         )}
 
@@ -426,11 +426,11 @@ function GhCliCard(props: {
         <div className="flex items-center gap-2">
           {available ? (
             <p className="text-sm text-muted-foreground leading-relaxed">
-              To disconnect, run{" "}
+              {t.settings.github.ghCli.disconnectPrefix}{" "}
               <code className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground font-mono text-xs">
                 gh auth logout
               </code>{" "}
-              in your terminal.
+              {t.settings.github.ghCli.disconnectSuffix}
             </p>
           ) : (
             <button
@@ -443,7 +443,7 @@ function GhCliCard(props: {
               ) : (
                 <Terminal className="size-3.5" />
               )}
-              Use gh CLI
+              {t.settings.github.ghCli.use}
             </button>
           )}
         </div>

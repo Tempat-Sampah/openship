@@ -1,0 +1,595 @@
+{
+  "settingSection": {
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "advanced": {
+    "projectInfo": {
+      "title": "Project Info",
+      "description": "Current configuration summary"
+    },
+    "metric": {
+      "status": "Status",
+      "project": "Project",
+      "hostedOn": "Hosted On"
+    },
+    "statusActive": "Active",
+    "statusDisabled": "Disabled",
+    "hostedCloud": "Openship Cloud",
+    "hostedServer": "Server",
+    "hostedLocal": "Local",
+    "projectStatus": {
+      "title": "Project Status",
+      "description": "Control whether the project is live or paused",
+      "active": "Project Active",
+      "disabled": "Project Disabled",
+      "liveAccessible": "Live and accessible",
+      "pausedInaccessible": "Paused and not accessible",
+      "disable": "Disable",
+      "enable": "Enable"
+    },
+    "cache": {
+      "title": "Cache",
+      "description": "Clear cached build artifacts and dependency installs",
+      "clearInstall": "Clear Install Cache",
+      "clearInstallDesc": "Remove cached node_modules",
+      "clearBuild": "Clear Build Cache",
+      "clearBuildDesc": "Remove cached build output"
+    },
+    "transfer": {
+      "title": "Transfer & Clone",
+      "description": "Move or duplicate this project to a different environment",
+      "current": "Current",
+      "transfer": "Transfer",
+      "clone": "Clone",
+      "anotherServer": "Another server",
+      "targetLocal": "Local Machine",
+      "targetServer": "Self-Hosted Server",
+      "targetCloud": "Openship Cloud"
+    },
+    "danger": {
+      "title": "Danger Zone",
+      "description": "Irreversible actions for this project",
+      "body": "Deleting this project will permanently remove all deployments, custom domains, environment variables, and analytics data.",
+      "delete": "Delete Project"
+    },
+    "toast": {
+      "toggleFailed": "Failed to toggle project",
+      "clearInstallFailed": "Failed to clear install cache",
+      "clearBuildFailed": "Failed to clear build cache"
+    }
+  },
+  "backup": {
+    "live": {
+      "title": "Live backup",
+      "description": "Real-time progress for the run you just kicked off. Survives page refresh.",
+      "dismiss": "Dismiss"
+    },
+    "destinations": {
+      "title": "Backup destinations",
+      "description": "Per-user storage targets. Add S3-compatible buckets, SFTP servers, or local disks.",
+      "manage": "Manage",
+      "loading": "Loading…",
+      "emptyPrefix": "No destinations yet. ",
+      "emptyLink": "Create one",
+      "emptySuffix": " to start backing up.",
+      "verified": "Verified",
+      "failed": "Failed"
+    },
+    "services": {
+      "title": "Services + policies",
+      "description": "Each service can have its own backup policy (schedule + destination). Project-level defaults land in Chunk 2.",
+      "refresh": "Refresh",
+      "empty": "This project has no services yet. Service-level backups appear here once you add some.",
+      "policyLabel": "Policy:",
+      "manualOnly": "manual only",
+      "preDeploy": "pre-deploy",
+      "webhook": "webhook",
+      "noPolicy": "No policy",
+      "backupNow": "Backup now",
+      "editPolicy": "Edit policy",
+      "addDestinationFirst": "Add a destination first",
+      "createPolicyHint": "Create a backup policy for this service",
+      "createPolicy": "Create policy"
+    },
+    "recent": {
+      "title": "Recent backups",
+      "description": "The 25 most recent runs across all services in this project.",
+      "loading": "Loading…",
+      "empty": "No backups yet.",
+      "protectedTitle": "Protected from retention prune",
+      "protected": "Protected",
+      "restoreTitle": "Restore from this backup",
+      "allowPrune": "Allow retention to prune",
+      "protectFrom": "Protect from retention"
+    },
+    "toast": {
+      "runFailed": "Backup run failed",
+      "toggleProtectionFailed": "Failed to toggle protection"
+    }
+  },
+  "build": {
+    "edit": "Edit",
+    "webmail": {
+      "title": "Managed by openship",
+      "description": "Webmail uses a fixed build and start pipeline — install, build, and run commands are not configurable. Redeploy from the mail overview to pick up upstream changes."
+    },
+    "services": {
+      "title": "Per-service settings",
+      "descriptionTemplate": "This project has {serviceLabel}. Build commands, framework, ports, and run commands live on each service row — view and edit them in the Services tab.",
+      "open": "Open Services",
+      "subAppOne": "{count} sub-app",
+      "subAppOther": "{count} sub-apps",
+      "composeOne": "{count} compose service",
+      "composeOther": "{count} compose services",
+      "both": "{subApps} and {composeServices}"
+    },
+    "runtime": {
+      "title": "Runtime configuration",
+      "description": "Read-only. Edit through the deploy wizard so each change ships as a new version.",
+      "framework": "Framework",
+      "packageManager": "Package manager",
+      "runtimeIsolation": "Runtime isolation",
+      "resources": "Resources",
+      "resourcesValue": "{cpu} vCPU · {memory} MB",
+      "runtimePort": "Runtime port",
+      "installCommand": "Install command",
+      "buildCommand": "Build command",
+      "noBuildStep": "No build step",
+      "outputDirectory": "Output directory",
+      "rootDirectory": "Root directory",
+      "startCommand": "Start command",
+      "staticNoServer": "Static (no server)",
+      "modeSandboxed": "Sandboxed (container)",
+      "modeDirect": "Direct (host process)",
+      "modeDefault": "Default (resolved at deploy)"
+    },
+    "env": {
+      "title": "Environment variables",
+      "description": "Encrypted at rest. Secrets stay masked — only the values you change are written.",
+      "edit": "Edit"
+    }
+  },
+  "envVars": {
+    "cancel": "Cancel",
+    "saveChanges": "Save changes",
+    "title": "Environment variables",
+    "description": "Production. Encrypted at rest. Secrets show as set — type to replace; leave blank to keep.",
+    "empty": "No environment variables yet.",
+    "keyPlaceholder": "KEY",
+    "secretPlaceholder": "•••••••• (set — type to replace)",
+    "valuePlaceholder": "value",
+    "hideValue": "Hide value",
+    "showValue": "Show value",
+    "markedSecret": "Marked secret",
+    "markSecret": "Mark as secret",
+    "removeVariable": "Remove variable",
+    "addVariable": "Add variable",
+    "toast": {
+      "loadFailed": "Failed to load environment variables",
+      "loadFailedTitle": "Error",
+      "validationTitle": "Validation",
+      "saved": "Environment variables saved",
+      "savedTitle": "Saved",
+      "saveFailed": "Failed to save environment variables",
+      "saveFailedTitle": "Save failed"
+    }
+  },
+  "gitInfo": {
+    "repository": "Repository",
+    "autoDeploy": "Auto-deploy",
+    "deploysOnPush": "Deploys on every push",
+    "manualOnly": "Manual deploys only",
+    "branchToDeploy": "Branch to Deploy",
+    "chooseBranch": "Choose which branch to deploy from your repository",
+    "save": "Save",
+    "cancel": "Cancel",
+    "viewOnGithub": "View on GitHub",
+    "recentCommits": "Recent Commits",
+    "totalCommits": "{count} total",
+    "noCommits": "No commits yet",
+    "toast": {
+      "fetchBranchesFailed": "Failed to fetch branches",
+      "errorTitle": "Error",
+      "branchUpdated": "Branch updated successfully",
+      "updatedTitle": "Updated",
+      "branchUpdateFailed": "Failed to update branch",
+      "autoDeployEnabled": "Auto-deploy enabled",
+      "autoDeployDisabled": "Auto-deploy disabled",
+      "autoDeployFailed": "Failed to update auto-deploy"
+    }
+  },
+  "git": {
+    "connectFirst": {
+      "title": "Connect GitHub first",
+      "description": "Link your GitHub account to connect a repository to this project.",
+      "connecting": "Connecting…",
+      "connect": "Connect GitHub"
+    },
+    "link": {
+      "title": "Link a Repository",
+      "description": "Connect a GitHub repository to enable webhook-triggered deployments.",
+      "select": "Select Repository"
+    },
+    "picker": {
+      "title": "Select a repository",
+      "description": "Choose a repository to link to this project",
+      "linking": "Linking repository…"
+    },
+    "appBanner": {
+      "title": "GitHub App not installed",
+      "description": "Install the Openship GitHub App on your account or organization to enable auto-deploy and webhook-triggered deployments for cloud projects.",
+      "install": "Install GitHub App"
+    },
+    "webhookBanner": {
+      "title": "Enable auto-deploy",
+      "description": "Auto-deploy needs a direct webhook endpoint. Expose this Openship API on a public URL or configure a verified webhook domain for direct delivery."
+    },
+    "source": {
+      "title": "Source Repository",
+      "description": "Git integration, deployment triggers, and repository health",
+      "repository": "Repository",
+      "open": "Open"
+    },
+    "webhookEndpoint": {
+      "title": "Webhook Endpoint",
+      "descriptionSet": "GitHub delivers push events directly to this domain",
+      "descriptionUnset": "Choose a domain for direct webhook delivery",
+      "updating": "Updating...",
+      "select": "Select domain...",
+      "clear": "Clear selection"
+    },
+    "autoDeployCard": {
+      "title": "Auto Deploy",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "descDelivers": "Pushes deliver to {domain}",
+      "descAuto": "Pushes trigger deployments automatically",
+      "descManual": "Deployments must be started manually"
+    },
+    "webhookCard": {
+      "title": "Webhook",
+      "direct": "Direct",
+      "active": "Active",
+      "inactive": "Inactive",
+      "descDirect": "Events deliver directly via {domain}",
+      "descActive": "Repository events are reaching Openship",
+      "descInactive": "Webhook has not been configured or is not responding"
+    },
+    "rollbackStrategy": {
+      "title": "Rollback strategy",
+      "rebuild": "Rebuild (git)",
+      "instant": "Instant (snapshot)",
+      "descRebuild": "Rollback re-clones & rebuilds the old commit — cheaper, but slower and can fail if that commit no longer builds.",
+      "descInstant": "Keeps each version's build artifact on disk for rollback in seconds. Uses extra disk, capped by the history limit.",
+      "toggleAria": "Toggle snapshot retention"
+    },
+    "rollbackHistory": {
+      "title": "Rollback history",
+      "valueOne": "{count} version",
+      "valueOther": "{count} versions",
+      "descSnapshot": "How many recent versions keep their build artifact for rollback. Older ones are pruned to reclaim disk.",
+      "descGit": "Applies only to Instant (snapshot) mode — Git mode keeps no artifacts to retain.",
+      "decreaseAria": "Decrease rollback history",
+      "increaseAria": "Increase rollback history"
+    },
+    "commits": {
+      "title": "Recent Commits",
+      "subtitle": "Latest commits on {branch}",
+      "empty": "No commits found",
+      "emptyDesc": "Push to your repository and recent commit activity will appear here.",
+      "viewAll": "View all commits on GitHub"
+    },
+    "cloneToken": {
+      "title": "Clone Token Override",
+      "description": "Project-scoped token used by the clone module before falling back to your global token or the GitHub App",
+      "loading": "Loading…",
+      "explainer": "Paste a GitHub PAT here to use ONLY for this project. Highest priority in the clone chain - overrides your settings-level token and the GitHub App.",
+      "hide": "Hide token",
+      "show": "Show token",
+      "saveToken": "Save token",
+      "cancel": "Cancel",
+      "savedTitle": "Token saved for this project",
+      "lastUpdated": "Last updated {when}",
+      "justNow": "just now",
+      "replace": "Replace",
+      "clear": "Clear"
+    },
+    "toast": {
+      "pasteToken": "Paste a token before saving",
+      "cloneTokenTitle": "Clone token",
+      "tokenSaved": "Project clone token saved",
+      "tokenSaveFailed": "Failed to save token",
+      "tokenCleared": "Project clone token cleared",
+      "tokenClearFailed": "Failed to clear token",
+      "autoDeployEnabled": "Auto-deploy enabled",
+      "autoDeployDisabled": "Auto-deploy disabled",
+      "autoDeployFailed": "Failed to toggle auto-deploy",
+      "rollbackGit": "Rollback strategy: Git-driven (no snapshots)",
+      "rollbackSnapshot": "Rollback strategy: Snapshot (artifacts retained)",
+      "rollbackStrategyFailed": "Failed to update rollback strategy",
+      "rollbackWindowOne": "Keeping the last {count} version for rollback",
+      "rollbackWindowOther": "Keeping the last {count} versions for rollback",
+      "rollbackHistoryFailed": "Failed to update rollback history",
+      "webhookDomainSet": "Webhook domain set to {domain}",
+      "webhookDomainCleared": "Webhook domain cleared",
+      "webhookDomainFailed": "Failed to set webhook domain",
+      "linked": "Linked to {repo}",
+      "appNotInstalled": "GitHub App is not installed for this account",
+      "linkFailed": "Failed to link repository"
+    }
+  },
+  "logs": {
+    "noRuntime": "No runtime logs",
+    "noRuntimeDesc": "This project is deployed as a static app, so there is no running server process to stream logs from.",
+    "terminal": "Terminal",
+    "server": "Server",
+    "requests": "Requests",
+    "target": "Runtime log target",
+    "targetDescProject": "Switch between the project runtime and service runtimes.",
+    "targetDescService": "Switch between service runtimes.",
+    "projectRuntime": "Project runtime",
+    "selectService": "Select a service to view its runtime logs.",
+    "projectFallback": "Project"
+  },
+  "resources": {
+    "title": "Machine Power",
+    "description": "Configure the machine power for your project.",
+    "tiers": {
+      "lightweight": { "name": "Lightweight", "description": "Small apps and static sites" },
+      "standard": { "name": "Standard", "description": "Most web applications" },
+      "performance": { "name": "Performance", "description": "High-traffic applications" },
+      "enterprise": { "name": "Enterprise", "description": "Large scale production apps" },
+      "autoscale": { "name": "Auto Scale", "description": "Scales based on demand" }
+    },
+    "dynamic": "Dynamic",
+    "custom": {
+      "name": "Custom",
+      "description": "Define your own resources",
+      "clickToConfigure": "Click to configure"
+    },
+    "cpuValue": "{cpu} vCPU",
+    "customPanel": {
+      "title": "Configure Custom Resources",
+      "cpuCores": "CPU Cores",
+      "cpuRange": "Range: 0.25 - 4.00",
+      "memory": "Memory (MB)",
+      "memoryRange": "Range: 128 - 8192",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save Configuration"
+    },
+    "toast": {
+      "updated": "Resources updated successfully",
+      "updateFailed": "Failed to update resources",
+      "cpuRange": "CPU must be between 0.25 and 4.00 cores",
+      "memoryRange": "Memory must be between 128 MB and 8192 MB",
+      "customSaved": "Custom resources saved successfully",
+      "customSaveFailed": "Failed to save custom resources"
+    }
+  },
+  "sleep": {
+    "title": "Machine Mode",
+    "description": "Control availability and cost efficiency",
+    "autoSleep": "Auto Sleep",
+    "recommended": "RECOMMENDED",
+    "autoSleepDesc": "Stops when idle, wakes instantly",
+    "autoSleepMeta": "Cost-efficient • No cold start",
+    "alwaysOn": "Always On",
+    "alwaysOnDesc": "Container never stops",
+    "alwaysOnMeta": "Maximum availability • Higher cost",
+    "infoTitle": "How Auto Sleep works",
+    "infoBefore": "When there are requests, your container stays running. After inactivity, it sleeps to save costs. On the next request, it wakes up ",
+    "infoEmphasis": "instantly",
+    "infoAfter": " - no cold start delays.",
+    "toast": {
+      "updated": "Sleep mode updated successfully",
+      "updateFailed": "Failed to update sleep mode"
+    }
+  },
+  "deleteDialog": {
+    "title": "Delete Project",
+    "bodyPrefix": "Are you sure you want to delete ",
+    "bodySuffix": "? This action cannot be undone and will permanently delete all project data, deployments, and settings.",
+    "cancel": "Cancel",
+    "delete": "Delete Project"
+  },
+  "deletion": {
+    "title": "Delete project",
+    "cannotUndo": "This action cannot be undone.",
+    "aboutToPrefix": "You are about to delete ",
+    "aboutToSuffix": ".",
+    "deleteAllAria": "Delete all environments",
+    "deleteAll": "Delete all environments",
+    "deleteAllOn": "Removes the project app and every branch environment under it.",
+    "deleteAllOff": "Removes only this environment. Other branches stay.",
+    "scanning": "Scanning attached services and volumes…",
+    "wipeAria": "Also wipe service data",
+    "wipeLabelOne": "Also wipe service data ({count} volume)",
+    "wipeLabelOther": "Also wipe service data ({count} volumes)",
+    "wipeOn": "Volumes will be permanently removed - database contents, caches, uploads, everything stored by these services will be gone.",
+    "wipeOff": "Off: containers are removed but their named volumes stay on disk. Re-attach them later by name.",
+    "appData": "App data",
+    "volOne": "{count} vol",
+    "volOther": "{count} vols",
+    "amberWipe": "All deployments, domains, env vars, and persistent service data will be permanently removed.",
+    "amberNoWipe": "All deployments, domains, env vars, and analytics will be permanently removed.",
+    "typePrefix": "Type ",
+    "typeSuffix": " to confirm.",
+    "cancel": "Cancel",
+    "confirmDeleteWipe": "Delete + wipe data",
+    "confirmDeleteEnvWipe": "Delete environment + wipe data",
+    "confirmDelete": "Delete project",
+    "confirmDeleteEnv": "Delete environment"
+  },
+  "routing": {
+    "title": "Routing",
+    "description": "Rewrites, redirects & headers. Applied on save — no rebuild.",
+    "saving": "Saving…",
+    "save": "Save",
+    "summaryNone": "None configured",
+    "summaryActive": "Configured",
+    "toast": {
+      "title": "Routing",
+      "updated": "Routing updated — applied to the live deployment.",
+      "failed": "Failed to update routing"
+    }
+  },
+  "domains": {
+    "status": {
+      "verified": "Verified",
+      "active": "Active",
+      "failed": "Failed",
+      "removing": "Removing",
+      "pending": "Pending"
+    },
+    "ssl": {
+      "includedByHost": "Included by host",
+      "active": "Active",
+      "provisioning": "Provisioning",
+      "expired": "Expired",
+      "error": "Error",
+      "inactive": "Inactive"
+    },
+    "typeCustom": "Custom domain",
+    "typeFree": "Free subdomain",
+    "primaryDomainTitle": "Primary domain",
+    "domainNTitle": "Domain {n}",
+    "portLabel": "Port {port}",
+    "noPortSelected": "No port selected",
+    "meta": {
+      "accessTitle": "Access URL",
+      "accessSubtitle": "Local development endpoint",
+      "local": "Local",
+      "availableOnMachine": "Available on this machine",
+      "primaryTitle": "Primary Domain",
+      "primaryAcross": "Primary route across {count} domains",
+      "hostManaged": "Host-managed production URL",
+      "customProduction": "Custom production domain"
+    },
+    "route": {
+      "disabled": "Disabled",
+      "routePaused": "Route paused",
+      "serviceDisabled": "Service disabled",
+      "internal": "Internal",
+      "notExposed": "Not exposed",
+      "public": "Public"
+    },
+    "actions": {
+      "visit": "Visit",
+      "editDomains": "Edit domains",
+      "hideSetup": "Hide setup",
+      "addDomain": "Add domain"
+    },
+    "add": {
+      "title": "Add domain",
+      "description": "Add a route: pick a free or custom domain and the port it maps to.",
+      "free": "Free subdomain",
+      "custom": "Custom domain",
+      "domainName": "Domain name",
+      "subdomain": "Subdomain",
+      "customPlaceholder": "yourdomain.com",
+      "defaultAppName": "my-app",
+      "mapsToPort": "Maps to port",
+      "includeWww": "Include www",
+      "includeWwwDesc": "Also generate records for www.{domain}",
+      "includeWwwFallback": "yourdomain.com",
+      "adding": "Adding...",
+      "submit": "Add domain"
+    },
+    "dns": {
+      "title": "DNS Records",
+      "descPreview": "Add these records at your DNS provider, then click Add domain to attach it",
+      "descApply": "Apply these records at your DNS provider, then wait for propagation",
+      "infoPreview": "Add these records first — they don't change after adding, so propagation starts now. Then press Add domain to attach it, and finally Verify once DNS resolves.",
+      "infoApply": "DNS changes can take up to 48 hours to propagate globally. Once the records resolve, click Verify below — we'll check DNS, mark the domain active, and provision SSL in the background.",
+      "verifying": "Verifying...",
+      "verify": "Verify {hostname}",
+      "copy": "Copy"
+    },
+    "overview": {
+      "primary": "Primary",
+      "mappedTo": "Mapped to",
+      "status": "Status",
+      "ssl": "SSL",
+      "visit": "Visit"
+    },
+    "cold": {
+      "localUrl": "Local URL",
+      "type": "Type",
+      "status": "Status"
+    },
+    "edit": {
+      "title": "Edit domains",
+      "descServer": "Edit which internal port each domain should route to.",
+      "descStatic": "Edit which static path each domain should serve.",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save changes"
+    },
+    "addRoute": {
+      "cancel": "Cancel",
+      "add": "Add route",
+      "free": "Free subdomain",
+      "custom": "Custom domain",
+      "customPlaceholder": "app.example.com",
+      "defaultServiceName": "my-service",
+      "port": "Port",
+      "portPlaceholder": "8080",
+      "submit": "Add",
+      "loading": "Loading routes...",
+      "emptyPrefix": "No domains yet. Click ",
+      "emptyAction": "Add route",
+      "emptySuffix": " to point a domain at a service's port."
+    },
+    "editRoute": {
+      "title": "Edit route",
+      "internalOnly": "Internal only",
+      "close": "Close",
+      "disabledWarning": "Service is disabled - routes are inactive until the service is re-enabled."
+    },
+    "menu": {
+      "editRoute": "Edit route",
+      "settingPrimary": "Setting primary...",
+      "setPrimary": "Set as primary",
+      "verifying": "Verifying...",
+      "verify": "Verify",
+      "renewing": "Renewing...",
+      "renewSsl": "Renew SSL",
+      "rechecking": "Rechecking...",
+      "recheckSsl": "Recheck SSL"
+    },
+    "toast": {
+      "enterPort": "Enter the port this domain should route to (1–65535).",
+      "addDomainTitle": "Add domain",
+      "addDomainFailed": "Failed to add domain",
+      "addDomainFailedTitle": "Add domain failed",
+      "addedCustom": "{label} added — apply the DNS records, then Verify.",
+      "addedFree": "{label} added.",
+      "copied": "Copied to clipboard",
+      "verifiedSuccess": "{hostname} verified — SSL is provisioning in the background.",
+      "verifiedTitle": "Domain verified",
+      "verifyNotYet": "{hostname} could not be verified yet.",
+      "verifyFailedTitle": "Verification failed",
+      "verifyFailed": "Failed to verify domain.",
+      "sslRenewed": "SSL renewed for {hostname}.",
+      "sslRenewFailed": "Failed to renew SSL for {hostname}.",
+      "sslTitle": "SSL",
+      "sslVerified": "SSL verified for {hostname}.",
+      "sslNoCert": "No valid certificate found for {hostname} yet. If you just deployed, give Let's Encrypt a moment, then recheck.",
+      "sslRecheckFailed": "Failed to recheck SSL for {hostname}.",
+      "completeEndpoints": "Complete every domain and mapped port before saving",
+      "domainsTitle": "Domains",
+      "routingUpdated": "Domain routing updated",
+      "routingUpdateFailed": "Failed to update domain routing",
+      "primaryUpdated": "Primary domain updated",
+      "setPrimaryFailed": "Failed to set primary domain",
+      "routeUpdateFailed": "Failed to update service route",
+      "enterPortShort": "Enter the port this domain should route to.",
+      "noServicePort": "No service publishes port {port}. Add that port to a service first.",
+      "enterCustom": "Enter a custom domain.",
+      "enterSubdomain": "Enter a subdomain."
+    }
+  }
+}

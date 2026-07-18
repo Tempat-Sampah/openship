@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AlertTriangle, Database, HardDrive, Loader2 } from "lucide-react";
 import { projectsApi } from "@/lib/api";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface Props {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const DeletionModal = ({
   projectName,
   projectId,
 }: Props) => {
+  const { t } = useI18n();
   const [inputValue, setInputValue] = useState("");
   const [deleteApp, setDeleteApp] = useState(true);
   const [wipeVolumes, setWipeVolumes] = useState(false);
@@ -103,9 +105,9 @@ export const DeletionModal = ({
             <AlertTriangle className="size-[18px] text-amber-600" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold text-foreground">Delete project</h3>
+            <h3 className="text-[15px] font-semibold text-foreground">{t.projectSettings.deletion.title}</h3>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              This action cannot be undone.
+              {t.projectSettings.deletion.cannotUndo}
             </p>
           </div>
         </div>
@@ -113,7 +115,7 @@ export const DeletionModal = ({
         {/* Body */}
         <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
           <p className="text-sm text-muted-foreground">
-            You are about to delete <strong className="text-foreground">{projectName}</strong>.
+            {t.projectSettings.deletion.aboutToPrefix}<strong className="text-foreground">{projectName}</strong>{t.projectSettings.deletion.aboutToSuffix}
           </p>
 
           {/* App vs single environment */}
@@ -123,14 +125,14 @@ export const DeletionModal = ({
               onCheckedChange={setDeleteApp}
               tone="destructive"
               className="mt-0.5"
-              aria-label="Delete all environments"
+              aria-label={t.projectSettings.deletion.deleteAllAria}
             />
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-foreground">Delete all environments</span>
+              <span className="block text-sm font-medium text-foreground">{t.projectSettings.deletion.deleteAll}</span>
               <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
                 {deleteApp
-                  ? "Removes the project app and every branch environment under it."
-                  : "Removes only this environment. Other branches stay."}
+                  ? t.projectSettings.deletion.deleteAllOn
+                  : t.projectSettings.deletion.deleteAllOff}
               </span>
             </span>
           </label>
@@ -139,7 +141,7 @@ export const DeletionModal = ({
           {previewLoading ? (
             <div className="flex items-center gap-2 rounded-xl border border-border/30 bg-muted/10 px-3 py-2.5 text-xs text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
-              Scanning attached services and volumes…
+              {t.projectSettings.deletion.scanning}
             </div>
           ) : showWipeBlock ? (
             <div className="rounded-xl border border-border/50 overflow-hidden">
@@ -149,19 +151,19 @@ export const DeletionModal = ({
                   onCheckedChange={setWipeVolumes}
                   tone="destructive"
                   className="mt-0.5"
-                  aria-label="Also wipe service data"
+                  aria-label={t.projectSettings.deletion.wipeAria}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     <HardDrive className="size-3.5 text-muted-foreground" />
                     <span className="text-sm font-medium text-foreground">
-                      Also wipe service data ({preview!.totalVolumes} volume{preview!.totalVolumes === 1 ? "" : "s"})
+                      {interpolate(preview!.totalVolumes === 1 ? t.projectSettings.deletion.wipeLabelOne : t.projectSettings.deletion.wipeLabelOther, { count: String(preview!.totalVolumes) })}
                     </span>
                   </span>
                   <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                     {wipeVolumes
-                      ? "Volumes will be permanently removed - database contents, caches, uploads, everything stored by these services will be gone."
-                      : "Off: containers are removed but their named volumes stay on disk. Re-attach them later by name."}
+                      ? t.projectSettings.deletion.wipeOn
+                      : t.projectSettings.deletion.wipeOff}
                   </span>
                 </span>
               </label>
@@ -176,7 +178,7 @@ export const DeletionModal = ({
                         {s.name}
                       </span>
                       <span className="text-[11px] tabular-nums text-muted-foreground/70 shrink-0">
-                        {s.volumes.length} vol{s.volumes.length === 1 ? "" : "s"}
+                        {interpolate(s.volumes.length === 1 ? t.projectSettings.deletion.volOne : t.projectSettings.deletion.volOther, { count: String(s.volumes.length) })}
                       </span>
                     </li>
                   ))}
@@ -184,10 +186,10 @@ export const DeletionModal = ({
                     <li className="flex items-center gap-3 px-3 py-2.5">
                       <Database className="size-3.5 text-muted-foreground/70 shrink-0" />
                       <span className="text-[13px] font-medium text-foreground truncate flex-1">
-                        App data
+                        {t.projectSettings.deletion.appData}
                       </span>
                       <span className="text-[11px] tabular-nums text-muted-foreground/70 shrink-0">
-                        {preview!.deploymentVolumes.length} vol{preview!.deploymentVolumes.length === 1 ? "" : "s"}
+                        {interpolate(preview!.deploymentVolumes.length === 1 ? t.projectSettings.deletion.volOne : t.projectSettings.deletion.volOther, { count: String(preview!.deploymentVolumes.length) })}
                       </span>
                     </li>
                   )}
@@ -199,14 +201,14 @@ export const DeletionModal = ({
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5">
             <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
               {wipeVolumes
-                ? "All deployments, domains, env vars, and persistent service data will be permanently removed."
-                : "All deployments, domains, env vars, and analytics will be permanently removed."}
+                ? t.projectSettings.deletion.amberWipe
+                : t.projectSettings.deletion.amberNoWipe}
             </p>
           </div>
 
           <div>
             <p className="text-xs text-muted-foreground mb-2">
-              Type <span className="font-mono text-foreground bg-muted/60 px-1 rounded">{projectName}</span> to confirm.
+              {t.projectSettings.deletion.typePrefix}<span className="font-mono text-foreground bg-muted/60 px-1 rounded">{projectName}</span>{t.projectSettings.deletion.typeSuffix}
             </p>
             <input
               type="text"
@@ -226,7 +228,7 @@ export const DeletionModal = ({
             onClick={handleClose}
             className="px-4 py-2 rounded-xl bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1] text-sm font-medium transition-colors"
           >
-            Cancel
+            {t.projectSettings.deletion.cancel}
           </button>
           <button
             onClick={handleConfirm}
@@ -238,8 +240,8 @@ export const DeletionModal = ({
             }`}
           >
             {wipeVolumes
-              ? deleteApp ? "Delete + wipe data" : "Delete environment + wipe data"
-              : deleteApp ? "Delete project" : "Delete environment"}
+              ? deleteApp ? t.projectSettings.deletion.confirmDeleteWipe : t.projectSettings.deletion.confirmDeleteEnvWipe
+              : deleteApp ? t.projectSettings.deletion.confirmDelete : t.projectSettings.deletion.confirmDeleteEnv}
           </button>
         </div>
       </div>

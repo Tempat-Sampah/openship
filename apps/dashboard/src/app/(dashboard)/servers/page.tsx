@@ -16,6 +16,7 @@ import {
 import { systemApi } from "@/lib/api";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { usePlatform } from "@/context/PlatformContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface ServerEntry {
   id: string;
@@ -27,6 +28,7 @@ interface ServerEntry {
 }
 
 export default function ServersPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const { deployMode } = usePlatform();
   const isDesktop = deployMode === "desktop";
@@ -91,10 +93,10 @@ export default function ServersPage() {
               className="text-2xl font-medium text-foreground/80"
               style={{ letterSpacing: "-0.2px" }}
             >
-              Servers
+              {t.servers.list.title}
             </h1>
             <p className="text-sm text-muted-foreground/70 mt-1">
-              Manage your deployment servers and infrastructure
+              {t.servers.list.subtitle}
             </p>
           </div>
           <button
@@ -102,7 +104,7 @@ export default function ServersPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
           >
             <Plus className="size-4" />
-            Add Server
+            {t.servers.list.addServer}
           </button>
         </div>
 
@@ -157,11 +159,10 @@ export default function ServersPage() {
                 </div>
 
                 <h3 className="text-2xl font-medium text-foreground/80 mb-2" style={{ letterSpacing: "-0.2px" }}>
-                  No servers yet
+                  {t.servers.list.emptyTitle}
                 </h3>
                 <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto mb-8 leading-relaxed">
-                  Connect a server via SSH and Openship will handle the rest -
-                  Docker, OpenResty, SSL, and deployments all set up automatically.
+                  {t.servers.list.emptyDescription}
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
@@ -170,43 +171,43 @@ export default function ServersPage() {
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
                   >
                     <Plus className="size-4" />
-                    Add Your First Server
+                    {t.servers.list.addFirstServer}
                   </button>
                 </div>
 
                 {/* Feature highlight cards */}
                 <div className="max-w-2xl mx-auto">
                   <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-4">
-                    What gets configured
+                    {t.servers.list.whatGetsConfigured}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+                    <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
                         <Server className="size-4 text-muted-foreground" />
                       </div>
                       <p className="text-sm font-medium text-foreground">Docker</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Container runtime</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.servers.list.dockerDesc}</p>
                     </div>
-                    <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+                    <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
                         <Shield className="size-4 text-muted-foreground" />
                       </div>
                       <p className="text-sm font-medium text-foreground">OpenResty</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Reverse proxy & SSL</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.servers.list.openRestyDesc}</p>
                     </div>
-                    <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+                    <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
                         <Wifi className="size-4 text-muted-foreground" />
                       </div>
-                      <p className="text-sm font-medium text-foreground">Monitoring</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Health checks</p>
+                      <p className="text-sm font-medium text-foreground">{t.servers.list.monitoring}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.servers.list.monitoringDesc}</p>
                     </div>
-                    <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+                    <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
                         <ExternalLink className="size-4 text-muted-foreground" />
                       </div>
                       <p className="text-sm font-medium text-foreground">Git</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Source deployments</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.servers.list.gitDesc}</p>
                     </div>
                   </div>
                 </div>
@@ -217,7 +218,7 @@ export default function ServersPage() {
                   <button
                     key={server.id}
                     onClick={() => router.push(`/servers/${server.id}`)}
-                    className="w-full text-left bg-card rounded-2xl border border-border/50 p-5 hover:border-border transition-colors group"
+                    className="w-full text-start bg-card rounded-2xl border border-border/50 p-5 hover:border-border transition-colors group"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
@@ -231,18 +232,18 @@ export default function ServersPage() {
                           {server.status === "connected" ? (
                             <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full">
                               <CheckCircle2 className="size-3" />
-                              Connected
+                              {t.servers.list.connected}
                             </div>
                           ) : (
                             <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
                               <XCircle className="size-3" />
-                              Error
+                              {t.servers.list.error}
                             </div>
                           )}
                           {isDesktop && (forwardCounts[server.id] ?? 0) > 0 && (
                             <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-full">
                               <Network className="size-3" />
-                              {forwardCounts[server.id]} forwarding
+                              {interpolate(t.servers.list.forwarding, { n: String(forwardCounts[server.id]) })}
                             </div>
                           )}
                         </div>
@@ -266,26 +267,26 @@ export default function ServersPage() {
                   <Shield className="size-[18px] text-emerald-500" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-foreground text-[15px]">Quick Info</h2>
-                  <p className="text-xs text-muted-foreground">Server overview</p>
+                  <h2 className="font-semibold text-foreground text-[15px]">{t.servers.list.quickInfo}</h2>
+                  <p className="text-xs text-muted-foreground">{t.servers.list.serverOverview}</p>
                 </div>
               </div>
               <div className="p-5">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Servers</span>
+                    <span className="text-sm text-muted-foreground">{t.servers.list.totalServers}</span>
                     <span className="text-sm font-medium text-foreground">
                       {loading ? "…" : servers.length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Connected</span>
+                    <span className="text-sm text-muted-foreground">{t.servers.list.connectedLabel}</span>
                     <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                       {loading ? "…" : servers.filter((s) => s.status === "connected").length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Errors</span>
+                    <span className="text-sm text-muted-foreground">{t.servers.list.errors}</span>
                     <span className="text-sm font-medium text-red-600 dark:text-red-400">
                       {loading ? "…" : servers.filter((s) => s.status === "error").length}
                     </span>

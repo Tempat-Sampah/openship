@@ -20,6 +20,7 @@ import {
   type ResourceType,
 } from "@/lib/api";
 import { ResourcePicker } from "@/components/permissions/ResourcePicker";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type MemberRole = "owner" | "admin" | "member" | "restricted";
 type MailSource = "platform" | "cloud";
@@ -44,6 +45,7 @@ export function InviteMemberModal({
   onClose: () => void;
 }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("member");
   const [grants, setGrants] = useState<PickerGrant[]>([]);
@@ -60,7 +62,7 @@ export function InviteMemberModal({
       await api.patch("system/settings", { invitationMailSource: next });
     } catch (err) {
       setMailSource(prev);
-      showToast(getApiErrorMessage(err, "Failed to update mail source"), "error", "Settings");
+      showToast(getApiErrorMessage(err, t.settings.inviteMember.toast.updateMailSourceFailed), "error", t.settings.common.toast.settings);
     } finally {
       setSavingMailSource(false);
     }
@@ -75,15 +77,15 @@ export function InviteMemberModal({
       } else {
         const res = await orgClient.inviteMember({ email: email.trim(), role });
         if (res.error) {
-          showToast(res.error.message ?? "Failed to send invite", "error", "Invitation");
+          showToast(res.error.message ?? t.settings.inviteMember.toast.failedSend, "error", t.settings.common.toast.invitation);
           return;
         }
       }
-      showToast(`Invitation sent to ${email}`, "success", "Invitation");
+      showToast(interpolate(t.settings.inviteMember.toast.invitationSent, { email }), "success", t.settings.common.toast.invitation);
       onInvited();
       onClose();
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to send invite"), "error", "Invitation");
+      showToast(getApiErrorMessage(err, t.settings.inviteMember.toast.failedSend), "error", t.settings.common.toast.invitation);
     } finally {
       setInviting(false);
     }
@@ -96,24 +98,24 @@ export function InviteMemberModal({
   const formFields = (
     <>
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground block">Email</label>
+        <label className="text-sm font-medium text-foreground block">{t.settings.inviteMember.email}</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="teammate@example.com"
+          placeholder={t.settings.inviteMember.emailPlaceholder}
           disabled={inviting}
           className="w-full px-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground block">Role</label>
+        <label className="text-sm font-medium text-foreground block">{t.settings.inviteMember.role}</label>
         <div className="space-y-2">
           <RoleCard
             icon={UsersIcon}
-            title="Member"
-            description="Read + write to all resources in this organization."
+            title={t.settings.inviteMember.roleMemberTitle}
+            description={t.settings.inviteMember.roleMemberDesc}
             selected={role === "member"}
             disabled={inviting}
             onClick={() => {
@@ -123,8 +125,8 @@ export function InviteMemberModal({
           />
           <RoleCard
             icon={Shield}
-            title="Admin"
-            description="Everything Member can do, plus manage members + billing."
+            title={t.settings.inviteMember.roleAdminTitle}
+            description={t.settings.inviteMember.roleAdminDesc}
             selected={role === "admin"}
             disabled={inviting}
             onClick={() => {
@@ -134,14 +136,17 @@ export function InviteMemberModal({
           />
           <RoleCard
             icon={Lock}
-            title="Restricted"
-            description="No default access — pick exactly which resources to unlock."
+            title={t.settings.inviteMember.roleRestrictedTitle}
+            description={t.settings.inviteMember.roleRestrictedDesc}
             selected={restricted}
             disabled={inviting}
             onClick={() => setRole("restricted")}
             badge={
               restricted && grants.length > 0
-                ? `${grants.length} grant${grants.length === 1 ? "" : "s"}`
+                ? interpolate(
+                    grants.length === 1 ? t.settings.inviteMember.grantsOne : t.settings.inviteMember.grantsMany,
+                    { count: String(grants.length) },
+                  )
                 : undefined
             }
           />
@@ -151,7 +156,7 @@ export function InviteMemberModal({
       {/* Mail source — self-hosted only (SaaS always sends via cloud). */}
       {selfHosted && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground block">Send via</label>
+          <label className="text-sm font-medium text-foreground block">{t.settings.inviteMember.sendVia}</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -165,7 +170,7 @@ export function InviteMemberModal({
               }`}
             >
               <Send className="size-3.5" />
-              Your mail server
+              {t.settings.inviteMember.yourMailServer}
             </button>
             <button
               type="button"
@@ -179,7 +184,7 @@ export function InviteMemberModal({
               }`}
             >
               <Cloud className="size-3.5" />
-              Openship Cloud
+              {t.settings.inviteMember.openshipCloud}
             </button>
           </div>
         </div>
@@ -191,10 +196,9 @@ export function InviteMemberModal({
   const pickerPane = (
     <div className="space-y-3">
       <div>
-        <h4 className="text-sm font-semibold text-foreground">Initial resource access</h4>
+        <h4 className="text-sm font-semibold text-foreground">{t.settings.inviteMember.pickerTitle}</h4>
         <p className="text-xs text-muted-foreground mt-1">
-          Restricted members start with no access. Pick what this invite unlocks once
-          accepted — you can grant more later from the member&apos;s row.
+          {t.settings.inviteMember.pickerDesc}
         </p>
       </div>
       <ResourcePicker
@@ -214,17 +218,17 @@ export function InviteMemberModal({
       }`}
     >
       <div className="p-6 border-b border-border/50">
-        <h3 className="text-lg font-semibold text-foreground">Invite a member</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t.settings.inviteMember.headerTitle}</h3>
         <p className="text-sm text-muted-foreground mt-1">
           {restricted
-            ? "Set their role on the left, then pick exactly what they can reach on the right."
-            : "We'll email them a link to join this organization."}
+            ? t.settings.inviteMember.headerDescRestricted
+            : t.settings.inviteMember.headerDescDefault}
         </p>
       </div>
 
       {restricted ? (
         <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-          <div className="overflow-y-auto p-6 space-y-5 md:border-r border-border/50">
+          <div className="overflow-y-auto p-6 space-y-5 md:border-e border-border/50">
             {formFields}
           </div>
           <div className="overflow-y-auto p-6">{pickerPane}</div>
@@ -240,7 +244,7 @@ export function InviteMemberModal({
           disabled={inviting}
           className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
-          Cancel
+          {t.settings.common.cancel}
         </button>
         <button
           type="button"
@@ -249,7 +253,7 @@ export function InviteMemberModal({
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
           {inviting && <Loader2 className="size-4 animate-spin" />}
-          Send invite
+          {t.settings.inviteMember.sendInvite}
         </button>
       </div>
     </div>
@@ -279,7 +283,7 @@ function RoleCard({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      className={`w-full text-left flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-all disabled:opacity-50 ${
+      className={`w-full text-start flex items-start gap-3 rounded-xl border px-3.5 py-3 transition-all disabled:opacity-50 ${
         selected
           ? "border-primary/40 bg-primary/[0.06]"
           : "border-border/50 bg-muted/[0.05] hover:bg-muted/15 hover:border-border"

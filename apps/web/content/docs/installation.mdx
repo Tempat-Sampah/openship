@@ -16,42 +16,54 @@ Openship runs on any Linux server. You can self-host it or use Openship Cloud.
 | Disk | 20 GB | 50+ GB SSD |
 | OS | Ubuntu 22.04+ | Ubuntu 24.04 |
 
-### One-line install
+### Install the CLI
+
+<InstallTabs />
+
+Already have a package manager? Any of these work too:
 
 ```bash
-curl -fsSL https://get.openship.io | sh
+npm i -g openship    # or: pnpm add -g openship  /  yarn global add openship  /  bun add -g openship
 ```
+
+<Callout title="Windows">
+The `curl | sh` one-liner targets Linux and macOS. On Windows, use the **Windows** tab above (PowerShell), run the Linux command inside **WSL**, or grab the [desktop app](/download).
+</Callout>
+
+### Run it
+
+```bash
+openship up
+```
+
+This starts the full platform locally — the API on `:4000` and the dashboard on `:3001` (downloaded on first run) — backed by an embedded database, with no external services to configure. Local access needs no login. Pass `--no-ui` for API-only.
 
 ### Docker Compose
 
-```yaml
-version: "3.8"
-services:
-  openship:
-    image: ghcr.io/oblien/openship:latest
-    ports:
-      - "3000:3000"
-      - "443:443"
-      - "80:80"
-    volumes:
-      - openship-data:/data
-    restart: unless-stopped
-
-volumes:
-  openship-data:
-```
+Prefer containers? Clone the repo and use the bundled multi-service stack (Postgres, Redis, API, dashboard, and the marketing/docs site):
 
 ```bash
+git clone https://github.com/oblien/openship.git
+cd openship
+cp .env.example .env          # then edit the secrets
 docker compose up -d
 ```
 
+This brings up the dashboard on `:3001` and the API on `:4000`.
+
 ### Verify
+
+With a local instance running, open the dashboard:
+
+```bash
+openship open
+```
+
+Or check the API health from the CLI:
 
 ```bash
 openship status
 ```
-
-You should see `Openship daemon running` with the dashboard URL.
 
 ## Desktop app
 
@@ -84,7 +96,7 @@ No FUSE available? Run it self-extracting instead:
 ### macOS & Windows
 
 - **macOS** — [Apple Silicon](https://github.com/oblien/openship/releases/latest/download/Openship-arm64.dmg) · [Intel](https://github.com/oblien/openship/releases/latest/download/Openship-x64.dmg)
-- **Windows** — [Openship-Setup.exe](https://github.com/oblien/openship/releases/latest/download/Openship-Setup.exe)
+- **Windows** — [Openship-win32-x64.zip](https://github.com/oblien/openship/releases/latest/download/Openship-win32-x64.zip)
 
 ## Openship Cloud
 

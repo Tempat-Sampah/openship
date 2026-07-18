@@ -37,11 +37,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
   const [resolvedTheme, setResolved] = useState<ResolvedTheme>("light");
 
-  // Initialize from localStorage. No stored preference → light (product
-  // default is light-first, not OS-following).
+  // Initialize from localStorage. An explicit stored choice always wins. With
+  // no stored preference: the DESKTOP app follows the OS ("system"), while the
+  // web product stays light-first. (The desktop window is a native app — users
+  // expect it to respect their macOS/Windows appearance.)
   useEffect(() => {
     const stored = localStorage.getItem("theme") as Theme | null;
-    const t: Theme = stored === "light" || stored === "dark" ? stored : "light";
+    const isDesktop = !!(window as { desktop?: { isDesktop?: boolean } }).desktop?.isDesktop;
+    const t: Theme =
+      stored === "light" || stored === "dark" || stored === "system"
+        ? stored
+        : isDesktop
+          ? "system"
+          : "light";
     const resolved = resolveTheme(t);
     setThemeState(t);
     setResolved(resolved);
@@ -84,9 +92,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function ThemeScript() {
   const script = `
     (function(){
-      var t = localStorage.getItem('theme');
-      // Default to light unless the user explicitly stored dark.
-      document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      try {
+        var t = localStorage.getItem('theme');
+        // window.desktop is injected by the Electron preload before this runs.
+        var isDesktop = !!(window.desktop && window.desktop.isDesktop);
+        var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved;
+        if (t === 'dark') resolved = 'dark';
+        else if (t === 'light') resolved = 'light';
+        else if (t === 'system') resolved = sysDark ? 'dark' : 'light';
+        // No stored pref: desktop follows the OS, web stays light-first.
+        else resolved = (isDesktop && sysDark) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', resolved);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
     })();
   `;
   return <script dangerouslySetInnerHTML={{ __html: script }} />;

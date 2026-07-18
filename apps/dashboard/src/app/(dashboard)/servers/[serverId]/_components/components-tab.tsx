@@ -13,6 +13,7 @@ import type {
   SetupComponentProgress,
   SetupLogEvent,
 } from "@/lib/api/system";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 function HealthRow({
   component,
@@ -27,8 +28,9 @@ function HealthRow({
   onRunAction: (component: ComponentStatus) => void;
   onRemoveAction: (component: ComponentStatus) => void;
 }) {
+  const { t } = useI18n();
   const canRunAction = component.installable;
-  const actionLabel = component.healthy || component.installed ? "Reinstall" : "Install";
+  const actionLabel = component.healthy || component.installed ? t.servers.components.reinstall : t.servers.components.install;
   const canRemove = component.removable && component.installed;
   const removeDisabled = busy || component.removeSupported === false;
 
@@ -80,7 +82,7 @@ function HealthRow({
               ) : (
                 <Download className="size-3.5" />
               )}
-              {running ? "Running..." : actionLabel}
+              {running ? t.servers.components.running : actionLabel}
             </button>
           )}
           {canRemove && (
@@ -95,7 +97,7 @@ function HealthRow({
               ) : (
                 <XCircle className="size-3.5" />
               )}
-              {running ? "Running..." : component.removeSupported === false ? "Unsupported" : "Remove"}
+              {running ? t.servers.components.running : component.removeSupported === false ? t.servers.components.unsupported : t.servers.components.remove}
             </button>
           )}
         </div>
@@ -137,6 +139,7 @@ export function ComponentsTab({
   installLogs: SetupLogEvent[];
   onDismissInstall: () => void;
 }) {
+  const { t } = useI18n();
   const [logsExpanded, setLogsExpanded] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -152,15 +155,15 @@ export function ComponentsTab({
   const progressTitle = actionMode === "remove"
     ? installDone
       ? installFinalStatus === "completed"
-        ? "Removal Complete"
-        : "Removal Finished with Errors"
-      : "Removing\u2026"
+        ? t.servers.components.removalComplete
+        : t.servers.components.removalFinishedErrors
+      : t.servers.components.removing
     : installDone
       ? installFinalStatus === "completed"
-        ? "Install Complete"
-        : "Install Finished with Errors"
-      : "Installing\u2026";
-  const progressLogsLabel = actionMode === "remove" ? "Removal Logs" : "Install Logs";
+        ? t.servers.components.installComplete
+        : t.servers.components.installFinishedErrors
+      : t.servers.components.installing;
+  const progressLogsLabel = actionMode === "remove" ? t.servers.components.removalLogs : t.servers.components.installLogs;
 
   useEffect(() => {
     if (logsExpanded && logEndRef.current) {
@@ -178,10 +181,10 @@ export function ComponentsTab({
           </div>
           <div className="flex-1">
             <h2 className="font-semibold text-foreground text-[15px]">
-              System Health
+              {t.servers.components.systemHealth}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Required components &amp; services
+              {t.servers.components.requiredComponents}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -196,10 +199,10 @@ export function ComponentsTab({
                 <Download className="size-3.5" />
               )}
               {busy
-                ? actionMode === "remove" ? "Removing\u2026" : "Installing\u2026"
+                ? actionMode === "remove" ? t.servers.components.removing : t.servers.components.installing
                 : unhealthyInstallableCount > 0
-                  ? `Install Missing (${unhealthyInstallableCount})`
-                  : "All installed"}
+                  ? interpolate(t.servers.components.installMissing, { count: String(unhealthyInstallableCount) })
+                  : t.servers.components.allInstalled}
             </button>
             <button
               onClick={onRecheck}
@@ -211,7 +214,7 @@ export function ComponentsTab({
               ) : (
                 <RotateCcw className="size-3.5" />
               )}
-              {checking ? "Checking\u2026" : "Re-check"}
+              {checking ? t.servers.components.checking : t.servers.components.recheck}
             </button>
           </div>
         </div>
@@ -230,7 +233,7 @@ export function ComponentsTab({
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
-                  Running health checks\u2026
+                  {t.servers.components.runningHealthChecks}
                 </p>
               </div>
             </div>
@@ -251,7 +254,7 @@ export function ComponentsTab({
                   <div className="flex items-center gap-2 pt-3 pb-1">
                     <div className="h-px flex-1 bg-border/50" />
                     <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">
-                      Detected Infrastructure
+                      {t.servers.components.detectedInfrastructure}
                     </span>
                     <div className="h-px flex-1 bg-border/50" />
                   </div>
@@ -270,7 +273,7 @@ export function ComponentsTab({
             </>
           ) : !checkError ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No health data yet
+              {t.servers.components.noHealthData}
             </p>
           ) : null}
         </div>
@@ -304,8 +307,10 @@ export function ComponentsTab({
                 {progressTitle}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {completedCount}
-                /{streamComponents.length} components
+                {interpolate(t.servers.components.componentsCount, {
+                  completed: String(completedCount),
+                  total: String(streamComponents.length),
+                })}
               </p>
             </div>
             {installDone && (
@@ -313,7 +318,7 @@ export function ComponentsTab({
                 onClick={onDismissInstall}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                Dismiss
+                {t.servers.components.dismiss}
               </button>
             )}
           </div>
@@ -362,7 +367,7 @@ export function ComponentsTab({
                   {comp.label}
                 </span>
                 <span
-                  className={`ml-auto text-xs ${
+                  className={`ms-auto text-xs ${
                     comp.status === "installing" || comp.status === "removing"
                       ? "text-primary"
                       : comp.status === "installed" || comp.status === "removed"
@@ -373,16 +378,16 @@ export function ComponentsTab({
                   }`}
                 >
                   {comp.status === "installing"
-                    ? "Installing\u2026"
+                    ? t.servers.components.statusInstalling
                     : comp.status === "removing"
-                      ? "Removing\u2026"
+                      ? t.servers.components.statusRemoving
                     : comp.status === "installed"
-                      ? "Installed"
+                      ? t.servers.components.statusInstalled
                     : comp.status === "removed"
-                      ? "Removed"
+                      ? t.servers.components.statusRemoved
                       : comp.status === "failed"
-                        ? comp.error || "Failed"
-                        : "Waiting"}
+                        ? comp.error || t.servers.components.statusFailed
+                        : t.servers.components.statusWaiting}
                 </span>
               </div>
             ))}
@@ -408,7 +413,7 @@ export function ComponentsTab({
                         key={i}
                         className="flex items-start gap-2 text-xs font-mono leading-5"
                       >
-                        <span className="w-[90px] shrink-0 text-muted-foreground/50 select-none truncate text-right">
+                        <span className="w-[90px] shrink-0 text-muted-foreground/50 select-none truncate text-end">
                           {entry.component}
                         </span>
                         <span

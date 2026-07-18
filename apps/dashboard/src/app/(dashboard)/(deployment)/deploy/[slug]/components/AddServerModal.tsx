@@ -14,6 +14,7 @@ import {
 import { getApiErrorMessage, systemApi } from "@/lib/api";
 import type { ServerInfo } from "@/lib/api/system";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 
 const INPUT =
   "w-full px-3.5 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none transition-all focus:ring-2 focus:ring-primary/20";
@@ -31,6 +32,8 @@ interface AddServerModalProps {
 // immediately.
 export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const tr = t.deploy.addServer;
 
   const [serverName, setServerName] = useState("");
   const [sshHost, setSshHost] = useState("");
@@ -50,15 +53,15 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
 
   async function handleTest() {
     if (!sshHost.trim()) {
-      showToast("Server IP address is required", "error", "Server");
+      showToast(tr.ipRequired, "error", tr.toastTitle);
       return;
     }
     if (sshAuthMethod === "password" && !sshPassword) {
-      showToast("Password is required to test connection", "error", "Server");
+      showToast(tr.passwordRequiredTest, "error", tr.toastTitle);
       return;
     }
     if (sshAuthMethod === "key" && !sshKeyPath) {
-      showToast("Key path is required to test connection", "error", "Server");
+      showToast(tr.keyRequiredTest, "error", tr.toastTitle);
       return;
     }
 
@@ -81,12 +84,12 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
       const result = await systemApi.testConnection(payload);
       setTestOk(result.ok);
       if (result.ok) {
-        showToast("Connection successful", "success", "Server");
+        showToast(tr.connectionSuccessful, "success", tr.toastTitle);
       } else {
-        showToast(result.message || "Connection failed", "error", "Server");
+        showToast(result.message || tr.connectionFailed, "error", tr.toastTitle);
       }
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Connection test failed"), "error", "Server");
+      showToast(getApiErrorMessage(err, tr.connectionTestFailed), "error", tr.toastTitle);
     } finally {
       setTesting(false);
     }
@@ -94,15 +97,15 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
 
   async function handleSave() {
     if (!sshHost.trim()) {
-      showToast("Server IP address is required", "error", "Server");
+      showToast(tr.ipRequired, "error", tr.toastTitle);
       return;
     }
     if (sshAuthMethod === "password" && !sshPassword) {
-      showToast("Password is required", "error", "Server");
+      showToast(tr.passwordRequired, "error", tr.toastTitle);
       return;
     }
     if (sshAuthMethod === "key" && !sshKeyPath) {
-      showToast("Key path is required", "error", "Server");
+      showToast(tr.keyRequired, "error", tr.toastTitle);
       return;
     }
 
@@ -125,10 +128,10 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
         if (sshKeyPassphrase) data.sshKeyPassphrase = sshKeyPassphrase;
       }
       const created = await systemApi.createServerEntry(data);
-      showToast("Server saved", "success", "Server");
+      showToast(tr.serverSaved, "success", tr.toastTitle);
       onCreated(created);
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to save server"), "error", "Server");
+      showToast(getApiErrorMessage(err, tr.saveFailed), "error", tr.toastTitle);
     } finally {
       setSaving(false);
     }
@@ -147,10 +150,10 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
           </div>
           <div className="min-w-0">
             <h2 className="font-semibold text-foreground text-[15px] truncate">
-              Add your server
+              {tr.title}
             </h2>
             <p className="text-xs text-muted-foreground truncate">
-              Connect via SSH. You can finish setup later.
+              {tr.subtitle}
             </p>
           </div>
         </div>
@@ -167,24 +170,24 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
       {/* Body */}
       <div className="p-5 space-y-[18px] max-h-[70vh] overflow-y-auto">
         <div>
-          <label className={LABEL}>Server Name</label>
+          <label className={LABEL}>{tr.serverName}</label>
           <input
             type="text"
             value={serverName}
             onChange={(e) => setServerName(e.target.value)}
-            placeholder={sshHost.trim() || "e.g. Production, Staging, Dev..."}
+            placeholder={sshHost.trim() || tr.serverNamePlaceholder}
             spellCheck={false}
             autoComplete="off"
             className={INPUT}
           />
           <p className="text-xs text-muted-foreground/60 mt-1.5">
-            Optional label shown in the picker.
+            {tr.serverNameHint}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
           <div>
-            <label className={LABEL}>Server IP Address</label>
+            <label className={LABEL}>{tr.serverIp}</label>
             <input
               type="text"
               value={sshHost}
@@ -196,7 +199,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
             />
           </div>
           <div>
-            <label className={LABEL}>Port</label>
+            <label className={LABEL}>{tr.port}</label>
             <input
               type="text"
               value={sshPort}
@@ -208,7 +211,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
         </div>
 
         <div>
-          <label className={LABEL}>Username</label>
+          <label className={LABEL}>{tr.username}</label>
           <input
             type="text"
             value={sshUser}
@@ -221,7 +224,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
         </div>
 
         <div>
-          <label className={LABEL}>Authentication</label>
+          <label className={LABEL}>{tr.authentication}</label>
           <div className="flex gap-1 bg-muted/50 rounded-[10px] p-[3px] mb-3">
             <button
               type="button"
@@ -233,7 +236,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
               }`}
             >
               <Lock className="size-3.5" />
-              Password
+              {tr.password}
             </button>
             <button
               type="button"
@@ -245,7 +248,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
               }`}
             >
               <KeyRound className="size-3.5" />
-              SSH Key
+              {tr.sshKey}
             </button>
             <button
               type="button"
@@ -257,18 +260,18 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
               }`}
             >
               <Network className="size-3.5" />
-              Agent
+              {tr.agent}
             </button>
           </div>
 
           {sshAuthMethod === "password" ? (
             <div>
-              <label className={LABEL}>Password</label>
+              <label className={LABEL}>{tr.password}</label>
               <input
                 type="password"
                 value={sshPassword}
                 onChange={(e) => setSshPassword(e.target.value)}
-                placeholder="Enter server password"
+                placeholder={tr.passwordPlaceholder}
                 autoComplete="off"
                 className={INPUT}
               />
@@ -277,16 +280,15 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
             <div className="flex items-start gap-2.5 rounded-xl border border-border/50 bg-muted/30 px-3.5 py-3">
               <Network className="size-4 shrink-0 mt-0.5 text-primary" />
               <p className="text-[13px] leading-relaxed text-muted-foreground">
-                Connects using this machine&apos;s SSH agent — like VSCode, no
-                password or key needed. The host running Openship must already
-                have access to this server (a key loaded in its{" "}
-                <span className="text-foreground/80">ssh-agent</span>).
+                {tr.agentInfoLead}
+                <span className="text-foreground/80">ssh-agent</span>
+                {tr.agentInfoTail}
               </p>
             </div>
           ) : (
             <div className="space-y-[18px]">
               <div>
-                <label className={LABEL}>Key Path</label>
+                <label className={LABEL}>{tr.keyPath}</label>
                 <input
                   type="text"
                   value={sshKeyPath}
@@ -299,14 +301,14 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
               </div>
               <div>
                 <label className={LABEL}>
-                  Passphrase{" "}
-                  <span className="text-muted-foreground/50 font-normal">(optional)</span>
+                  {tr.passphrase}{" "}
+                  <span className="text-muted-foreground/50 font-normal">{tr.optional}</span>
                 </label>
                 <input
                   type="password"
                   value={sshKeyPassphrase}
                   onChange={(e) => setSshKeyPassphrase(e.target.value)}
-                  placeholder="Enter passphrase or leave blank"
+                  placeholder={tr.passphrasePlaceholder}
                   autoComplete="off"
                   className={INPUT}
                 />
@@ -323,15 +325,15 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
           <ChevronDown
             className={`size-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
           />
-          Advanced
+          {tr.advanced}
         </button>
 
         {showAdvanced && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>
-                Jump Host{" "}
-                <span className="text-muted-foreground/50 font-normal">(optional)</span>
+                {tr.jumpHost}{" "}
+                <span className="text-muted-foreground/50 font-normal">{tr.optional}</span>
               </label>
               <input
                 type="text"
@@ -345,8 +347,8 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
             </div>
             <div>
               <label className={LABEL}>
-                Extra SSH Args{" "}
-                <span className="text-muted-foreground/50 font-normal">(optional)</span>
+                {tr.extraArgs}{" "}
+                <span className="text-muted-foreground/50 font-normal">{tr.optional}</span>
               </label>
               <input
                 type="text"
@@ -377,7 +379,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
           ) : (
             <Network className="size-4" />
           )}
-          {testing ? "Testing…" : testOk ? "Connected" : "Test Connection"}
+          {testing ? tr.testing : testOk ? tr.connected : tr.testConnection}
         </button>
         <button
           type="button"
@@ -386,7 +388,7 @@ export function AddServerModal({ onCancel, onCreated }: AddServerModalProps) {
           className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-          {saving ? "Saving…" : "Save server"}
+          {saving ? tr.savingServer : tr.saveServer}
         </button>
       </div>
     </div>

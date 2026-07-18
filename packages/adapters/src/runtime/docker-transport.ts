@@ -1,8 +1,7 @@
 import Dockerode from "dockerode";
-import http from "node:http";
 import type { CommandExecutor } from "../types";
 
-import { createDockerSshAgent, verifyDockerSshBridge } from "./docker-ssh-agent";
+import { createDockerSshBridge, verifyDockerSshBridge, type DockerSshBridge } from "./docker-ssh-agent";
 
 export interface DockerConnectionOptions {
   /** Transport type */
@@ -48,15 +47,14 @@ export interface DockerConnectionOptions {
   timeout?: number;
 }
 
-type DockerSshOptions = Dockerode.DockerOptions & {
-  agent?: http.Agent;
-};
-
 export interface DockerTransport {
   kind: "socket" | "ssh" | "tcp";
   description: string;
   unreachableHint: string;
-  dockerodeOptions: Dockerode.DockerOptions;
+  /** Resolve dockerode options, standing up any transport machinery (e.g. the SSH bridge). */
+  establish: () => Promise<Dockerode.DockerOptions>;
+  /** Tear down machinery created by establish(). Idempotent; safe to call when never established. */
+  close: () => Promise<void>;
   preflight: () => Promise<void>;
 }
 
@@ -66,7 +64,8 @@ export function resolveDockerTransport(opts?: DockerConnectionOptions): DockerTr
       kind: "socket",
       description: "local Docker daemon via socket",
       unreachableHint: "Check that the local Docker daemon is running.",
-      dockerodeOptions: { socketPath: "/var/run/docker.sock" },
+      establish: async () => ({ socketPath: "/var/run/docker.sock" }),
+      close: async () => {},
       preflight: async () => {},
     };
   }
@@ -76,18 +75,27 @@ export function resolveDockerTransport(opts?: DockerConnectionOptions): DockerTr
       throw new Error("SSH transport requires one of privateKey, sshAgent, or password.");
     }
 
+    let bridge: DockerSshBridge | null = null;
+
     return {
       kind: "ssh",
       description: `remote Docker daemon via SSH (${opts.host ?? "unknown-host"})`,
       unreachableHint:
         "Check that SSH credentials are correct, the remote Docker socket exists, the SSH server supports streamlocal forwarding, and the SSH user has permission to access the Docker socket.",
-      dockerodeOptions: {
-        protocol: "http",
-        host: "docker-ssh",
-        port: 80,
-        agent: createDockerSshAgent(opts),
-        timeout: opts.timeout ?? 600_000,
-      } as DockerSshOptions,
+      establish: async () => {
+        bridge = createDockerSshBridge(opts);
+        const { host, port } = await bridge.start();
+        return {
+          protocol: "http",
+          host,
+          port,
+          timeout: opts.timeout ?? 600_000,
+        };
+      },
+      close: async () => {
+        bridge?.close();
+        bridge = null;
+      },
       preflight: async () => verifyDockerSshBridge(opts),
     };
   }
@@ -102,7 +110,7 @@ export function resolveDockerTransport(opts?: DockerConnectionOptions): DockerTr
     kind: "tcp",
     description: `remote Docker daemon via TLS (${opts.host ?? "unknown-host"}:${opts.port ?? 2376})`,
     unreachableHint: "Check that the remote Docker daemon is reachable and the TLS certificates are valid.",
-    dockerodeOptions: {
+    establish: async () => ({
       protocol: "https",
       host: opts.host,
       port: opts.port ?? 2376,
@@ -110,7 +118,8 @@ export function resolveDockerTransport(opts?: DockerConnectionOptions): DockerTr
       cert: opts.cert as string | undefined,
       key: opts.key as string | undefined,
       timeout: opts.timeout ?? 30_000,
-    },
+    }),
+    close: async () => {},
     preflight: async () => {},
   };
 }

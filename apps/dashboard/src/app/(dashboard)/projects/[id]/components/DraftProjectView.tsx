@@ -37,8 +37,10 @@ import {
 } from "lucide-react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { projectsApi } from "@/lib/api";
-import { getProjectStatus, PROJECT_STATUS_META, type ProjectStatus } from "@/utils/project-status";
+import { getProjectStatus, PROJECT_STATUS_META, projectStatusLabel, type ProjectStatus } from "@/utils/project-status";
 import { encodeLocalSlug, encodeRepoSlug } from "@/utils/repoSlug";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 
 interface DraftProjectViewProps {
   /** Deletes the project. Page passes its handleDeleteProject (defaults:
@@ -64,20 +66,21 @@ const ATTEMPT_STATUSES: ProjectStatus[] = [
   "live",
 ];
 
-function relativeTime(iso?: string): string {
+function relativeTime(iso: string | undefined, t: Dictionary): string {
   if (!iso) return "";
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return "";
-  const m = Math.round((Date.now() - t) / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return "";
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return t.projects.time.justNow;
+  if (m < 60) return interpolate(t.projects.time.minutesAgo, { count: String(m) });
   const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
+  if (h < 24) return interpolate(t.projects.time.hoursAgo, { count: String(h) });
+  return interpolate(t.projects.time.daysAgo, { count: String(Math.round(h / 24)) });
 }
 
 export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
   const { id, projectData, setActiveTab } = useProjectSettings();
+  const { t } = useI18n();
   const router = useRouter();
 
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
@@ -128,14 +131,14 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
 
   const heading =
     status === "failed"
-      ? "Last deploy didn't finish"
+      ? t.projects.draft.headingFailed
       : status === "cancelled"
-        ? "Deploy was cancelled"
-        : "Ready to deploy";
+        ? t.projects.draft.headingCancelled
+        : t.projects.draft.headingReady;
   const subtext =
     status === "draft"
-      ? "This project hasn't been deployed yet. Deploy it to get a live URL, logs, and analytics."
-      : "This project has no live deployment yet. Review the source and try again.";
+      ? t.projects.draft.subtextDraft
+      : t.projects.draft.subtextOther;
 
   const confirmDelete = async () => {
     setDeleting(true);
@@ -165,7 +168,7 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
                   className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.badge}`}
                 >
                   <span className={`size-1.5 rounded-full ${meta.dot}`} />
-                  {meta.label}
+                  {projectStatusLabel(status, t)}
                 </span>
               </div>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{subtext}</p>
@@ -176,14 +179,14 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <Rocket className="size-4" />
-                  {hasSource ? "Deploy now" : "Connect a source"}
+                  {hasSource ? t.projects.draft.deployNow : t.projects.draft.connectSource}
                 </button>
                 <button
                   onClick={() => setActiveTab("settings")}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   <Settings className="size-4" />
-                  Settings
+                  {t.projects.draft.settings}
                 </button>
               </div>
             </div>
@@ -196,8 +199,8 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
         {attempts.length > 0 && (
           <SectionCard
             icon={ListChecks}
-            title="Deploy attempts"
-            description="Every build for this project — click one to open it"
+            title={t.projects.draft.attemptsTitle}
+            description={t.projects.draft.attemptsDescription}
           >
             <div className="-mx-2 space-y-0.5">
               {attempts.map((d) => {
@@ -211,14 +214,14 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
                     key={d.id}
                     type="button"
                     onClick={() => router.push(`/build/${d.id}`)}
-                    className="group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-foreground/[0.05]"
+                    className="group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-start transition-colors hover:bg-foreground/[0.05]"
                   >
                     <div className="flex min-w-0 items-center gap-2.5">
                       <span
                         className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${am.badge}`}
                       >
                         <span className={`size-1.5 rounded-full ${am.dot}`} />
-                        {am.label}
+                        {projectStatusLabel(s, t)}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">
                         {commit && <span className="font-mono">{commit}</span>}
@@ -228,9 +231,9 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="text-[11px] text-muted-foreground/70">
-                        {relativeTime(d.createdAt)}
+                        {relativeTime(d.createdAt, t)}
                       </span>
-                      <ChevronRight className="size-4 text-muted-foreground/40 transition-colors group-hover:text-foreground" />
+                      <ChevronRight className="size-4 text-muted-foreground/40 transition-colors group-hover:text-foreground rtl:rotate-180" />
                     </div>
                   </button>
                 );
@@ -244,58 +247,65 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
       <div className="space-y-5">
         <SectionCard
           icon={hasRepoSource ? Github : FolderCode}
-          title="Source"
-          description="Where this project deploys from"
+          title={t.projects.draft.sourceTitle}
+          description={t.projects.draft.sourceDescription}
         >
           {hasSource ? (
             <div className="space-y-3">
               {hasRepoSource && (
-                <InfoRow label="Repository" value={`${projectData.gitOwner}/${projectData.gitRepo}`} />
+                <InfoRow label={t.projects.draft.repository} value={`${projectData.gitOwner}/${projectData.gitRepo}`} />
               )}
               {hasRepoSource && projectData.gitBranch && (
-                <InfoRow label="Branch" value={String(projectData.gitBranch)} />
+                <InfoRow label={t.projects.draft.branch} value={String(projectData.gitBranch)} />
               )}
-              {hasLocalSource && <InfoRow label="Local path" value={String(projectData.localPath)} />}
+              {hasLocalSource && <InfoRow label={t.projects.draft.localPath} value={String(projectData.localPath)} />}
               {projectData?.framework && (
-                <InfoRow label="Framework" value={String(projectData.framework)} />
+                <InfoRow label={t.projects.draft.framework} value={String(projectData.framework)} />
               )}
               {projectData?.options?.buildCommand && (
                 <InfoRow
-                  label="Build"
+                  label={t.projects.draft.build}
                   value={`${projectData.options.buildCommand}${projectData.options.outputDirectory ? ` → ${projectData.options.outputDirectory}` : ""}`}
                 />
               )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No source connected yet.{" "}
+              {t.projects.draft.noSourceText}{" "}
               <button
                 onClick={() => setActiveTab("settings")}
                 className="font-medium text-primary hover:underline"
               >
-                Connect a repository or local path
+                {t.projects.draft.connectLink}
               </button>
               .
             </p>
           )}
         </SectionCard>
 
-        {/* Delete — de-emphasized. A quiet muted trigger (nothing is
-            provisioned for a draft), escalating to a red confirm only when the
-            user opts in. No permanent red card competing with the deploy CTA. */}
-        <SectionCard icon={Trash2} title="Delete project" description="Remove this project — can't be undone">
-          {!confirmOpen ? (
-            <button
-              onClick={() => setConfirmOpen(true)}
-              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-red-600 dark:hover:text-red-400"
-            >
-              <Trash2 className="size-4" />
-              Delete project
-            </button>
-          ) : (
+        {/* Delete — de-emphasized. The section header owns the icon/title/
+            "can't be undone" copy; a single quiet trigger lives in the header's
+            action slot (right), escalating to a red confirm in the body only
+            when the user opts in — no duplicated "Delete project" row. */}
+        <SectionCard
+          icon={Trash2}
+          title={t.projects.draft.deleteTitle}
+          description={t.projects.draft.deleteDescription}
+          action={
+            confirmOpen ? undefined : (
+              <button
+                onClick={() => setConfirmOpen(true)}
+                className="inline-flex shrink-0 items-center rounded-xl border border-border/60 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-red-600/40 hover:text-red-600 dark:hover:text-red-400"
+              >
+                {t.projects.draft.delete}
+              </button>
+            )
+          }
+        >
+          {confirmOpen && (
             <div className="space-y-3">
               <p className="text-sm text-foreground">
-                Permanently delete <span className="font-medium">{projectData?.name}</span>?
+                {t.projects.draft.deleteConfirmPrefix} <span className="font-medium">{projectData?.name}</span>{t.projects.draft.deleteConfirmSuffix}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -303,7 +313,7 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
                   disabled={deleting}
                   className="flex-1 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
                 >
-                  Cancel
+                  {t.projects.draft.cancel}
                 </button>
                 <button
                   onClick={confirmDelete}
@@ -311,7 +321,7 @@ export function DraftProjectView({ onDeleteProject }: DraftProjectViewProps) {
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
                 >
                   {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-                  Delete
+                  {t.projects.draft.delete}
                 </button>
               </div>
             </div>

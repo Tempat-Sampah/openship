@@ -57,7 +57,7 @@ const PILLARS: Pillar[] = [
   },
   {
     title: "Open source & auditable",
-    desc: "Openship is open source under AGPL-3. The security boundary, permission plane, and gateway are all in the open for you to review.",
+    desc: "Openship is open source under the Apache 2.0 license. The security boundary, permission plane, and gateway are all in the open for you to review.",
     icon: Github,
     href: "https://github.com/oblien/openship",
   },

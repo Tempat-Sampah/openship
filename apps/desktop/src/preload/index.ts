@@ -101,6 +101,8 @@ contextBridge.exposeInMainWorld("desktop", {
   updates: {
     /** Begin download + install of the pending update. */
     start: () => ipcRenderer.invoke("update:start"),
+    /** Open (or focus) the native update window for the pending update. */
+    open: () => ipcRenderer.invoke("update:open"),
     /** Dismiss / close the update window ("Later"). */
     dismiss: () => ipcRenderer.invoke("update:dismiss"),
     /** Subscribe to download progress (0..1). Returns an unsubscribe fn. */

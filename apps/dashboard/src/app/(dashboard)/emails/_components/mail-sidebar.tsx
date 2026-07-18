@@ -23,6 +23,7 @@ import type {
 } from "@/lib/api";
 import { DnsRecordCard } from "./dns-record-card";
 import { StepIcon } from "./step-icon";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface CompletionData {
   webmailUrl: string;
@@ -62,6 +63,7 @@ export function MailSidebar({
   onResolveConflict,
   onResume,
 }: MailSidebarProps) {
+  const { t } = useI18n();
   const completedCount = steps.filter((s) => s.status === "completed").length;
   return (
     <div className="space-y-4">
@@ -72,10 +74,10 @@ export function MailSidebar({
             <Unplug className="size-5 text-amber-500" />
             <div>
               <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                Port Conflict Detected
+                {t.emails.sidebar.portConflict.title}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Ports 80/443 are needed for the mail server
+                {t.emails.sidebar.portConflict.subtitle}
               </p>
             </div>
           </div>
@@ -106,16 +108,18 @@ export function MailSidebar({
                       }`}
                     >
                       {conflict.type === "traefik"
-                        ? "Managed"
+                        ? t.emails.sidebar.portConflict.managed
                         : conflict.type === "known"
-                          ? "Known Service"
-                          : "Unknown"}
+                          ? t.emails.sidebar.portConflict.known
+                          : t.emails.sidebar.portConflict.unknown}
                     </span>
                   </div>
 
                   {conflict.usage.containerName && (
                     <p className="text-xs text-muted-foreground mb-2">
-                      Container: {conflict.usage.containerName}
+                      {interpolate(t.emails.sidebar.portConflict.container, {
+                        name: conflict.usage.containerName,
+                      })}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mb-3">
@@ -129,7 +133,7 @@ export function MailSidebar({
                         key={resolution.id}
                         onClick={() => onResolveConflict(conflict, resolution.id)}
                         disabled={resolving}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors disabled:opacity-50 ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-start transition-colors disabled:opacity-50 ${
                           resolution.destructive
                             ? "border-red-500/30 hover:bg-red-500/5"
                             : "border-border/50 hover:bg-muted/50"
@@ -169,8 +173,7 @@ export function MailSidebar({
                     <div className="mt-3 flex items-start gap-2 p-2.5 rounded-lg bg-red-500/5">
                       <AlertTriangle className="size-3.5 text-red-500 mt-0.5 shrink-0" />
                       <p className="text-xs text-red-600 dark:text-red-400">
-                        Make sure this process is not needed before killing
-                        it. This action cannot be undone.
+                        {t.emails.sidebar.portConflict.killWarning}
                       </p>
                     </div>
                   )}
@@ -180,10 +183,10 @@ export function MailSidebar({
           ) : (
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                All conflicts resolved
+                {t.emails.sidebar.portConflict.allResolved}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Re-run the port check and continue the setup.
+                {t.emails.sidebar.portConflict.rerun}
               </p>
               <button
                 onClick={() => onResume(3)}
@@ -191,7 +194,7 @@ export function MailSidebar({
                 className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 <RotateCcw className="size-3.5" />
-                Resume from Step 3
+                {t.emails.sidebar.portConflict.resumeStep3}
               </button>
             </div>
           )}
@@ -204,7 +207,7 @@ export function MailSidebar({
           <div className="flex items-center gap-3 mb-4">
             <CheckCircle2 className="size-5 text-emerald-500" />
             <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-              Mail Server Ready!
+              {t.emails.sidebar.completion.ready}
             </h3>
           </div>
           <div className="space-y-3">
@@ -216,7 +219,7 @@ export function MailSidebar({
             >
               <Mail className="size-4 text-muted-foreground" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">Webmail</p>
+                <p className="text-sm font-medium text-foreground">{t.emails.sidebar.completion.webmail}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {completionData.webmailUrl}
                 </p>
@@ -231,7 +234,7 @@ export function MailSidebar({
             >
               <Shield className="size-4 text-muted-foreground" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">Admin Panel</p>
+                <p className="text-sm font-medium text-foreground">{t.emails.sidebar.completion.adminPanel}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {completionData.adminUrl}
                 </p>
@@ -270,19 +273,19 @@ export function MailSidebar({
       {/* Setup domain info */}
       {domain && (
         <div className="bg-card rounded-2xl border border-border/50 p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Setup Details</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-3">{t.emails.sidebar.details.title}</h3>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">Domain</dt>
+              <dt className="text-muted-foreground">{t.emails.sidebar.details.domain}</dt>
               <dd className="font-medium text-foreground">{domain}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">Mail Server</dt>
+              <dt className="text-muted-foreground">{t.emails.sidebar.details.mailServer}</dt>
               <dd className="font-medium text-foreground">mail.{domain}</dd>
             </div>
             {status?.startedAt && (
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Started</dt>
+                <dt className="text-muted-foreground">{t.emails.sidebar.details.started}</dt>
                 <dd className="font-medium text-foreground">
                   {new Date(status.startedAt).toLocaleTimeString()}
                 </dd>
@@ -318,6 +321,7 @@ function AllStepsCard({
   running,
   onResume,
 }: AllStepsCardProps) {
+  const { t } = useI18n();
   const listRef = useRef<HTMLOListElement>(null);
   const activeRowRef = useRef<HTMLLIElement>(null);
 
@@ -349,7 +353,7 @@ function AllStepsCard({
   return (
     <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
       <div className="px-5 py-3.5 border-b border-border/50 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">All steps</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t.emails.sidebar.steps.title}</h3>
         <span className="text-xs text-muted-foreground/70 tabular-nums">
           {completedCount} / {steps.length}
         </span>
@@ -358,14 +362,14 @@ function AllStepsCard({
       {isStalled && firstPendingId !== undefined && (
         <div className="px-5 py-3 border-b border-amber-500/20 bg-amber-500/5 flex items-center justify-between gap-3">
           <p className="text-xs text-amber-700 dark:text-amber-400 min-w-0">
-            Install was interrupted before step {firstPendingId}. Resume to pick up where it left off.
+            {interpolate(t.emails.sidebar.steps.interrupted, { step: String(firstPendingId) })}
           </p>
           <button
             onClick={() => onResume(firstPendingId)}
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-amber-500 text-white hover:bg-amber-500/90 transition-colors shrink-0"
           >
             <RotateCcw className="size-3" />
-            Resume
+            {t.emails.sidebar.steps.resume}
           </button>
         </div>
       )}
@@ -441,7 +445,7 @@ function AllStepsCard({
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
                 >
                   <RotateCcw className="size-3" />
-                  Retry
+                  {t.emails.sidebar.steps.retry}
                 </button>
               )}
             </li>
@@ -458,20 +462,21 @@ function AllStepsCard({
  * a click away if they need to re-verify.
  */
 function DnsRecordsCollapsibleCard({ dnsRecords }: { dnsRecords: DnsRecords }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left hover:bg-muted/30 transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-start hover:bg-muted/30 transition-colors"
         aria-expanded={open}
       >
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground">
-            Required DNS Records
+            {t.emails.sidebar.dnsRef.title}
           </h3>
           <p className="text-xs text-muted-foreground/70 mt-0.5">
-            Reference - tap to view the records you published
+            {t.emails.sidebar.dnsRef.subtitle}
           </p>
         </div>
         <ChevronDown

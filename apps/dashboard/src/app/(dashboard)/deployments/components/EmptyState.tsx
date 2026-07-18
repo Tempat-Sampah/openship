@@ -3,12 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { SearchX, Plus, GitBranch } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 interface EmptyStateProps {
   hasFilters: boolean;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ hasFilters }) => {
+  const { t } = useI18n();
   if (hasFilters) {
     return (
       <div className="bg-card rounded-2xl border border-border/50 p-16 text-center">
@@ -16,9 +18,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ hasFilters }) => {
           <div className="w-16 h-16 bg-muted/60 rounded-full flex items-center justify-center mx-auto mb-4 border border-border/50">
             <SearchX className="w-7 h-7 text-muted-foreground/50" />
           </div>
-          <h3 className="text-lg font-medium text-foreground/80 mb-2">No deployments found</h3>
+          <h3 className="text-lg font-medium text-foreground/80 mb-2">{t.deployments.empty.filtered.title}</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Try adjusting your filters or clearing your search.
+            {t.deployments.empty.filtered.description}
           </p>
         </div>
       </div>
@@ -72,11 +74,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ hasFilters }) => {
       </div>
 
       <h3 className="text-lg font-medium text-foreground/80 mb-2">
-        No deployments yet
+        {t.deployments.empty.none.title}
       </h3>
       <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-8 leading-relaxed">
-        Deploy your first project and it will appear here with
-        build status, commit details, and performance metrics.
+        {t.deployments.empty.none.description}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -85,14 +86,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ hasFilters }) => {
           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
         >
           <Plus className="size-4" />
-          Deploy Project
+          {t.deployments.empty.none.deployButton}
         </Link>
         <Link
           href="/library"
           className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
         >
           <GitBranch className="size-4" />
-          Browse Templates
+          {t.deployments.empty.none.browseButton}
         </Link>
       </div>
     </div>

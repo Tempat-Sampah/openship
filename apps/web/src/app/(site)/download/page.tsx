@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePlatform, type Platform } from "@/hooks/use-platform";
 import { Navbar, Footer } from "@/components/landing";
 import "./download.css";
@@ -48,6 +48,8 @@ const DOWNLOADS: DownloadEntry[] = [
 const DOWNLOAD_BASE = "https://github.com/oblien/openship/releases/latest/download";
 
 const CLI_OPTIONS = [
+  { manager: "macOS / Linux", cmd: "curl -fsSL https://get.openship.io | sh" },
+  { manager: "Windows",       cmd: "irm https://raw.githubusercontent.com/oblien/openship/main/scripts/install.ps1 | iex" },
   { manager: "npm",  cmd: "npm i -g openship" },
   { manager: "pnpm", cmd: "pnpm add -g openship" },
   { manager: "yarn", cmd: "yarn global add openship" },
@@ -55,9 +57,9 @@ const CLI_OPTIONS = [
 ];
 
 const STEPS = [
-  { num: "01", title: "Install", desc: "One command in any package manager. No daemons, no agents." },
-  { num: "02", title: "Connect", desc: "Run openship init and point it at your server over SSH." },
-  { num: "03", title: "Ship",    desc: "Run openship deploy. TLS, DNS, databases, edge - done." },
+  { num: "01", title: "Install", desc: "One command in any package manager. Bun runtime, no daemons or agents." },
+  { num: "02", title: "Run",     desc: "openship up starts Openship locally (API + dashboard), or openship install for the desktop app." },
+  { num: "03", title: "Ship",    desc: "openship init links your project, then openship deploy. TLS, DNS, databases, edge - done." },
 ];
 
 const MODES = [
@@ -97,7 +99,36 @@ export default function DownloadPage() {
   const { platform: detected } = usePlatform();
   const [downloading, setDownloading] = useState<Platform | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [activeManager, setActiveManager] = useState<string>("npm");
+  const [activeManager, setActiveManager] = useState<string>("macOS / Linux");
+  // Version + asset sizes come from the LATEST GitHub release, never hardcoded.
+  // The download URLs already resolve to /releases/latest/download; this just
+  // labels them. Falls back to the static labels below if the API is unreachable.
+  const [release, setRelease] = useState<{ version: string; sizes: Record<string, number> } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("https://api.github.com/repos/oblien/openship/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!alive || !data) return;
+        const sizes: Record<string, number> = {};
+        for (const a of data.assets ?? []) sizes[a.name] = a.size;
+        setRelease({ version: data.tag_name ?? "", sizes });
+      })
+      .catch(() => {
+        /* rate-limited or offline → keep the static fallback labels */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Default the install tab to the visitor's OS one-liner (Windows → PowerShell).
+  useEffect(() => {
+    if (detected === "windows") setActiveManager("Windows");
+  }, [detected]);
 
   const handleDownload = (platform: Platform, fileName: string) => {
     setDownloading(platform);
@@ -113,6 +144,20 @@ export default function DownloadPage() {
 
   const activeCmd = CLI_OPTIONS.find((o) => o.manager === activeManager)?.cmd ?? CLI_OPTIONS[0].cmd;
   const recommendedDl = DOWNLOADS.find((d) => d.platform === detected) ?? DOWNLOADS[0];
+  const fmtMB = (bytes?: number) => (bytes ? `${Math.round(bytes / 1024 / 1024)} MB` : undefined);
+  const sizeFor = (dl: DownloadEntry) => fmtMB(release?.sizes[dl.fileName]) ?? dl.size;
+
+  // macOS: detection only reliably tells us it's a Mac — arm vs intel can't be
+  // trusted (Safari reports "Intel" on Apple Silicon). So present BOTH and let
+  // the user choose, pre-selecting the detected arch as the default.
+  const isMac = recommendedDl.platform === "mac-arm" || recommendedDl.platform === "mac-intel";
+  const [macArch, setMacArch] = useState<Platform>("mac-arm");
+  useEffect(() => {
+    if (recommendedDl.platform === "mac-arm" || recommendedDl.platform === "mac-intel") {
+      setMacArch(recommendedDl.platform);
+    }
+  }, [recommendedDl.platform]);
+  const featuredDl = isMac ? DOWNLOADS.find((d) => d.platform === macArch) ?? recommendedDl : recommendedDl;
 
   return (
     <>
@@ -197,7 +242,7 @@ export default function DownloadPage() {
               </a>
             </div>
             <p className="text-[12px] th-text-muted">
-              Free forever · AGPL-3.0 · v1.0
+              Free forever · Apache 2.0{release?.version ? ` · ${release.version}` : ""}
             </p>
           </div>
         </div>
@@ -241,7 +286,7 @@ export default function DownloadPage() {
               <h2 className="mt-4 text-[clamp(1.875rem,3.6vw,2.625rem)] font-medium leading-[1.1] tracking-[-0.025em]" style={{ color: "var(--th-text-heading)" }}>
                 One command.<br />
                 <span className="font-light italic" style={{ color: "var(--th-on-40)" }}>
-                  Any package manager.
+                  Any shell, any OS.
                 </span>
               </h2>
               <p className="mt-5 max-w-md text-[16px] leading-[1.65]" style={{ color: "var(--th-text-body)" }}>
@@ -289,7 +334,7 @@ export default function DownloadPage() {
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-0.5 px-4 pt-3">
+              <div className="flex flex-wrap items-center gap-0.5 px-4 pt-3">
                 {CLI_OPTIONS.map((opt) => {
                   const active = opt.manager === activeManager;
                   return (
@@ -385,8 +430,8 @@ export default function DownloadPage() {
 
           {/* ── Featured card - detected platform ─────────────────── */}
           {(() => {
-            const PrimaryIcon = recommendedDl.icon;
-            const isDl = downloading === recommendedDl.platform;
+            const PrimaryIcon = featuredDl.icon;
+            const isDl = downloading === featuredDl.platform;
             return (
               <div
                 className="mx-auto mt-14 max-w-3xl overflow-hidden rounded-3xl"
@@ -413,24 +458,51 @@ export default function DownloadPage() {
                   {/* Copy + CTA */}
                   <div className="min-w-0 flex-1">
                     <div className="text-[26px] font-medium tracking-[-0.02em]" style={{ color: "var(--th-text-heading)" }}>
-                      {recommendedDl.title}
+                      {featuredDl.title}
                     </div>
                     <div className="mt-1 text-[14px]" style={{ color: "var(--th-text-muted)" }}>
-                      {recommendedDl.subtitle}
+                      {isMac ? "Pick your chip — not sure? Apple Silicon covers every Mac since 2020." : featuredDl.subtitle}
                     </div>
+
+                    {/* macOS chip chooser: detection guesses the default, but the
+                        user always decides (Safari can't be trusted for arm/intel). */}
+                    {isMac && (
+                      <div
+                        className="mt-4 inline-flex rounded-full p-1"
+                        style={{ background: "var(--th-sf-04)", border: "1px solid var(--th-on-06)" }}
+                      >
+                        {(["mac-arm", "mac-intel"] as const).map((p) => {
+                          const active = macArch === p;
+                          return (
+                            <button
+                              key={p}
+                              onClick={() => setMacArch(p)}
+                              className="rounded-full px-4 py-1.5 text-[13px] font-medium transition-all"
+                              style={{
+                                background: active ? "var(--th-card-bg)" : "transparent",
+                                color: active ? "var(--th-text-heading)" : "var(--th-text-muted)",
+                                boxShadow: active ? "0 1px 3px rgba(0,0,0,.12)" : "none",
+                              }}
+                            >
+                              {p === "mac-arm" ? "Apple Silicon" : "Intel"}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <div className="mt-7 flex flex-wrap items-center gap-3">
                       <button
-                        onClick={() => handleDownload(recommendedDl.platform, recommendedDl.fileName)}
+                        onClick={() => handleDownload(featuredDl.platform, featuredDl.fileName)}
                         className="th-btn group rounded-full px-7 py-3 text-[15px] font-medium"
                       >
                         <svg className="-ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                         </svg>
-                        {isDl ? "Downloading…" : `Download ${recommendedDl.fileName}`}
+                        {isDl ? "Downloading…" : `Download ${featuredDl.fileName}`}
                       </button>
                       <span className="font-mono text-[12px]" style={{ color: "var(--th-text-muted)" }}>
-                        {recommendedDl.size}
+                        {sizeFor(featuredDl)}
                       </span>
                     </div>
 
@@ -451,7 +523,7 @@ export default function DownloadPage() {
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        v1.0.0 · today
+                        {release?.version ? `${release.version} · latest` : "latest"}
                       </span>
                     </div>
                   </div>
@@ -472,7 +544,7 @@ export default function DownloadPage() {
                 boxShadow: "0 1px 0 0 var(--th-on-05)",
               }}
             >
-              {DOWNLOADS.filter((dl) => dl.platform !== recommendedDl.platform).map((dl) => {
+              {DOWNLOADS.filter((dl) => (isMac ? !dl.platform.startsWith("mac") : dl.platform !== featuredDl.platform)).map((dl) => {
                 const Icon = dl.icon;
                 const isDl = downloading === dl.platform;
                 return (
@@ -496,7 +568,7 @@ export default function DownloadPage() {
                         {dl.title}
                       </div>
                       <div className="mt-0.5 truncate text-[12px]" style={{ color: "var(--th-text-muted)" }}>
-                        {dl.subtitle} · {dl.size}
+                        {dl.subtitle} · {sizeFor(dl)}
                       </div>
                     </div>
                     <span
@@ -645,7 +717,7 @@ export default function DownloadPage() {
               Ready in 60 seconds.
             </h2>
             <p className="mx-auto mt-5 max-w-md text-[16px] leading-[1.6]" style={{ color: "var(--th-text-body)" }}>
-              Install the CLI and ship your first deploy. Free, open-source, AGPL-3.0.
+              Install the CLI and ship your first deploy. Free, open-source, Apache 2.0.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3.5">
               <button

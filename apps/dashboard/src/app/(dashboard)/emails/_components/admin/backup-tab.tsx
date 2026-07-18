@@ -37,17 +37,19 @@ import {
   type MailBackupPolicy,
 } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 import { SectionCard } from "./_shared/section-card";
 import { MailRestoreModal } from "./mail-restore-modal";
 
-const SCHEDULES: Array<{ label: string; value: string | null }> = [
-  { label: "Manual only", value: null },
-  { label: "Daily", value: "17 3 * * *" },
-  { label: "Weekly", value: "17 3 * * 0" },
+const SCHEDULE_VALUES: Array<{ labelKey: "manual" | "daily" | "weekly"; value: string | null }> = [
+  { labelKey: "manual", value: null },
+  { labelKey: "daily", value: "17 3 * * *" },
+  { labelKey: "weekly", value: "17 3 * * 0" },
 ];
 
 export function BackupTab({ serverId, domain }: { serverId: string; domain: string }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [restoreTarget, setRestoreTarget] = useState<{
     run: BackupRun;
     mode: "in_place" | "to_fork";
@@ -97,7 +99,7 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
 
   const save = useCallback(async (): Promise<MailBackupPolicy | null> => {
     if (!destinationId) {
-      showToast("Pick a backup destination first.", "error", "Backup");
+      showToast(t.emailsAdmin.backup.pickDest, "error", t.emailsAdmin.backup.toastTitle);
       return null;
     }
     setSaving(true);
@@ -109,10 +111,10 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
         cronExpression: cron,
       });
       setPolicy(saved);
-      showToast("Backup settings saved.", "success", "Backup");
+      showToast(t.emailsAdmin.backup.saved, "success", t.emailsAdmin.backup.toastTitle);
       return saved;
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Could not save backup settings"), "error", "Backup");
+      showToast(getApiErrorMessage(err, t.emailsAdmin.backup.saveFailed), "error", t.emailsAdmin.backup.toastTitle);
       return null;
     } finally {
       setSaving(false);
@@ -126,7 +128,7 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
       const saved = policy ? await save() : await save();
       if (!saved) return;
       await backupsApi.runNow(saved.id);
-      showToast("Backup started. It'll appear below as it runs.", "success", "Backup");
+      showToast(t.emailsAdmin.backup.started, "success", t.emailsAdmin.backup.toastTitle);
       // Give the run a moment to register, then refresh the list.
       setTimeout(() => {
         void mailAdminApi.backup
@@ -135,7 +137,7 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
           .catch(() => {});
       }, 1200);
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Could not start backup"), "error", "Backup");
+      showToast(getApiErrorMessage(err, t.emailsAdmin.backup.startFailed), "error", t.emailsAdmin.backup.toastTitle);
     } finally {
       setRunning(false);
     }
@@ -154,18 +156,16 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Backup</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t.emailsAdmin.backup.heading}</h2>
         <p className="text-sm text-muted-foreground mt-0.5 max-w-2xl">
-          Snapshot this mail server to one of your backup destinations. To move a
-          server, back it up here, set the target up with the install wizard, then
-          restore this backup onto it.
+          {t.emailsAdmin.backup.description}
         </p>
       </div>
 
       {/* What to include */}
       <SectionCard
-        title="What to back up"
-        description="Accounts and auth are always included; message data and keys are optional."
+        title={t.emailsAdmin.backup.whatTitle}
+        description={t.emailsAdmin.backup.whatDesc}
         icon={DatabaseBackup}
       >
         <div className="space-y-3">
@@ -173,27 +173,26 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
             checked
             disabled
             onChange={() => {}}
-            title="Accounts, domains & aliases"
-            desc="Mailboxes (with password hashes), domains, and aliases — the vmail database."
+            title={t.emailsAdmin.backup.accountsTitle}
+            desc={t.emailsAdmin.backup.accountsDesc}
           />
           <CheckRow
             checked={messageData}
             onChange={setMessageData}
-            title="Mailbox message data"
-            desc="Every stored email (the /var/vmail maildirs). Can be large."
+            title={t.emailsAdmin.backup.messageTitle}
+            desc={t.emailsAdmin.backup.messageDesc}
           />
           <CheckRow
             checked={keys}
             onChange={setKeys}
-            title="DKIM keys & secrets"
-            desc="DKIM keys + config + mail-state.json. Keeps DKIM valid on restore — but the archive then holds private keys and secrets."
+            title={t.emailsAdmin.backup.keysTitle}
+            desc={t.emailsAdmin.backup.keysDesc}
           />
           {keys && (
             <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3.5 py-2.5">
               <ShieldAlert className="size-4 text-amber-500 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                The backup will contain password hashes, DKIM private keys, and
-                plaintext secrets. Keep the destination private.
+                {t.emailsAdmin.backup.keysWarning}
               </p>
             </div>
           )}
@@ -202,8 +201,8 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
 
       {/* Destination + schedule */}
       <SectionCard
-        title="Destination & schedule"
-        description="Backups stream to a destination you manage on the Backups page."
+        title={t.emailsAdmin.backup.destTitle}
+        description={t.emailsAdmin.backup.destDesc}
         icon={HardDrive}
       >
         {noDestinations ? (
@@ -212,15 +211,14 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
             className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 hover:bg-muted/40 transition-colors"
           >
             <p className="text-sm text-muted-foreground">
-              No backup destinations yet. Add one (e.g. an existing server) on the
-              Backups page.
+              {t.emailsAdmin.backup.noDest}
             </p>
-            <ArrowRight className="size-4 text-muted-foreground/60 shrink-0" />
+            <ArrowRight className="size-4 text-muted-foreground/60 shrink-0 rtl:rotate-180" />
           </Link>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block">
-              <span className="block text-sm font-medium text-foreground mb-1.5">Destination</span>
+              <span className="block text-sm font-medium text-foreground mb-1.5">{t.emailsAdmin.backup.destinationLabel}</span>
               <select
                 value={destinationId}
                 onChange={(e) => setDestinationId(e.target.value)}
@@ -234,15 +232,15 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
               </select>
             </label>
             <label className="block">
-              <span className="block text-sm font-medium text-foreground mb-1.5">Automatic backups</span>
+              <span className="block text-sm font-medium text-foreground mb-1.5">{t.emailsAdmin.backup.autoLabel}</span>
               <select
                 value={cron ?? ""}
                 onChange={(e) => setCron(e.target.value || null)}
                 className="w-full px-3 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
-                {SCHEDULES.map((s) => (
-                  <option key={s.label} value={s.value ?? ""}>
-                    {s.label}
+                {SCHEDULE_VALUES.map((s) => (
+                  <option key={s.labelKey} value={s.value ?? ""}>
+                    {t.emailsAdmin.backup.schedules[s.labelKey]}
                   </option>
                 ))}
               </select>
@@ -257,7 +255,7 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-muted text-foreground hover:bg-muted/80 border border-border transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-            Save settings
+            {t.emailsAdmin.backup.saveSettings}
           </button>
           <button
             onClick={backupNow}
@@ -265,16 +263,16 @@ export function BackupTab({ serverId, domain }: { serverId: string; domain: stri
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             {running ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
-            Back up now
+            {t.emailsAdmin.backup.backupNow}
           </button>
         </div>
       </SectionCard>
 
       {/* Recent runs */}
-      <SectionCard title="Recent backups" icon={Clock} density="split">
+      <SectionCard title={t.emailsAdmin.backup.recentTitle} icon={Clock} density="split">
         {runs.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-            No backups yet.
+            {t.emailsAdmin.backup.noBackups}
           </div>
         ) : (
           <div className="divide-y divide-border/40">
@@ -349,6 +347,7 @@ function RunRow({
   run: BackupRun;
   onRestore: (mode: "in_place" | "to_fork") => void;
 }) {
+  const { t } = useI18n();
   const p = runPresentation(run.status);
   return (
     <div className="flex items-center gap-4 px-5 py-3.5">
@@ -373,14 +372,14 @@ function RunRow({
             onClick={() => onRestore("in_place")}
             className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Restore
+            {t.emailsAdmin.backup.restore}
           </button>
           <span className="text-muted-foreground/30">·</span>
           <button
             onClick={() => onRestore("to_fork")}
             className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
-            Migrate
+            {t.emailsAdmin.backup.migrate}
           </button>
         </div>
       )}

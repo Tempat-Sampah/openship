@@ -34,8 +34,8 @@ export const ProjectsBottomNavigation = () => {
         <div>
             {/* Fixed Bottom Navigation - Hide when project not found */}
             {!projectNotFound && (
-                <div className="fixed bottom-0 left-0 right-0 z-50">
-                    <div className="w-[95vw] mx-auto lg:max-w-[calc(100vw-20vw)] lg:ml-auto lg:mr-0 flex justify-center">
+                <div className="fixed bottom-0 start-0 end-0 z-50">
+                    <div className="w-[95vw] mx-auto lg:max-w-[calc(100vw-20vw)] lg:ms-auto lg:me-0 flex justify-center">
                         <div className="flex items-center justify-center gap-2 p-2 mb-6 bg-foreground overflow-x-auto backdrop-blur-sm rounded-full">
                             {tabs.map((tab) => {
                                 const isActive = activeTab === tab.id;

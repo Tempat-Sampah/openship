@@ -11,6 +11,9 @@ import {
   HardDrive,
   Server,
   Loader2,
+  Pencil,
+  Star,
+  KeyRound,
 } from "lucide-react";
 import {
   backupDestinationsApi,
@@ -18,15 +21,11 @@ import {
   getApiErrorMessage,
 } from "@/lib/api";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { Modal } from "@/components/ui/Modal";
+import DropdownMenu, { type MenuAction } from "@/components/ui/DropdownMenu";
+import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { CreateDestinationModal } from "./_components/CreateDestinationModal";
-
-const KIND_LABELS: Record<BackupDestinationSummary["kind"], string> = {
-  s3_compatible: "S3-compatible",
-  sftp: "SFTP",
-  openship_server: "Existing server",
-  local: "Local disk",
-  http_upload: "HTTP upload",
-};
 
 const KIND_ICONS: Record<
   BackupDestinationSummary["kind"],
@@ -39,10 +38,34 @@ const KIND_ICONS: Record<
   http_upload: Cloud,
 };
 
+// Kinds the create/edit form can configure. Others (e.g. http_upload) may exist
+// via the API but must NOT offer "Edit" — the form has no UI for them and would
+// drop into the create picker, risking a wrong-kind overwrite.
+const EDITABLE_KINDS = new Set<BackupDestinationSummary["kind"]>([
+  "s3_compatible",
+  "sftp",
+  "openship_server",
+  "local",
+]);
+
 export default function BackupsPage() {
+  const { showToast } = useToast();
+  const { t } = useI18n();
+  const m = t.misc.backups;
+  const kindLabels: Record<BackupDestinationSummary["kind"], string> = {
+    s3_compatible: m.kindS3,
+    sftp: m.kindSftp,
+    openship_server: m.kindServer,
+    local: m.kindLocal,
+    http_upload: m.kindHttp,
+  };
   const [items, setItems] = useState<BackupDestinationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<BackupDestinationSummary | null>(null);
+  const [verifyingIds, setVerifyingIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState<BackupDestinationSummary | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,40 +81,57 @@ export default function BackupsPage() {
     void load();
   }, [load]);
 
-  const handlePreflight = useCallback(
-    async (id: string) => {
+  const handleVerify = useCallback(
+    async (row: BackupDestinationSummary) => {
+      setVerifyingIds((prev) => new Set(prev).add(row.id));
       try {
-        const res = await backupDestinationsApi.preflight(id);
-        if (!res.data.ok) {
-          window.alert(`Verification failed: ${res.data.reason}`);
+        const res = await backupDestinationsApi.preflight(row.id);
+        if (res.data.ok) {
+          showToast(interpolate(m.verifiedSuccess, { name: row.name }), "success", m.title);
+        } else {
+          showToast(res.data.reason ?? m.verificationFailedMsg, "error", m.verificationFailedTitle);
         }
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Preflight failed"));
+        showToast(getApiErrorMessage(err, m.verificationFailedTitle), "error", m.verificationFailedTitle);
       } finally {
+        setVerifyingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
         void load();
       }
     },
-    [load],
+    [load, showToast, m],
   );
 
-  const handleDelete = useCallback(
-    async (id: string, name: string) => {
-      if (
-        !window.confirm(
-          `Delete destination "${name}"? Active backup policies will block this.`,
-        )
-      ) {
-        return;
-      }
+  const handleSetDefault = useCallback(
+    async (row: BackupDestinationSummary) => {
       try {
-        await backupDestinationsApi.delete(id);
+        await backupDestinationsApi.update(row.id, { isDefault: true });
+        showToast(interpolate(m.setDefaultSuccess, { name: row.name }), "success", m.title);
         await load();
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Delete failed"));
+        showToast(getApiErrorMessage(err, m.setDefaultFailed), "error", m.title);
       }
     },
-    [load],
+    [load, showToast, m],
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await backupDestinationsApi.delete(deleting.id);
+      showToast(interpolate(m.deletedSuccess, { name: deleting.name }), "success", m.title);
+      setDeleting(null);
+      await load();
+    } catch (err) {
+      showToast(getApiErrorMessage(err, m.deleteFailed), "error", m.title);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }, [deleting, load, showToast, m]);
 
   return (
     <PageContainer>
@@ -102,10 +142,10 @@ export default function BackupsPage() {
             className="text-2xl font-medium text-foreground/80"
             style={{ letterSpacing: "-0.2px" }}
           >
-            Backups
+            {m.title}
           </h1>
           <p className="text-sm text-muted-foreground/70 mt-1">
-            External storage targets for project and service backups
+            {m.subtitle}
           </p>
         </div>
         {items.length > 0 && (
@@ -114,7 +154,7 @@ export default function BackupsPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
           >
             <Plus className="size-4" />
-            Add Destination
+            {m.addDestination}
           </button>
         )}
       </div>
@@ -130,6 +170,31 @@ export default function BackupsPage() {
           <ul className="divide-y divide-border/50">
             {items.map((row) => {
               const Icon = KIND_ICONS[row.kind] ?? Cloud;
+              const actions: MenuAction[] = [];
+              if (EDITABLE_KINDS.has(row.kind)) {
+                actions.push({
+                  id: "edit",
+                  label: m.editAction,
+                  icon: <Pencil className="size-4" />,
+                  onClick: () => setEditing(row),
+                });
+              }
+              if (!row.isDefault) {
+                actions.push({
+                  id: "default",
+                  label: m.setDefaultAction,
+                  icon: <Star className="size-4" />,
+                  onClick: () => handleSetDefault(row),
+                });
+              }
+              if (actions.length > 0) actions.push({ id: "div", divider: true });
+              actions.push({
+                id: "delete",
+                label: m.deleteAction,
+                icon: <Trash2 className="size-4" />,
+                variant: "danger",
+                onClick: () => setDeleting(row),
+              });
               return (
                 <li
                   key={row.id}
@@ -144,16 +209,30 @@ export default function BackupsPage() {
                         <p className="truncate text-sm font-medium text-foreground">
                           {row.name}
                         </p>
+                        {row.isDefault && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                            title={m.defaultTitle}
+                          >
+                            <Star className="size-3 fill-current" />
+                            {m.defaultBadge}
+                          </span>
+                        )}
                         <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                          {KIND_LABELS[row.kind]}
+                          {kindLabels[row.kind]}
                         </span>
-                        {row.lastVerifiedAt ? (
+                        {verifyingIds.has(row.id) ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                            <Loader2 className="size-3 animate-spin" />
+                            {m.verifyingBadge}
+                          </span>
+                        ) : row.lastVerifiedAt ? (
                           <span
                             className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
-                            title={`Last verified ${new Date(row.lastVerifiedAt).toLocaleString()}`}
+                            title={interpolate(m.lastVerified, { date: new Date(row.lastVerifiedAt).toLocaleString() })}
                           >
                             <CheckCircle2 className="size-3" />
-                            Verified
+                            {m.verifiedBadge}
                           </span>
                         ) : row.lastVerifyError ? (
                           <span
@@ -161,34 +240,42 @@ export default function BackupsPage() {
                             title={row.lastVerifyError}
                           >
                             <AlertCircle className="size-3" />
-                            Failed
+                            {m.failedBadge}
                           </span>
                         ) : (
                           <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-[11px] font-medium text-muted-foreground/70">
-                            Not verified
+                            {m.notVerifiedBadge}
                           </span>
                         )}
                       </div>
                       <p className="mt-1 truncate font-mono text-xs text-muted-foreground/80">
-                        {describeDestination(row)}
+                        {describeDestination(row, m)}
+                      </p>
+                      <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/60">
+                        <KeyRound className="size-3" />
+                        {describeCredentials(row, m)}
+                        {row.lastVerifyError && !row.lastVerifiedAt && (
+                          <span className="ms-1 truncate text-red-500/80" title={row.lastVerifyError}>
+                            · {row.lastVerifyError}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <button
-                      onClick={() => handlePreflight(row.id)}
-                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-                      title="Test connection"
+                      onClick={() => handleVerify(row)}
+                      disabled={verifyingIds.has(row.id)}
+                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
+                      title={m.verifyConnection}
                     >
-                      <RefreshCw className="size-4" />
+                      {verifyingIds.has(row.id) ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="size-4" />
+                      )}
                     </button>
-                    <button
-                      onClick={() => handleDelete(row.id, row.name)}
-                      className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                      title="Delete"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <DropdownMenu align="right" actions={actions} />
                   </div>
                 </li>
               );
@@ -198,18 +285,80 @@ export default function BackupsPage() {
       )}
 
       <CreateDestinationModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onCreated={async () => {
+        isOpen={modalOpen || !!editing}
+        destination={editing}
+        onClose={() => {
           setModalOpen(false);
+          setEditing(null);
+        }}
+        onSaved={async () => {
+          const wasEdit = !!editing;
+          setModalOpen(false);
+          setEditing(null);
+          showToast(
+            wasEdit ? m.updated : m.created,
+            "success",
+            m.title,
+          );
           await load();
         }}
       />
+
+      {/* Delete confirmation */}
+      {deleting && (
+        <Modal
+          isOpen
+          onClose={() => !deleteBusy && setDeleting(null)}
+          maxWidth="440px"
+          width="100%"
+        >
+          <div className="p-6">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+                <Trash2 className="size-5 text-red-500" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-foreground">
+                  {m.deleteTitle}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {m.deletePre}
+                  <span className="font-medium text-foreground">{deleting.name}</span>
+                  {m.deletePost}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setDeleting(null)}
+                disabled={deleteBusy}
+                className="h-10 inline-flex items-center rounded-xl px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
+              >
+                {m.cancel}
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteBusy}
+                className="h-10 inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+              >
+                {deleteBusy ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+                {m.deleteAction}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </PageContainer>
   );
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useI18n();
+  const m = t.misc.backups;
   return (
     <div className="py-16 text-center">
       {/* SVG illustration — backup-themed: stacked databases being archived to a cloud */}
@@ -337,11 +486,10 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         className="text-2xl font-medium text-foreground/80 mb-2"
         style={{ letterSpacing: "-0.2px" }}
       >
-        No backup destinations yet
+        {m.emptyTitle}
       </h3>
       <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto mb-8 leading-relaxed">
-        Connect an S3-compatible bucket, an SFTP host, an existing openship
-        server, or a local disk — services will then be able to back up to it.
+        {m.emptyDescription}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
@@ -350,20 +498,20 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
         >
           <Plus className="size-4" />
-          Add Your First Destination
+          {m.addFirst}
         </button>
       </div>
 
       {/* Feature highlight cards — exact home empty-state pattern */}
       <div className="max-w-2xl mx-auto">
         <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-4">
-          Supported destinations
+          {m.supportedTitle}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <KindCard icon={Cloud} label="S3-compatible" sub="AWS · R2 · B2 · MinIO" />
-          <KindCard icon={Server} label="SFTP" sub="Any SSH host" />
-          <KindCard icon={Server} label="Existing server" sub="Reuse SSH creds" />
-          <KindCard icon={HardDrive} label="Local disk" sub="Self-hosted only" />
+          <KindCard icon={Cloud} label={m.kindS3} sub={m.cardS3Sub} />
+          <KindCard icon={Server} label={m.kindSftp} sub={m.cardSftpSub} />
+          <KindCard icon={Server} label={m.kindServer} sub={m.cardServerSub} />
+          <KindCard icon={HardDrive} label={m.kindLocal} sub={m.cardLocalSub} />
         </div>
       </div>
     </div>
@@ -380,7 +528,7 @@ function KindCard({
   sub: string;
 }) {
   return (
-    <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+    <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
         <Icon className="size-4 text-muted-foreground" />
       </div>
@@ -390,14 +538,41 @@ function KindCard({
   );
 }
 
-function describeDestination(row: BackupDestinationSummary): string {
+function describeCredentials(
+  row: BackupDestinationSummary,
+  m: Record<string, string>,
+): string {
+  switch (row.kind) {
+    case "s3_compatible":
+      return row.hasAccessKeyId && row.hasSecretAccessKey
+        ? m.credAccessKeyStored
+        : m.credNone;
+    case "sftp":
+      return row.hasSftpPrivateKey
+        ? m.credPrivateKeyStored
+        : row.hasSftpPassword
+          ? m.credPasswordStored
+          : m.credNone;
+    case "openship_server":
+      return m.credReusesServer;
+    case "local":
+      return m.credNoneNeeded;
+    case "http_upload":
+      return "—";
+  }
+}
+
+function describeDestination(
+  row: BackupDestinationSummary,
+  m: Record<string, string>,
+): string {
   switch (row.kind) {
     case "s3_compatible":
       return `${row.bucket ?? "?"}${row.region ? ` · ${row.region}` : ""}${row.endpoint ? ` · ${row.endpoint}` : ""}`;
     case "sftp":
       return `${row.sshUser ?? "?"}@${row.sshHost ?? "?"}:${row.sshPort ?? 22}${row.pathPrefix ? `:${row.pathPrefix}` : ""}`;
     case "openship_server":
-      return `server ${row.serverId?.slice(0, 8) ?? "?"}…${row.pathPrefix ? ` · ${row.pathPrefix}` : ""}`;
+      return `${m.serverPrefix}${row.serverId?.slice(0, 8) ?? "?"}…${row.pathPrefix ? ` · ${row.pathPrefix}` : ""}`;
     case "local":
       return row.endpoint ?? "?";
     case "http_upload":

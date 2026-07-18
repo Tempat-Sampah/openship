@@ -13,6 +13,7 @@ import {
 import { getApiErrorMessage, systemApi } from "@/lib/api";
 import type { ServerInfo } from "@/lib/api/system";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 
 const INPUT =
   "w-full px-3.5 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none transition-all focus:ring-2 focus:ring-primary/20";
@@ -33,6 +34,7 @@ interface ServerFormProps {
 // test/save logic; the surrounding page header and sidebars stay in the pages.
 export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const isEditing = !!server;
 
   const [saving, setSaving] = useState(false);
@@ -61,7 +63,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
 
   async function handleSave() {
     if (!sshHost.trim()) {
-      showToast("Server IP address is required", "error", "Server");
+      showToast(t.servers.form.toastIpRequired, "error", t.servers.toastTitles.server);
       return;
     }
 
@@ -75,12 +77,12 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
     // When editing and not switching auth method, the stored secret is reused -
     // so a blank password/key is only an error on create or when switching.
     if (sshAuthMethod === "password" && (!isEditing || server?.sshAuthMethod !== "password") && !sshPassword) {
-      showToast("Password is required when switching to password auth", "error", "Server");
+      showToast(t.servers.form.toastPasswordSwitchRequired, "error", t.servers.toastTitles.server);
       return;
     }
 
     if (sshAuthMethod === "key" && (!isEditing || server?.sshAuthMethod !== "key") && !sshKeyPath) {
-      showToast("Key path is required when switching to SSH key auth", "error", "Server");
+      showToast(t.servers.form.toastKeyPathSwitchRequired, "error", t.servers.toastTitles.server);
       return;
     }
 
@@ -109,13 +111,13 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
         ? await systemApi.updateServerEntry(server!.id, data)
         : await systemApi.createServerEntry(data);
 
-      showToast(isEditing ? "Server updated" : "Server saved", "success", "Server");
+      showToast(isEditing ? t.servers.form.toastUpdated : t.servers.form.toastSaved, "success", t.servers.toastTitles.server);
       onSaved({ server: saved, isEditing });
     } catch (err) {
       showToast(
-        getApiErrorMessage(err, "Failed to save server"),
+        getApiErrorMessage(err, t.servers.form.toastSaveFailed),
         "error",
-        "Server",
+        t.servers.toastTitles.server,
       );
     } finally {
       setSaving(false);
@@ -124,17 +126,17 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
 
   async function handleTestConnection() {
     if (!sshHost.trim()) {
-      showToast("Server IP address is required", "error", "Server");
+      showToast(t.servers.form.toastIpRequired, "error", t.servers.toastTitles.server);
       return;
     }
 
     if (sshAuthMethod === "password" && !sshPassword && !(isEditing && server?.sshAuthMethod === "password")) {
-      showToast("Password is required to test connection", "error", "Server");
+      showToast(t.servers.form.toastPasswordTestRequired, "error", t.servers.toastTitles.server);
       return;
     }
 
     if (sshAuthMethod === "key" && !sshKeyPath && !(isEditing && server?.sshAuthMethod === "key")) {
-      showToast("Key path is required to test connection", "error", "Server");
+      showToast(t.servers.form.toastKeyPathTestRequired, "error", t.servers.toastTitles.server);
       return;
     }
 
@@ -157,14 +159,14 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
       const result = await systemApi.testConnection(payload as Parameters<typeof systemApi.testConnection>[0]);
       setTestResult(result);
       if (result.ok) {
-        showToast("Connection successful", "success", "Server");
+        showToast(t.servers.form.toastConnectionSuccess, "success", t.servers.toastTitles.server);
       } else {
-        showToast(result.message || "Connection failed", "error", "Server");
+        showToast(result.message || t.servers.form.toastConnectionFailed, "error", t.servers.toastTitles.server);
       }
     } catch (err) {
-      const message = getApiErrorMessage(err, "Connection test failed");
+      const message = getApiErrorMessage(err, t.servers.form.toastConnectionTestFailed);
       setTestResult({ ok: false, message });
-      showToast(message, "error", "Server");
+      showToast(message, "error", t.servers.toastTitles.server);
     } finally {
       setTesting(false);
     }
@@ -178,34 +180,34 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
         </div>
         <div>
           <h2 className="font-semibold text-foreground text-[15px]">
-            SSH Connection
+            {t.servers.form.sshConnection}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Connect to your server via SSH
+            {t.servers.form.sshConnectionDesc}
           </p>
         </div>
       </div>
 
       <div className="p-5 space-y-[18px]">
         <div>
-          <label className={LABEL}>Server Name</label>
+          <label className={LABEL}>{t.servers.form.serverName}</label>
           <input
             type="text"
             value={serverName}
             onChange={(e) => setServerName(e.target.value)}
-            placeholder={sshHost.trim() || "e.g. Production, Staging, Dev..."}
+            placeholder={sshHost.trim() || t.servers.form.serverNamePlaceholder}
             spellCheck={false}
             autoComplete="off"
             className={INPUT}
           />
           <p className="text-xs text-muted-foreground/60 mt-1.5">
-            Optional label shown in the server list and header.
+            {t.servers.form.serverNameHelp}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
           <div>
-            <label className={LABEL}>Server IP Address</label>
+            <label className={LABEL}>{t.servers.form.serverIp}</label>
             <input
               type="text"
               value={sshHost}
@@ -217,24 +219,24 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
             />
           </div>
           <div>
-            <label className={LABEL}>Port</label>
+            <label className={LABEL}>{t.servers.form.port}</label>
             <input
               type="text"
               value={sshPort}
               onChange={(e) => setSshPort(e.target.value)}
-              placeholder="e.g. 22"
+              placeholder={t.servers.form.portPlaceholder}
               className={INPUT}
             />
           </div>
         </div>
 
         <div>
-          <label className={LABEL}>Username</label>
+          <label className={LABEL}>{t.servers.form.username}</label>
           <input
             type="text"
             value={sshUser}
             onChange={(e) => setSshUser(e.target.value)}
-            placeholder="e.g. root"
+            placeholder={t.servers.form.usernamePlaceholder}
             spellCheck={false}
             autoComplete="off"
             className={INPUT}
@@ -242,7 +244,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
         </div>
 
         <div>
-          <label className={LABEL}>Authentication</label>
+          <label className={LABEL}>{t.servers.form.authentication}</label>
           <div className="flex gap-1 bg-muted/50 rounded-[10px] p-[3px] mb-3">
             <button
               type="button"
@@ -254,7 +256,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
               }`}
             >
               <Lock className="size-3.5" />
-              Password
+              {t.servers.form.password}
             </button>
             <button
               type="button"
@@ -266,7 +268,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
               }`}
             >
               <KeyRound className="size-3.5" />
-              SSH Key
+              {t.servers.form.sshKey}
             </button>
             <button
               type="button"
@@ -278,21 +280,21 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
               }`}
             >
               <Network className="size-3.5" />
-              Agent
+              {t.servers.form.agent}
             </button>
           </div>
 
           {sshAuthMethod === "password" ? (
             <div>
-              <label className={LABEL}>Password</label>
+              <label className={LABEL}>{t.servers.form.password}</label>
               <input
                 type="password"
                 value={sshPassword}
                 onChange={(e) => setSshPassword(e.target.value)}
                 placeholder={
                   isEditing && server?.sshAuthMethod === "password"
-                    ? "Leave blank to keep current password"
-                    : "Enter server password"
+                    ? t.servers.form.passwordPlaceholderKeep
+                    : t.servers.form.passwordPlaceholderEnter
                 }
                 autoComplete="off"
                 className={INPUT}
@@ -302,16 +304,13 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
             <div className="flex items-start gap-2.5 rounded-xl border border-border/50 bg-muted/30 px-3.5 py-3">
               <Network className="size-4 shrink-0 mt-0.5 text-primary" />
               <p className="text-[13px] leading-relaxed text-muted-foreground">
-                Connects using this machine&apos;s SSH agent — like
-                VSCode, no password or key needed. The host running
-                Openship must already have access to this server (a key
-                loaded in its <span className="text-foreground/80">ssh-agent</span>).
+                {t.servers.form.agentInfoBefore}<span className="text-foreground/80">ssh-agent</span>{t.servers.form.agentInfoAfter}
               </p>
             </div>
           ) : (
             <div className="space-y-[18px]">
               <div>
-                <label className={LABEL}>Key Path</label>
+                <label className={LABEL}>{t.servers.form.keyPath}</label>
                 <input
                   type="text"
                   value={sshKeyPath}
@@ -324,16 +323,16 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
               </div>
               <div>
                 <label className={LABEL}>
-                  Passphrase{" "}
+                  {t.servers.form.passphrase}{" "}
                   <span className="text-muted-foreground/50 font-normal">
-                    (optional)
+                    {t.servers.form.optional}
                   </span>
                 </label>
                 <input
                   type="password"
                   value={sshKeyPassphrase}
                   onChange={(e) => setSshKeyPassphrase(e.target.value)}
-                  placeholder="Enter passphrase or leave blank"
+                  placeholder={t.servers.form.passphrasePlaceholder}
                   autoComplete="off"
                   className={INPUT}
                 />
@@ -350,7 +349,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
           <ChevronDown
             className={`size-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
           />
-          Advanced
+          {t.servers.form.advanced}
         </button>
 
         {showAdvanced && (
@@ -358,9 +357,9 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={LABEL}>
-                  Jump Host{" "}
+                  {t.servers.form.jumpHost}{" "}
                   <span className="text-muted-foreground/50 font-normal">
-                    (optional)
+                    {t.servers.form.optional}
                   </span>
                 </label>
                 <input
@@ -375,9 +374,9 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
               </div>
               <div>
                 <label className={LABEL}>
-                  Extra SSH Arguments{" "}
+                  {t.servers.form.extraArgs}{" "}
                   <span className="text-muted-foreground/50 font-normal">
-                    (optional)
+                    {t.servers.form.optional}
                   </span>
                 </label>
                 <input
@@ -407,7 +406,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
             ) : (
               <Network className="size-4" />
             )}
-            {testing ? "Testing…" : testResult?.ok ? "Connected" : "Test Connection"}
+            {testing ? t.servers.form.testing : testResult?.ok ? t.servers.form.connected : t.servers.form.testConnection}
           </button>
           {testResult && !testResult.ok && (
             <p className="text-xs text-red-500 text-center">{testResult.message}</p>
@@ -422,7 +421,7 @@ export function ServerForm({ server, onSaved, submitLabel }: ServerFormProps) {
             ) : (
               <Check className="size-4" />
             )}
-            {submitLabel ?? (isEditing ? "Save Changes" : "Save & Continue to Setup")}
+            {submitLabel ?? (isEditing ? t.servers.form.saveChanges : t.servers.form.saveAndContinue)}
           </button>
         </div>
       </div>

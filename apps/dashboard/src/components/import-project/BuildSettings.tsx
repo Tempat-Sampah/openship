@@ -1,9 +1,12 @@
+"use client";
+
 import React, { useState } from "react";
 import { Terminal, FolderOutput, Package, Play, Hash, Settings2, ChevronDown, ChevronUp, Pencil, Hammer, BoxSelect, ShieldCheck } from "lucide-react";
 import { Toggle } from "@/components/project-settings/ServerSideSwitch";
 import { useOptionalDeployment } from "@/context/DeploymentContext";
 import { usePlatform } from "@/context/PlatformContext";
 import { getPublicEndpointHosts, getRecommendedSingleAppBuildImage, type PublicEndpoint } from "@/context/deployment/types";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface InputField {
   key: string;
@@ -43,6 +46,8 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
     : fallbackContext;
   const { config, updateOptions, updateConfig } = resolvedContext;
   const { baseDomain } = usePlatform();
+  const { t } = useI18n();
+  const bs = t.importProject.buildSettings;
 
   const [isEditing] = useState(mode === 'simple');
 
@@ -76,35 +81,35 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
   const primaryPortLabel = primaryEndpointHost
     ? (
       <>
-        Port for <span className="text-foreground font-semibold">{primaryEndpointHost}</span>
+        {bs.portForPrefix} <span className="text-foreground font-semibold">{primaryEndpointHost}</span>
       </>
     )
-    : 'Production Port';
+    : bs.productionPort;
 
   // ── Build-group fields (shown when Build is ON) ──────────────────
   const buildFields: InputField[] = [
     {
       key: 'installCommand',
-      label: 'Install Command',
+      label: bs.installCommandLabel,
       placeholder: 'bun install',
-      description: 'Command to install dependencies',
+      description: bs.installCommandDesc,
       type: 'text',
       icon: <Package className="size-4" />
     },
     ...(needsBuild ? [
       {
         key: 'buildCommand',
-        label: 'Build Command',
+        label: bs.buildCommandLabel,
         placeholder: 'npm run build',
-        description: 'Command to build your project',
+        description: bs.buildCommandDesc,
         type: 'text' as const,
         icon: <Terminal className="size-4" />
       },
       {
         key: 'outputDirectory',
-        label: 'Output Directory',
+        label: bs.outputDirectoryLabel,
         placeholder: '.next',
-        description: 'Directory with build output',
+        description: bs.outputDirectoryDesc,
         type: 'text' as const,
         icon: <FolderOutput className="size-4" />
       },
@@ -115,18 +120,18 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
   const advancedFields: InputField[] = [
     {
       key: 'rootDirectory',
-      label: 'Source Folder',
+      label: bs.sourceFolderLabel,
       placeholder: './',
-      description: 'Build from a subdirectory inside the repository or local project.',
+      description: bs.sourceFolderDesc,
       type: 'text',
       optional: true,
       icon: <FolderOutput className="size-4" />
     },
     {
       key: 'buildImage',
-      label: 'Build Image',
+      label: bs.buildImageLabel,
       placeholder: recommendedBuildImage,
-      description: 'Builder container image for cloud or server builds. Override it when the detected base image is wrong.',
+      description: bs.buildImageDesc,
       type: 'text',
       optional: true,
       icon: <BoxSelect className="size-4" />,
@@ -135,9 +140,9 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
     ...(needsBuild ? [
       {
         key: 'productionPaths',
-        label: 'Production Paths',
+        label: bs.productionPathsLabel,
         placeholder: 'dist, node_modules, package.json',
-        description: 'Only deploy these files/dirs after build - hides source code from runtime. Leave empty to run in-place.',
+        description: bs.productionPathsDesc,
         type: 'text' as const,
         optional: true,
         icon: <ShieldCheck className="size-4" />
@@ -149,17 +154,17 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
   const startFields: InputField[] = [
     {
       key: 'startCommand',
-      label: 'Start Command',
+      label: bs.startCommandLabel,
       placeholder: 'npm start',
-      description: 'Command to start your application',
+      description: bs.startCommandDesc,
       type: 'text',
       icon: <Play className="size-4" />
     },
     {
       key: 'productionPort',
       label: primaryPortLabel,
-      placeholder: 'Enter port',
-      description: 'Production port for your application',
+      placeholder: bs.enterPort,
+      description: bs.productionPortDesc,
       type: 'number',
       min: 1,
       max: 65535,
@@ -237,7 +242,7 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
             {field.label}
             {field.optional && (
-              <span className="text-muted-foreground/50 ml-1">(Optional)</span>
+              <span className="text-muted-foreground/50 ms-1">{bs.optional}</span>
             )}
           </label>
           <input
@@ -286,13 +291,13 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
                 disabled={loading[field.key]}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Save
+                {bs.save}
               </button>
               <button
                 onClick={() => handleCancel(field.key, value)}
                 className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-xl text-sm font-medium transition-all"
               >
-                Cancel
+                {bs.cancel}
               </button>
             </div>
           </div>
@@ -304,7 +309,7 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
             </div>
             <button
               onClick={() => handleEdit(field.key, value)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground/50 hover:text-primary transition-colors"
+              className="absolute end-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground/50 hover:text-primary transition-colors"
             >
               <Pencil className="size-4" />
             </button>
@@ -379,8 +384,8 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
         return (
           <div key={endpoint.id}>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-              Port for <span className="text-foreground font-semibold">{hostname}</span>
-              <span className="text-muted-foreground/50 ml-1">(Optional)</span>
+              {bs.portForPrefix} <span className="text-foreground font-semibold">{hostname}</span>
+              <span className="text-muted-foreground/50 ms-1">{bs.optional}</span>
             </label>
             <input
               type="number"
@@ -388,7 +393,7 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
               max={65535}
               value={endpoint.port || ''}
               onChange={(event) => handleAdditionalEndpointPortChange(endpoint.id, event.target.value)}
-              placeholder={config?.options?.productionPort || 'Enter port'}
+              placeholder={config?.options?.productionPort || bs.enterPort}
               className="w-full px-3.5 py-2.5 border border-border/50 rounded-lg text-sm text-foreground bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
@@ -406,7 +411,7 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
       return (
         <div key={endpoint.id}>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            Path for <span className="text-foreground font-semibold">{hostname}</span>
+            {bs.pathForPrefix} <span className="text-foreground font-semibold">{hostname}</span>
           </label>
           <input
             type="text"
@@ -425,16 +430,16 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
       <div className="bg-card rounded-2xl border border-border/50">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center justify-between px-5 py-4 text-left"
+          className="w-full flex items-center justify-between px-5 py-4 text-start"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center">
               <Settings2 className="size-[18px] text-orange-500" />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Deploy Configuration</p>
+              <p className="text-[15px] font-semibold text-foreground">{bs.deployConfig}</p>
               <p className="text-sm text-muted-foreground">
-                {config?.framework ? `${config.framework} defaults applied` : 'Configure build options'}
+                {config?.framework ? interpolate(bs.defaultsApplied, { framework: config.framework }) : bs.configureOptions}
               </p>
             </div>
           </div>
@@ -454,11 +459,11 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
                   <div className="flex items-center gap-2">
                     <Hammer className="w-3.5 h-3.5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">Build</p>
+                      <p className="text-sm font-medium text-foreground">{bs.build}</p>
                       <p className="text-sm text-muted-foreground leading-tight">
                         {hasBuild
-                          ? (config?.buildImage ? `Install & build in ${config.buildImage}` : 'Install & build commands')
-                          : 'Deploy source directly'}
+                          ? (config?.buildImage ? interpolate(bs.installBuildIn, { image: config.buildImage }) : bs.installBuildCommands)
+                          : bs.deploySourceDirectly}
                       </p>
                     </div>
                   </div>
@@ -472,11 +477,11 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
                   <div className="border border-border/30 rounded-lg overflow-hidden">
                     <button
                       onClick={() => setAdvancedOpen(!advancedOpen)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/30 transition-colors"
+                      className="w-full flex items-center justify-between px-3 py-2 text-start hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">Advanced</span>
+                        <span className="text-xs font-medium text-muted-foreground">{bs.advanced}</span>
                       </div>
                       {advancedOpen ? (
                         <ChevronUp className="size-3 text-muted-foreground" />
@@ -499,11 +504,11 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
                   <div className="flex items-center gap-2">
                     <Play className="w-3.5 h-3.5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">Start</p>
+                      <p className="text-sm font-medium text-foreground">{bs.start}</p>
                       <p className="text-sm text-muted-foreground leading-tight">
                         {hasServer
-                          ? (buildData?.productionPort ? `Server on port ${buildData.productionPort}` : 'Server port not set')
-                          : 'Static from edge'}
+                          ? (buildData?.productionPort ? interpolate(bs.serverOnPort, { port: String(buildData.productionPort) }) : bs.serverPortNotSet)
+                          : bs.staticFromEdge}
                       </p>
                     </div>
                   </div>
@@ -524,7 +529,7 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-6">
       <h2 className="text-lg font-semibold text-foreground mb-6">
-        Build Settings
+        {bs.buildSettingsTitle}
       </h2>
       <div className="grid gap-5 mb-6">
         <div className="grid md:grid-cols-2 gap-5">
@@ -540,7 +545,7 @@ const BuildSettings: React.FC<BuildSettingsProps> = ({
             className="flex items-center gap-2 mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ShieldCheck className="size-4" />
-            <span className="font-medium">Advanced</span>
+            <span className="font-medium">{bs.advanced}</span>
             {advancedOpen ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
           </button>
           {advancedOpen && (

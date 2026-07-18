@@ -16,9 +16,12 @@ import {
   X,
 } from "lucide-react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
+import { RoutingConfigCard } from "./RoutingConfigCard";
 import { invalidateProjectCaches } from "@/hooks/useProjectEndpoints";
 import { getApiErrorMessage, projectsApi, deployApi, domainsApi, serviceKind, servicesApi, type Service, type ServiceInput } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 import { usePlatform } from "@/context/PlatformContext";
 import { resolveServiceHostnameLabel } from "@repo/core";
 import PublicEndpointsCard from "@/components/routing/PublicEndpointsCard";
@@ -156,39 +159,41 @@ function resolveProjectEndpointHostname(endpoint: any, baseDomain: string): stri
   return domain ? `${domain}.${baseDomain}` : "";
 }
 
-function resolveDomainStatus(domain: any): { label: string; tone: DomainTone } {
+function resolveDomainStatus(domain: any, t: Dictionary): { label: string; tone: DomainTone } {
+  const s = t.projectSettings.domains.status;
   if (domain?.verified) {
-    return { label: "Verified", tone: "success" };
+    return { label: s.verified, tone: "success" };
   }
 
   switch (domain?.status) {
     case "active":
-      return { label: "Active", tone: "success" };
+      return { label: s.active, tone: "success" };
     case "failed":
-      return { label: "Failed", tone: "danger" };
+      return { label: s.failed, tone: "danger" };
     case "removing":
-      return { label: "Removing", tone: "neutral" };
+      return { label: s.removing, tone: "neutral" };
     default:
-      return { label: "Pending", tone: "warning" };
+      return { label: s.pending, tone: "warning" };
   }
 }
 
-function resolveDomainSsl(hostname: string, domain: any, baseDomain: string): { label: string; tone: DomainTone } {
+function resolveDomainSsl(hostname: string, domain: any, baseDomain: string, t: Dictionary): { label: string; tone: DomainTone } {
+  const s = t.projectSettings.domains.ssl;
   if (hostname.endsWith(`.${baseDomain}`)) {
-    return { label: "Included by host", tone: "success" };
+    return { label: s.includedByHost, tone: "success" };
   }
 
   switch (domain?.sslStatus) {
     case "active":
-      return { label: "Active", tone: "success" };
+      return { label: s.active, tone: "success" };
     case "provisioning":
-      return { label: "Provisioning", tone: "warning" };
+      return { label: s.provisioning, tone: "warning" };
     case "expired":
-      return { label: "Expired", tone: "danger" };
+      return { label: s.expired, tone: "danger" };
     case "error":
-      return { label: "Error", tone: "danger" };
+      return { label: s.error, tone: "danger" };
     default:
-      return { label: "Inactive", tone: "neutral" };
+      return { label: s.inactive, tone: "neutral" };
   }
 }
 
@@ -204,6 +209,7 @@ export const DomainSettings = () => {
     refreshServices,
   } = useProjectSettings();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const { baseDomain, selfHosted } = usePlatform();
 
   const [newDomain, setNewDomain] = useState("");
@@ -315,21 +321,21 @@ export const DomainSettings = () => {
         return {
           id: endpoint?.id || hostname,
           domainId,
-          title: index === 0 ? "Primary domain" : `Domain ${index + 1}`,
+          title: index === 0 ? t.projectSettings.domains.primaryDomainTitle : interpolate(t.projectSettings.domains.domainNTitle, { n: String(index + 1) }),
           hostname,
-          typeLabel: endpoint?.domainType === "custom" ? "Custom domain" : "Free subdomain",
+          typeLabel: endpoint?.domainType === "custom" ? t.projectSettings.domains.typeCustom : t.projectSettings.domains.typeFree,
           mappedLabel: hasProjectServer
-            ? (mappedPort ? `Port ${mappedPort}` : "No port selected")
+            ? (mappedPort ? interpolate(t.projectSettings.domains.portLabel, { port: String(mappedPort) }) : t.projectSettings.domains.noPortSelected)
             : (endpoint?.targetPath || "/"),
           liveUrl: `https://${hostname}`,
           isPrimary: index === 0,
           needsVerify,
-          status: resolveDomainStatus(domain),
-          ssl: resolveDomainSsl(hostname, domain, baseDomain),
+          status: resolveDomainStatus(domain, t),
+          ssl: resolveDomainSsl(hostname, domain, baseDomain, t),
         };
       })
       .filter((domain): domain is DomainSummaryItem => domain !== null);
-  }, [projectData.publicEndpoints, publicEndpoints, domainsData.domains, baseDomain, hasProjectServer, projectRuntimePort]);
+  }, [projectData.publicEndpoints, publicEndpoints, domainsData.domains, baseDomain, hasProjectServer, projectRuntimePort, t]);
 
   const primaryProjectDomain = domainSummaries[0] ?? null;
 
@@ -345,40 +351,41 @@ export const DomainSettings = () => {
   }, [draftPublicEndpoints]);
 
   const domainMeta = useMemo(() => {
+    const m = t.projectSettings.domains.meta;
     if (!hasDomain) {
       return {
-        title: "Access URL",
-        subtitle: "Local development endpoint",
-        typeLabel: "Local",
-        statusLabel: "Available on this machine",
+        title: m.accessTitle,
+        subtitle: m.accessSubtitle,
+        typeLabel: m.local,
+        statusLabel: m.availableOnMachine,
         statusTone: "neutral" as const,
       };
     }
 
     if (isManagedHostDomain) {
       return {
-        title: "Primary Domain",
+        title: m.primaryTitle,
         subtitle:
           domainSummaries.length > 1
-            ? `Primary route across ${domainSummaries.length} domains`
-            : "Host-managed production URL",
-        typeLabel: primaryProjectDomain?.typeLabel || "Free subdomain",
-        statusLabel: primaryProjectDomain?.status.label || "Verified",
+            ? interpolate(m.primaryAcross, { count: String(domainSummaries.length) })
+            : m.hostManaged,
+        typeLabel: primaryProjectDomain?.typeLabel || t.projectSettings.domains.typeFree,
+        statusLabel: primaryProjectDomain?.status.label || t.projectSettings.domains.status.verified,
         statusTone: primaryProjectDomain?.status.tone || ("success" as const),
       };
     }
 
     return {
-      title: "Primary Domain",
+      title: m.primaryTitle,
       subtitle:
         domainSummaries.length > 1
-          ? `Primary route across ${domainSummaries.length} domains`
-          : "Custom production domain",
-      typeLabel: primaryProjectDomain?.typeLabel || "Custom domain",
-      statusLabel: primaryProjectDomain?.status.label || "Pending",
+          ? interpolate(m.primaryAcross, { count: String(domainSummaries.length) })
+          : m.customProduction,
+      typeLabel: primaryProjectDomain?.typeLabel || t.projectSettings.domains.typeCustom,
+      statusLabel: primaryProjectDomain?.status.label || t.projectSettings.domains.status.pending,
       statusTone: primaryProjectDomain?.status.tone || ("warning" as const),
     };
-  }, [hasDomain, isManagedHostDomain, domainSummaries.length, primaryProjectDomain]);
+  }, [hasDomain, isManagedHostDomain, domainSummaries.length, primaryProjectDomain, t]);
 
   // The previous live SSL fetch (deployApi.sslStatus) only ran for the
   // primary domain — useless for multi-domain projects, redundant for
@@ -472,7 +479,7 @@ export const DomainSettings = () => {
     if (hasProjectServer) {
       const portNum = Number(portValue);
       if (!portValue || !Number.isFinite(portNum) || portNum < 1 || portNum > 65535) {
-        showToast("Enter the port this domain should route to (1–65535).", "error", "Add domain");
+        showToast(t.projectSettings.domains.toast.enterPort, "error", t.projectSettings.domains.toast.addDomainTitle);
         return;
       }
     }
@@ -486,9 +493,9 @@ export const DomainSettings = () => {
         const result = await projectsApi.connectDomain(id, { domain: host, includeWww });
         if (!result.success) {
           showToast(
-            result.error || "Failed to add domain",
+            result.error || t.projectSettings.domains.toast.addDomainFailed,
             "error",
-            result.message || "Add domain failed",
+            result.message || t.projectSettings.domains.toast.addDomainFailedTitle,
           );
           return;
         }
@@ -509,8 +516,8 @@ export const DomainSettings = () => {
       const ok = await persistPublicEndpoints(
         [...publicEndpoints, nextEndpoint],
         isCustom
-          ? `${label} added — apply the DNS records, then Verify.`
-          : `${label} added.`,
+          ? interpolate(t.projectSettings.domains.toast.addedCustom, { label })
+          : interpolate(t.projectSettings.domains.toast.addedFree, { label }),
       );
       if (!ok) return;
 
@@ -526,7 +533,7 @@ export const DomainSettings = () => {
       }
     } catch (err) {
       console.error("Failed to add domain:", err);
-      showToast(getApiErrorMessage(err) || "Failed to add domain", "error", "Add domain failed");
+      showToast(getApiErrorMessage(err) || t.projectSettings.domains.toast.addDomainFailed, "error", t.projectSettings.domains.toast.addDomainFailedTitle);
     } finally {
       setIsSubmitting(false);
     }
@@ -535,7 +542,7 @@ export const DomainSettings = () => {
   const handleCopy = async (text: string) => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
-    showToast("Copied to clipboard", "success");
+    showToast(t.projectSettings.domains.toast.copied, "success");
   };
 
   const handleVerifyDomain = async (domainId: string, hostname: string) => {
@@ -559,26 +566,26 @@ export const DomainSettings = () => {
         updateDomains(updatedDomains);
         invalidateProjectCaches(id);
         showToast(
-          result.message || `${hostname} verified — SSL is provisioning in the background.`,
+          result.message || interpolate(t.projectSettings.domains.toast.verifiedSuccess, { hostname }),
           "success",
-          "Domain verified",
+          t.projectSettings.domains.toast.verifiedTitle,
         );
       } else {
         // 422 path. result.cnameVerified/txtVerified explain what's
         // still missing so the user knows whether DNS hasn't propagated
         // OR they forgot the TXT challenge. Surface verbatim.
         showToast(
-          result.message || `${hostname} could not be verified yet.`,
+          result.message || interpolate(t.projectSettings.domains.toast.verifyNotYet, { hostname }),
           "error",
-          "Verification failed",
+          t.projectSettings.domains.toast.verifyFailedTitle,
         );
       }
     } catch (err) {
       console.error("Failed to verify domain:", err);
       showToast(
-        getApiErrorMessage(err) || "Failed to verify domain.",
+        getApiErrorMessage(err) || t.projectSettings.domains.toast.verifyFailed,
         "error",
-        "Verification failed",
+        t.projectSettings.domains.toast.verifyFailedTitle,
       );
     } finally {
       setVerifyingDomainId(null);
@@ -593,13 +600,13 @@ export const DomainSettings = () => {
       const result = await deployApi.sslRenew(hostname, false);
 
       if (result.success) {
-        showToast(`SSL renewed for ${hostname}.`, "success");
+        showToast(interpolate(t.projectSettings.domains.toast.sslRenewed, { hostname }), "success");
         // Pull the canonical sslExpiresAt off the DB row by re-fetching
         // project info. The status pill flips on the next render.
         invalidateProjectCaches(id);
       } else {
         showToast(
-          result.message || result.error || `Failed to renew SSL for ${hostname}.`,
+          result.message || result.error || interpolate(t.projectSettings.domains.toast.sslRenewFailed, { hostname }),
           "error",
           result.message,
         );
@@ -610,9 +617,9 @@ export const DomainSettings = () => {
       // ACME DNS/reachability errors) instead of a generic string — the API
       // returns it on the ApiError body and getApiErrorMessage walks it out.
       showToast(
-        getApiErrorMessage(error, `Failed to renew SSL for ${hostname}.`),
+        getApiErrorMessage(error, interpolate(t.projectSettings.domains.toast.sslRenewFailed, { hostname })),
         "error",
-        "SSL",
+        t.projectSettings.domains.toast.sslTitle,
       );
     } finally {
       setRenewingHostname(null);
@@ -629,18 +636,18 @@ export const DomainSettings = () => {
       const res = await domainsApi.verifySsl(domainId);
       const status = res?.data?.sslStatus;
       if (status === "active") {
-        showToast(`SSL verified for ${hostname}.`, "success", "SSL");
+        showToast(interpolate(t.projectSettings.domains.toast.sslVerified, { hostname }), "success", t.projectSettings.domains.toast.sslTitle);
       } else {
         showToast(
-          `No valid certificate found for ${hostname} yet. If you just deployed, give Let's Encrypt a moment, then recheck.`,
+          interpolate(t.projectSettings.domains.toast.sslNoCert, { hostname }),
           "error",
-          "SSL",
+          t.projectSettings.domains.toast.sslTitle,
         );
       }
       invalidateProjectCaches(id);
     } catch (error) {
       console.error("Failed to recheck SSL:", error);
-      showToast(getApiErrorMessage(error, `Failed to recheck SSL for ${hostname}.`), "error", "SSL");
+      showToast(getApiErrorMessage(error, interpolate(t.projectSettings.domains.toast.sslRecheckFailed, { hostname })), "error", t.projectSettings.domains.toast.sslTitle);
     } finally {
       setRecheckingDomainId(null);
     }
@@ -663,14 +670,14 @@ export const DomainSettings = () => {
   // lockstep. Returns false (with a toast) if any endpoint is incomplete.
   const persistPublicEndpoints = async (
     endpoints: PublicEndpoint[],
-    successMessage = "Domain routing updated",
+    successMessage = t.projectSettings.domains.toast.routingUpdated,
   ): Promise<boolean> => {
     const payload = endpoints
       .map((endpoint) => buildPublicEndpointPayload(endpoint, hasProjectServer))
       .filter((endpoint): endpoint is NonNullable<ReturnType<typeof buildPublicEndpointPayload>> => endpoint !== null);
 
     if (payload.length !== endpoints.length || payload.length === 0) {
-      showToast("Complete every domain and mapped port before saving", "error", "Domains");
+      showToast(t.projectSettings.domains.toast.completeEndpoints, "error", t.projectSettings.domains.toast.domainsTitle);
       return false;
     }
 
@@ -728,11 +735,11 @@ export const DomainSettings = () => {
       // Drop the cached project info so the next mount of Overview /
       // any hook consumer refetches with the new domain state.
       if (id) invalidateProjectCaches(id);
-      showToast(successMessage, "success", "Domains");
+      showToast(successMessage, "success", t.projectSettings.domains.toast.domainsTitle);
       setIsEditingDomains(false);
       return true;
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to update domain routing"), "error", "Domains");
+      showToast(getApiErrorMessage(error, t.projectSettings.domains.toast.routingUpdateFailed), "error", t.projectSettings.domains.toast.domainsTitle);
       return false;
     } finally {
       setIsSavingPublicEndpoints(false);
@@ -758,7 +765,7 @@ export const DomainSettings = () => {
     setSettingPrimaryId(summary.id);
     try {
       setPublicEndpoints(reordered);
-      await persistPublicEndpoints(reordered, "Primary domain updated");
+      await persistPublicEndpoints(reordered, t.projectSettings.domains.toast.primaryUpdated);
     } finally {
       setSettingPrimaryId(null);
     }
@@ -782,9 +789,9 @@ export const DomainSettings = () => {
         ),
       );
       if (id) invalidateProjectCaches(id);
-      showToast("Primary domain updated", "success", "Domains");
+      showToast(t.projectSettings.domains.toast.primaryUpdated, "success", t.projectSettings.domains.toast.domainsTitle);
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to set primary domain"), "error", "Domains");
+      showToast(getApiErrorMessage(error, t.projectSettings.domains.toast.setPrimaryFailed), "error", t.projectSettings.domains.toast.domainsTitle);
     } finally {
       setSettingPrimaryId(null);
     }
@@ -805,9 +812,9 @@ export const DomainSettings = () => {
     if (!service.enabled) {
       return {
         connected: false,
-        statusLabel: "Disabled",
+        statusLabel: t.projectSettings.domains.route.disabled,
         statusClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-        detail: service.exposed ? "Route paused" : "Service disabled",
+        detail: service.exposed ? t.projectSettings.domains.route.routePaused : t.projectSettings.domains.route.serviceDisabled,
         liveUrl,
       };
     }
@@ -815,18 +822,18 @@ export const DomainSettings = () => {
     if (!service.exposed) {
       return {
         connected: false,
-        statusLabel: "Internal",
+        statusLabel: t.projectSettings.domains.route.internal,
         statusClass: "bg-muted/60 text-muted-foreground/70",
-        detail: "Not exposed",
+        detail: t.projectSettings.domains.route.notExposed,
         liveUrl: null as string | null,
       };
     }
 
     return {
       connected: true,
-      statusLabel: "Public",
+      statusLabel: t.projectSettings.domains.route.public,
       statusClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-      detail: service.domainType === "custom" ? "Custom domain" : "Free subdomain",
+      detail: service.domainType === "custom" ? t.projectSettings.domains.typeCustom : t.projectSettings.domains.typeFree,
       liveUrl,
     };
   };
@@ -841,7 +848,7 @@ export const DomainSettings = () => {
       await refreshServices();
     } catch (error) {
       console.error("Failed to update service route:", error);
-      showToast("Failed to update service route", "error");
+      showToast(t.projectSettings.domains.toast.routeUpdateFailed, "error");
     } finally {
       setRouteSavingServiceId(null);
     }
@@ -873,17 +880,17 @@ export const DomainSettings = () => {
     const { domainType, domain, port } = addRouteDraft;
     const cleanPort = port.trim();
     if (!cleanPort) {
-      setAddRouteError("Enter the port this domain should route to.");
+      setAddRouteError(t.projectSettings.domains.toast.enterPortShort);
       return;
     }
     const target = findServiceByPort(cleanPort);
     if (!target) {
-      setAddRouteError(`No service publishes port ${cleanPort}. Add that port to a service first.`);
+      setAddRouteError(interpolate(t.projectSettings.domains.toast.noServicePort, { port: cleanPort }));
       return;
     }
     const domainValue = domain.trim();
     if (!domainValue) {
-      setAddRouteError(domainType === "custom" ? "Enter a custom domain." : "Enter a subdomain.");
+      setAddRouteError(domainType === "custom" ? t.projectSettings.domains.toast.enterCustom : t.projectSettings.domains.toast.enterSubdomain);
       return;
     }
     setAddRouteSaving(true);
@@ -925,13 +932,13 @@ export const DomainSettings = () => {
             domainId: typeof domain?.id === "string" ? domain.id : undefined,
             title: service.name,
             hostname,
-            typeLabel: service.domainType === "custom" ? "Custom domain" : "Free subdomain",
-            mappedLabel: `Port ${service.exposedPort || firstContainerPort(service.ports) || "auto"}`,
+            typeLabel: service.domainType === "custom" ? t.projectSettings.domains.typeCustom : t.projectSettings.domains.typeFree,
+            mappedLabel: interpolate(t.projectSettings.domains.portLabel, { port: String(service.exposedPort || firstContainerPort(service.ports) || "auto") }),
             liveUrl: `https://${hostname}`,
             isPrimary: domain?.isPrimary ?? false,
             needsVerify: !!domain && domain.verified === false,
-            status: resolveDomainStatus(domain),
-            ssl: resolveDomainSsl(hostname, domain, baseDomain),
+            status: resolveDomainStatus(domain, t),
+            ssl: resolveDomainSsl(hostname, domain, baseDomain, t),
           },
         };
       });
@@ -951,14 +958,15 @@ export const DomainSettings = () => {
     isSettingPrimary?: boolean;
   }): MenuAction[] => {
     const { domain, isVerifying, isManagedRow, isRenewing, isRechecking, onEditRoute, onSetPrimary, isSettingPrimary } = opts;
+    const m = t.projectSettings.domains.menu;
     const items: MenuAction[] = [];
     if (onEditRoute) {
-      items.push({ id: "edit", label: "Edit route", icon: <Pencil className="size-4" />, onClick: onEditRoute });
+      items.push({ id: "edit", label: m.editRoute, icon: <Pencil className="size-4" />, onClick: onEditRoute });
     }
     if (onSetPrimary) {
       items.push({
         id: "set-primary",
-        label: isSettingPrimary ? "Setting primary..." : "Set as primary",
+        label: isSettingPrimary ? m.settingPrimary : m.setPrimary,
         icon: <Star className={isSettingPrimary ? "size-4 animate-pulse" : "size-4"} />,
         onClick: onSetPrimary,
         disabled: isSettingPrimary,
@@ -967,7 +975,7 @@ export const DomainSettings = () => {
     if (domain.needsVerify && domain.domainId) {
       items.push({
         id: "verify",
-        label: isVerifying ? "Verifying..." : "Verify",
+        label: isVerifying ? m.verifying : m.verify,
         icon: <RefreshCw className={isVerifying ? "size-4 animate-spin" : "size-4"} />,
         onClick: () => void handleVerifyDomain(domain.domainId!, domain.hostname),
         disabled: isVerifying,
@@ -976,14 +984,14 @@ export const DomainSettings = () => {
     if (!isManagedRow && !domain.needsVerify && domain.domainId) {
       items.push({
         id: "renew",
-        label: isRenewing ? "Renewing..." : "Renew SSL",
+        label: isRenewing ? m.renewing : m.renewSsl,
         icon: <ShieldAlert className={isRenewing ? "size-4 animate-spin" : "size-4"} />,
         onClick: () => void handleRenewDomainSsl(domain.hostname),
         disabled: isRenewing,
       });
       items.push({
         id: "recheck",
-        label: isRechecking ? "Rechecking..." : "Recheck SSL",
+        label: isRechecking ? m.rechecking : m.recheckSsl,
         icon: <RefreshCw className={isRechecking ? "size-4 animate-spin" : "size-4"} />,
         onClick: () => void handleRecheckSsl(domain.domainId!, domain.hostname),
         disabled: isRechecking,
@@ -1022,12 +1030,12 @@ export const DomainSettings = () => {
   };
   const singleDomainActions = (
     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-      <ActionButton href={currentHref} label="Visit" icon={ExternalLink} />
+      <ActionButton href={currentHref} label={t.projectSettings.domains.actions.visit} icon={ExternalLink} />
       {hasProjectLevelRouting ? (
-        <ActionButton label="Edit domains" icon={Pencil} onClick={handleStartEditingDomains} />
+        <ActionButton label={t.projectSettings.domains.actions.editDomains} icon={Pencil} onClick={handleStartEditingDomains} />
       ) : null}
       <ActionButton
-        label={showCustomDomainSection ? "Hide setup" : "Add domain"}
+        label={showCustomDomainSection ? t.projectSettings.domains.actions.hideSetup : t.projectSettings.domains.actions.addDomain}
         icon={Plus}
         onClick={handleToggleCustomDomain}
       />
@@ -1035,9 +1043,9 @@ export const DomainSettings = () => {
   );
   const multiDomainActions = (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <ActionButton label="Edit domains" icon={Pencil} onClick={handleStartEditingDomains} />
+      <ActionButton label={t.projectSettings.domains.actions.editDomains} icon={Pencil} onClick={handleStartEditingDomains} />
       <ActionButton
-        label={showCustomDomainSection ? "Hide setup" : "Add domain"}
+        label={showCustomDomainSection ? t.projectSettings.domains.actions.hideSetup : t.projectSettings.domains.actions.addDomain}
         icon={Plus}
         onClick={handleToggleCustomDomain}
       />
@@ -1059,6 +1067,11 @@ export const DomainSettings = () => {
 
   return (
     <div className="space-y-5">
+      <RoutingConfigCard
+        id={id}
+        initial={projectData.routingConfig}
+        onSaved={(cfg) => setProjectData((prev) => ({ ...prev, routingConfig: cfg }))}
+      />
       {showCustomDomainSection ? (
         // Custom Domain setup sits ABOVE the existing list so the form
         // is the first thing the user sees after clicking Add domain —
@@ -1068,8 +1081,8 @@ export const DomainSettings = () => {
         // placeholder noise before the user has done anything.
         <div className={`grid grid-cols-1 gap-5 ${hasDnsRecords ? "lg:grid-cols-2" : ""}`}>
           <SectionCard
-            title="Add domain"
-            description="Add a route: pick a free or custom domain and the port it maps to."
+            title={t.projectSettings.domains.add.title}
+            description={t.projectSettings.domains.add.description}
             icon={Plus}
             iconTone="blue"
           >
@@ -1087,31 +1100,31 @@ export const DomainSettings = () => {
                         : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                     }`}
                   >
-                    {type === "free" ? "Free subdomain" : "Custom domain"}
+                    {type === "free" ? t.projectSettings.domains.add.free : t.projectSettings.domains.add.custom}
                   </button>
                 ))}
               </div>
 
               <div className="space-y-2">
                 <label className="text-[13px] font-medium text-foreground">
-                  {newDomainType === "custom" ? "Domain name" : "Subdomain"}
+                  {newDomainType === "custom" ? t.projectSettings.domains.add.domainName : t.projectSettings.domains.add.subdomain}
                 </label>
                 <div className="flex items-center overflow-hidden rounded-xl border border-border bg-background transition-colors focus-within:border-primary/40">
                   <input
-                    placeholder={newDomainType === "custom" ? "yourdomain.com" : projectLabel || "my-app"}
+                    placeholder={newDomainType === "custom" ? t.projectSettings.domains.add.customPlaceholder : projectLabel || t.projectSettings.domains.add.defaultAppName}
                     value={newDomain}
                     onChange={(e) => setNewDomain(e.target.value)}
                     className="flex-1 bg-transparent px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
                   />
                   {newDomainType === "free" && (
-                    <span className="shrink-0 pr-4 text-sm text-muted-foreground">.{baseDomain}</span>
+                    <span className="shrink-0 pe-4 text-sm text-muted-foreground">.{baseDomain}</span>
                   )}
                 </div>
               </div>
 
               {hasProjectServer && (
                 <div className="space-y-2">
-                  <label className="text-[13px] font-medium text-foreground">Maps to port</label>
+                  <label className="text-[13px] font-medium text-foreground">{t.projectSettings.domains.add.mapsToPort}</label>
                   <input
                     value={newDomainPort}
                     onChange={(e) => setNewDomainPort(e.target.value)}
@@ -1125,9 +1138,9 @@ export const DomainSettings = () => {
               {newDomainType === "custom" && (
                 <div className="flex items-center justify-between rounded-xl border border-border/50 bg-muted/25 px-4 py-3">
                   <div>
-                    <p className="text-[13px] font-medium text-foreground">Include www</p>
+                    <p className="text-[13px] font-medium text-foreground">{t.projectSettings.domains.add.includeWww}</p>
                     <p className="text-[12px] text-muted-foreground">
-                      Also generate records for www.{newDomain || "yourdomain.com"}
+                      {interpolate(t.projectSettings.domains.add.includeWwwDesc, { domain: newDomain || t.projectSettings.domains.add.includeWwwFallback })}
                     </p>
                   </div>
                   <button
@@ -1156,7 +1169,7 @@ export const DomainSettings = () => {
                   ) : (
                     <Plus className="size-4" />
                   )}
-                  {isSubmitting ? "Adding..." : "Add domain"}
+                  {isSubmitting ? t.projectSettings.domains.add.adding : t.projectSettings.domains.add.submit}
                 </button>
               </div>
             </div>
@@ -1164,11 +1177,11 @@ export const DomainSettings = () => {
 
           {hasDnsRecords ? (
             <SectionCard
-              title="DNS Records"
+              title={t.projectSettings.domains.dns.title}
               description={
                 isPreviewOnly
-                  ? "Add these records at your DNS provider, then click Add domain to attach it"
-                  : "Apply these records at your DNS provider, then wait for propagation"
+                  ? t.projectSettings.domains.dns.descPreview
+                  : t.projectSettings.domains.dns.descApply
               }
               icon={Link2}
               iconTone="orange"
@@ -1185,8 +1198,8 @@ export const DomainSettings = () => {
 
               <div className="rounded-xl bg-muted/35 px-4 py-3 text-[12px] text-muted-foreground">
                 {isPreviewOnly
-                  ? "Add these records first — they don't change after adding, so propagation starts now. Then press Add domain to attach it, and finally Verify once DNS resolves."
-                  : "DNS changes can take up to 48 hours to propagate globally. Once the records resolve, click Verify below — we'll check DNS, mark the domain active, and provision SSL in the background."}
+                  ? t.projectSettings.domains.dns.infoPreview
+                  : t.projectSettings.domains.dns.infoApply}
               </div>
 
               {pendingVerifyDomain ? (
@@ -1194,8 +1207,8 @@ export const DomainSettings = () => {
                   <ActionButton
                     label={
                       verifyingDomainId === pendingVerifyDomain.id
-                        ? "Verifying..."
-                        : `Verify ${pendingVerifyDomain.hostname}`
+                        ? t.projectSettings.domains.dns.verifying
+                        : interpolate(t.projectSettings.domains.dns.verify, { hostname: pendingVerifyDomain.hostname })
                     }
                     icon={verifyingDomainId === pendingVerifyDomain.id ? Loader2 : RefreshCw}
                     onClick={() =>
@@ -1221,10 +1234,10 @@ export const DomainSettings = () => {
           iconTone="primary"
           actions={singleDomainActions}
         >
-          <ValueBlock label="Local URL" value={currentUrl} />
-          <InfoRow label="Type" value={domainMeta.typeLabel} />
+          <ValueBlock label={t.projectSettings.domains.cold.localUrl} value={currentUrl} />
+          <InfoRow label={t.projectSettings.domains.cold.type} value={domainMeta.typeLabel} />
           <InfoRow
-            label="Status"
+            label={t.projectSettings.domains.cold.status}
             value={<StatusPill tone={domainMeta.statusTone}>{domainMeta.statusLabel}</StatusPill>}
           />
         </SectionCard>
@@ -1283,11 +1296,11 @@ export const DomainSettings = () => {
         <div className="space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-[14px] font-semibold text-foreground">Edit domains</h3>
+              <h3 className="text-[14px] font-semibold text-foreground">{t.projectSettings.domains.edit.title}</h3>
               <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {hasProjectServer
-                  ? "Edit which internal port each domain should route to."
-                  : "Edit which static path each domain should serve."}
+                  ? t.projectSettings.domains.edit.descServer
+                  : t.projectSettings.domains.edit.descStatic}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -1298,7 +1311,7 @@ export const DomainSettings = () => {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground/[0.06] px-4 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X className="size-4" />
-                Cancel
+                {t.projectSettings.domains.edit.cancel}
               </button>
               <button
                 type="button"
@@ -1311,7 +1324,7 @@ export const DomainSettings = () => {
                 ) : (
                   <CheckCircle2 className="size-4" />
                 )}
-                {isSavingPublicEndpoints ? "Saving..." : "Save changes"}
+                {isSavingPublicEndpoints ? t.projectSettings.domains.edit.saving : t.projectSettings.domains.edit.save}
               </button>
             </div>
           </div>
@@ -1330,7 +1343,7 @@ export const DomainSettings = () => {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-end gap-2">
             <ActionButton
-              label={showAddRoute ? "Cancel" : "Add route"}
+              label={showAddRoute ? t.projectSettings.domains.addRoute.cancel : t.projectSettings.domains.addRoute.add}
               icon={Plus}
               onClick={() => {
                 setAddRouteError(null);
@@ -1352,7 +1365,7 @@ export const DomainSettings = () => {
                         : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                     }`}
                   >
-                    {type === "free" ? "Free subdomain" : "Custom domain"}
+                    {type === "free" ? t.projectSettings.domains.addRoute.free : t.projectSettings.domains.addRoute.custom}
                   </button>
                 ))}
               </div>
@@ -1361,19 +1374,19 @@ export const DomainSettings = () => {
                   <input
                     value={addRouteDraft.domain}
                     onChange={(e) => setAddRouteDraft((d) => ({ ...d, domain: e.target.value }))}
-                    placeholder={addRouteDraft.domainType === "custom" ? "app.example.com" : projectLabel || "my-service"}
+                    placeholder={addRouteDraft.domainType === "custom" ? t.projectSettings.domains.addRoute.customPlaceholder : projectLabel || t.projectSettings.domains.addRoute.defaultServiceName}
                     className="flex-1 bg-transparent px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
                   />
                   {addRouteDraft.domainType === "free" && (
-                    <span className="shrink-0 pr-3 text-sm text-muted-foreground">.{baseDomain}</span>
+                    <span className="shrink-0 pe-3 text-sm text-muted-foreground">.{baseDomain}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] text-muted-foreground">Port</span>
+                  <span className="text-[13px] text-muted-foreground">{t.projectSettings.domains.addRoute.port}</span>
                   <input
                     value={addRouteDraft.port}
                     onChange={(e) => setAddRouteDraft((d) => ({ ...d, port: e.target.value }))}
-                    placeholder="8080"
+                    placeholder={t.projectSettings.domains.addRoute.portPlaceholder}
                     inputMode="numeric"
                     className="w-24 rounded-xl border border-border/50 bg-background px-3 py-2.5 text-sm text-foreground outline-none"
                   />
@@ -1384,7 +1397,7 @@ export const DomainSettings = () => {
                     className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-4 py-2.5 text-[13px] font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
                   >
                     {addRouteSaving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-                    Add
+                    {t.projectSettings.domains.addRoute.submit}
                   </button>
                 </div>
               </div>
@@ -1393,10 +1406,10 @@ export const DomainSettings = () => {
           )}
 
           {servicesLoading ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Loading routes...</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t.projectSettings.domains.addRoute.loading}</div>
           ) : serviceRouteCards.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              No domains yet. Click <span className="font-medium text-foreground">Add route</span> to point a domain at a service&apos;s port.
+              {t.projectSettings.domains.addRoute.emptyPrefix}<span className="font-medium text-foreground">{t.projectSettings.domains.addRoute.emptyAction}</span>{t.projectSettings.domains.addRoute.emptySuffix}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -1433,12 +1446,12 @@ export const DomainSettings = () => {
           >
             <div className="flex items-center justify-between gap-4 border-b border-border/40 px-5 py-4">
               <div className="min-w-0">
-                <h3 className="text-[14px] font-semibold text-foreground">Edit route</h3>
+                <h3 className="text-[14px] font-semibold text-foreground">{t.projectSettings.domains.editRoute.title}</h3>
                 <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                   {editingRouteService.name}
                   {editingRoute.liveUrl
                     ? ` · ${editingRoute.liveUrl.replace("https://", "")}`
-                    : " · Internal only"}
+                    : ` · ${t.projectSettings.domains.editRoute.internalOnly}`}
                 </p>
               </div>
               <button
@@ -1446,7 +1459,7 @@ export const DomainSettings = () => {
                 onClick={() => setEditingRouteServiceId(null)}
                 className="inline-flex min-h-9 items-center rounded-xl bg-foreground/[0.06] px-3 text-[12px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1]"
               >
-                Close
+                {t.projectSettings.domains.editRoute.close}
               </button>
             </div>
 
@@ -1484,7 +1497,7 @@ export const DomainSettings = () => {
               />
               {!editingRouteService.enabled && editingRouteService.exposed && (
                 <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
-                  Service is disabled - routes are inactive until the service is re-enabled.
+                  {t.projectSettings.domains.editRoute.disabledWarning}
                 </p>
               )}
             </div>
@@ -1545,7 +1558,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-[13px] text-muted-foreground">{label}</span>
-      <div className="text-right">
+      <div className="text-end">
         {typeof value === "string" ? (
           <span className="text-[13px] font-medium text-foreground">{value}</span>
         ) : (
@@ -1648,6 +1661,7 @@ function DomainOverviewCard({
    *  is a plain icon, not a menu item — it's the one everyday action. */
   menuActions?: MenuAction[];
 }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
       <div className="flex items-start justify-between gap-2 border-b border-border/40 px-5 py-4">
@@ -1656,7 +1670,7 @@ function DomainOverviewCard({
             <h3 className="text-[15px] font-semibold text-foreground">{domain.title}</h3>
             {domain.isPrimary ? (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                Primary
+                {t.projectSettings.domains.overview.primary}
               </span>
             ) : null}
           </div>
@@ -1668,8 +1682,8 @@ function DomainOverviewCard({
               href={domain.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              title="Visit"
-              aria-label="Visit"
+              title={t.projectSettings.domains.overview.visit}
+              aria-label={t.projectSettings.domains.overview.visit}
               className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <ExternalLink className="size-4" />
@@ -1681,9 +1695,9 @@ function DomainOverviewCard({
 
       <div className="space-y-4 px-5 py-4">
         <div className="break-all text-[15px] font-semibold text-foreground">{domain.hostname}</div>
-        <InfoRow label="Mapped to" value={domain.mappedLabel} />
-        <InfoRow label="Status" value={<StatusPill tone={domain.status.tone}>{domain.status.label}</StatusPill>} />
-        <InfoRow label="SSL" value={<StatusPill tone={domain.ssl.tone}>{domain.ssl.label}</StatusPill>} />
+        <InfoRow label={t.projectSettings.domains.overview.mappedTo} value={domain.mappedLabel} />
+        <InfoRow label={t.projectSettings.domains.overview.status} value={<StatusPill tone={domain.status.tone}>{domain.status.label}</StatusPill>} />
+        <InfoRow label={t.projectSettings.domains.overview.ssl} value={<StatusPill tone={domain.ssl.tone}>{domain.ssl.label}</StatusPill>} />
       </div>
     </div>
   );
@@ -1696,6 +1710,7 @@ function DnsRecordRow({
   record: DnsRecord;
   onCopy: (text: string) => void | Promise<void>;
 }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
@@ -1712,7 +1727,7 @@ function DnsRecordRow({
           <button
             onClick={() => onCopy(record.value)}
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-            title="Copy"
+            title={t.projectSettings.domains.dns.copy}
           >
             <Copy className="size-3.5" />
           </button>

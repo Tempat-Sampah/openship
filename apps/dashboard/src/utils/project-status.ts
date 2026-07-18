@@ -1,3 +1,5 @@
+import type { Dictionary } from "@/i18n";
+
 export type ProjectStatus =
   | "live"
   | "attention"
@@ -16,62 +18,64 @@ type ProjectStatusSource = {
    *  operator's keep/reject decision — surfaced as "Action Required", never
    *  "Live". */
   awaitingDecision?: boolean | null;
+  /** True when the live release deployed fine but its free .opsh.io edge route
+   *  didn't sync — also surfaced as "Action Required", with a Retry routing
+   *  action (distinct from the keep/reject decision above). */
+  routingUnsynced?: boolean | null;
   deletedAt?: string | null;
   /** True while an atomic teardown is in flight (the real in-progress flag;
    *  teardown hard-deletes on success, so `deletedAt` is rarely set). */
   deletionInProgress?: boolean | null;
 };
 
+// CSS-only presentation. The human-readable label is resolved from the
+// active dictionary via `projectStatusLabel(status, t)` so badges localize.
 export const PROJECT_STATUS_META: Record<
   ProjectStatus,
-  { label: string; badge: string; dot: string }
+  { badge: string; dot: string }
 > = {
   live: {
-    label: "Live",
     badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     dot: "bg-emerald-500",
   },
   attention: {
-    label: "Action Required",
     badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     dot: "bg-amber-500",
   },
   queued: {
-    label: "Queued",
     badge: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
     dot: "bg-sky-500",
   },
   building: {
-    label: "Building",
     badge: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
     dot: "bg-sky-500",
   },
   deploying: {
-    label: "Deploying",
     badge: "bg-primary/10 text-primary",
     dot: "bg-primary",
   },
   failed: {
-    label: "Failed",
     badge: "bg-red-500/10 text-red-600 dark:text-red-400",
     dot: "bg-red-500",
   },
   cancelled: {
-    label: "Cancelled",
     badge: "bg-muted text-muted-foreground",
     dot: "bg-muted-foreground",
   },
   deleting: {
-    label: "Deleting",
     badge: "bg-red-500/10 text-red-600 dark:text-red-400",
     dot: "bg-red-500 animate-pulse",
   },
   draft: {
-    label: "Draft",
     badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     dot: "bg-amber-500",
   },
 };
+
+/** Localized status label for a project/deployment status pill. */
+export function projectStatusLabel(status: ProjectStatus, t: Dictionary): string {
+  return t.projects.status[status];
+}
 
 export function getProjectStatus(project: ProjectStatusSource): ProjectStatus {
   if (project.deletedAt || project.deletionInProgress) {
@@ -89,9 +93,10 @@ export function getProjectStatus(project: ProjectStatusSource): ProjectStatus {
       break;
   }
 
-  // A live release that's a partial-failure deploy still awaiting a keep/reject
-  // decision is flagged "Action Required" — never the green "Live".
-  if (project.awaitingDecision) {
+  // A live release that still needs the operator: either a partial-failure
+  // deploy awaiting keep/reject, or one whose free-domain edge route didn't
+  // sync. Both flag "Action Required" — never the green "Live".
+  if (project.awaitingDecision || project.routingUnsynced) {
     return "attention";
   }
 

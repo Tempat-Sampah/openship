@@ -21,8 +21,9 @@ import { projectsApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import HomeTipCard from "@/components/overview/HomeTipCard";
 import HomeWelcome from "@/components/overview/HomeWelcome";
-import { useI18n } from "@/components/i18n-provider";
-import { getProjectStatus, PROJECT_STATUS_META } from "@/utils/project-status";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import { getProjectStatus, PROJECT_STATUS_META, projectStatusLabel } from "@/utils/project-status";
+import type { Dictionary } from "@/i18n";
 import { PageContainer } from "@/components/ui/PageContainer";
 import ProjectCard from "./projects/components/ProjectCard";
 import { type Project } from "@/constants/mock";
@@ -35,16 +36,16 @@ import { type Project } from "@/constants/mock";
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, labels: Dictionary["dashboard"]["home"]["time"]): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return labels.justNow;
+  if (mins < 60) return interpolate(labels.minutes, { n: String(mins) });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return interpolate(labels.hours, { n: String(hrs) });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
+  if (days < 30) return interpolate(labels.days, { n: String(days) });
+  return interpolate(labels.months, { n: String(Math.floor(days / 30)) });
 }
 
 import { useDashboardHome } from "@/hooks/useDashboardHome";
@@ -84,7 +85,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
         {/* ── Header ─────────────────────────────────────────────── */}
         <div className="mb-6">
           <h1 className="text-2xl font-medium text-foreground/80" style={{ letterSpacing: "-0.2px" }}>
-            {displayName ? `${greeting}, ${displayName}` : greeting}
+            {displayName ? interpolate(t.dashboard.home.greetingName, { greeting, name: displayName }) : greeting}
           </h1>
           <p className="text-sm text-muted-foreground/70 mt-1">
             {t.dashboard.home.subtitle}
@@ -105,9 +106,16 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                     <FolderKanban className="size-[18px] text-primary" />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground text-[15px]">Your Projects</h2>
+                    <h2 className="font-semibold text-foreground text-[15px]">{t.dashboard.home.yourProjects}</h2>
                     <p className="text-xs text-muted-foreground">
-                      {loading ? "Loading..." : `${projects.length} project${projects.length !== 1 ? 's' : ''}`}
+                      {loading
+                        ? t.dashboard.home.loading
+                        : interpolate(
+                            projects.length === 1
+                              ? t.dashboard.home.projectCountOne
+                              : t.dashboard.home.projectCountOther,
+                            { count: String(projects.length) },
+                          )}
                     </p>
                   </div>
                 </div>
@@ -115,7 +123,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                   href="/projects"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
-                  View all
+                  {t.dashboard.home.viewAll}
                   <ArrowRight className="size-3.5" />
                 </Link>
               </div>
@@ -144,7 +152,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                       href="/projects"
                       className="block px-5 py-3 text-center text-sm text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-colors"
                     >
-                      View all {projects.length} projects →
+                      {interpolate(t.dashboard.home.viewAllProjects, { count: String(projects.length) })}
                     </Link>
                   )}
                 </div>
@@ -160,8 +168,8 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                 <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                   <GitBranch className="size-[18px] text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-foreground">Import Git</p>
-                <p className="text-xs text-muted-foreground mt-0.5">From repository</p>
+                <p className="text-sm font-medium text-foreground">{t.dashboard.home.importGit}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t.dashboard.home.importGitDesc}</p>
               </Link>
               <Link
                 href="/settings?tab=mcp"
@@ -170,8 +178,8 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                 <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                   <Boxes className="size-[18px] text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-foreground">MCP Deploy</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Connect an AI agent</p>
+                <p className="text-sm font-medium text-foreground">{t.dashboard.home.mcpDeploy}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t.dashboard.home.mcpDeployDesc}</p>
               </Link>
               <Link
                 href="/settings"
@@ -180,8 +188,8 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                 <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                   <Settings className="size-[18px] text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-foreground">Settings</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Account & team</p>
+                <p className="text-sm font-medium text-foreground">{t.dashboard.home.settingsCard}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t.dashboard.home.settingsCardDesc}</p>
               </Link>
               <a
                 href="https://docs.openship.io"
@@ -193,10 +201,10 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                   <BookOpen className="size-[18px] text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium text-foreground flex items-center gap-1">
-                  Docs
+                  {t.dashboard.home.docs}
                   <ExternalLink className="size-3 text-muted-foreground" />
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Learn more</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t.dashboard.home.docsDesc}</p>
               </a>
             </div>
           </div>
@@ -208,7 +216,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
             <div className="bg-card rounded-2xl border border-border/50 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Activity className="size-4 text-muted-foreground" />
-                <h3 className="font-semibold text-foreground text-sm">Activity</h3>
+                <h3 className="font-semibold text-foreground text-sm">{t.dashboard.home.activityTitle}</h3>
               </div>
               
               <div className="space-y-3">
@@ -217,7 +225,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                       <FolderKanban className="size-4 text-primary" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Projects</span>
+                    <span className="text-sm text-muted-foreground">{t.dashboard.home.statsProjects}</span>
                   </div>
                   <span className="text-lg font-semibold text-foreground">
                     {loading ? "–" : numbers.total_active_projects ?? 0}
@@ -229,7 +237,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                     <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
                       <Rocket className="size-4 text-orange-500" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Deployments</span>
+                    <span className="text-sm text-muted-foreground">{t.dashboard.home.statsDeployments}</span>
                   </div>
                   <span className="text-lg font-semibold text-foreground">
                     {loading ? "–" : numbers.total_deployments ?? 0}
@@ -241,7 +249,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-emerald-500" />
-                    <span className="text-sm text-muted-foreground">Success rate</span>
+                    <span className="text-sm text-muted-foreground">{t.dashboard.home.successRate}</span>
                   </div>
                   <span className={`text-sm font-medium ${successRate >= 80 ? 'text-emerald-500' : successRate >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
                     {loading ? "–" : `${successRate}%`}
@@ -256,7 +264,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
             <div className="bg-card rounded-2xl border border-border/50 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="size-4 text-muted-foreground" />
-                <h3 className="font-semibold text-foreground text-sm">Recent</h3>
+                <h3 className="font-semibold text-foreground text-sm">{t.dashboard.home.recentTitle}</h3>
               </div>
               
               {loading ? (
@@ -274,7 +282,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                     <Clock className="size-4 text-muted-foreground/50" />
                   </div>
                   <p className="text-xs text-muted-foreground/70">
-                    Your activity will appear here
+                    {t.dashboard.home.activityEmpty}
                   </p>
                 </div>
               ) : (
@@ -282,6 +290,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                   {projects.slice(0, 4).map((p) => {
                     const status = getProjectStatus(p);
                     const statusMeta = PROJECT_STATUS_META[status];
+                    const statusLabel = projectStatusLabel(status, t);
 
                     return (
                       <div
@@ -295,7 +304,7 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                             {p.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {statusMeta.label} • {timeAgo(p.updatedAt || p.createdAt)}
+                            {statusLabel} • {timeAgo(p.updatedAt || p.createdAt, t.dashboard.home.time)}
                           </p>
                         </div>
                       </div>
@@ -313,9 +322,9 @@ export default function DashboardHomeClient({ initialData }: DashboardHomeClient
                     <TrendingUp className="size-4 text-blue-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">All systems operational</p>
+                    <p className="text-sm font-medium text-foreground">{t.dashboard.home.allSystemsOperational}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Your projects are running smoothly
+                      {t.dashboard.home.runningSmoothly}
                     </p>
                   </div>
                 </div>

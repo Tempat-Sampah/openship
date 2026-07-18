@@ -23,7 +23,7 @@ const footerLinks = {
   Legal: [
     { label: "Privacy", href: "/privacy" },
     { label: "Terms", href: "/terms" },
-    { label: "License (AGPL-3)", href: "https://github.com/oblien/openship/blob/main/LICENSE" },
+    { label: "License (Apache 2.0)", href: "https://github.com/oblien/openship/blob/main/LICENSE" },
   ],
 };
 
@@ -116,7 +116,7 @@ export function Footer() {
             </a>
             {/* X / Twitter */}
             <a
-              href="https://x.com/openship"
+              href="https://x.com/openshipio"
               target="_blank"
               rel="noopener noreferrer"
               className="th-text-muted transition-colors hover:text-[var(--th-text-strong)]"

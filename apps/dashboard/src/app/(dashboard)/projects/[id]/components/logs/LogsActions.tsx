@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Download, RefreshCw, Copy, Check } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 interface LogsActionsProps {
   onCopy: () => void;
@@ -18,6 +19,7 @@ export const LogsActions: React.FC<LogsActionsProps> = ({
   copied,
   logsCount,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-1.5">
       {/* Copy */}
@@ -26,7 +28,7 @@ export const LogsActions: React.FC<LogsActionsProps> = ({
         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-muted/60 rounded-md transition-colors text-xs text-muted-foreground hover:text-foreground"
       >
         {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-        {copied ? "Copied" : "Copy"}
+        {copied ? t.projectDetail.logs.actions.copied : t.projectDetail.logs.actions.copy}
       </button>
 
       {/* Download */}
@@ -35,7 +37,7 @@ export const LogsActions: React.FC<LogsActionsProps> = ({
         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-muted/60 rounded-md transition-colors text-xs text-muted-foreground hover:text-foreground"
       >
         <Download className="w-3.5 h-3.5" />
-        Download
+        {t.projectDetail.logs.actions.download}
       </button>
 
       {/* Clear */}
@@ -44,7 +46,7 @@ export const LogsActions: React.FC<LogsActionsProps> = ({
         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-red-500/10 rounded-md transition-colors text-xs text-muted-foreground hover:text-red-600"
       >
         <RefreshCw className="w-3.5 h-3.5" />
-        Clear
+        {t.projectDetail.logs.actions.clear}
       </button>
     </div>
   );

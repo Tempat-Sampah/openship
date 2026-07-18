@@ -1,6 +1,9 @@
-import React from "react";
-import { Globe, Plus, Trash2 } from "lucide-react";
+"use client";
+
+import React, { useState } from "react";
+import { ChevronDown, Globe, Plus, Trash2 } from "lucide-react";
 import { RoutingSettingsCard } from "@/components/routing/RoutingSettingsCard";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { PublicEndpoint } from "@/context/deployment/types";
 import { createPublicEndpoint } from "@/context/deployment/types";
 
@@ -23,7 +26,21 @@ const PublicEndpointsCard: React.FC<PublicEndpointsCardProps> = ({
   onChange,
   saveMode = "change",
 }) => {
+  const { t } = useI18n();
+  const w = t.widgets.routing.publicEndpoints;
   const hasMultipleEndpoints = endpoints.length > 1;
+
+  // With multiple domains, collapse each into a compact row so the list isn't
+  // a huge stack of full forms — click a row to expand its editor. A single
+  // route keeps the full inline form (nothing to collapse).
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const normalizeEndpointForMode = (
     endpoint: PublicEndpoint,
@@ -97,10 +114,10 @@ const PublicEndpointsCard: React.FC<PublicEndpointsCardProps> = ({
   const describeEndpointTarget = (endpoint: PublicEndpoint) => {
     if (hasServer) {
       const mappedPort = endpoint.port || runtimePort || "";
-      return mappedPort ? `Mapped to port ${mappedPort}.` : "No port selected yet.";
+      return mappedPort ? interpolate(w.mappedToPort, { port: mappedPort }) : w.noPortYet;
     }
 
-    return `Mapped to ${endpoint.targetPath || "/"}.`;
+    return interpolate(w.mappedTo, { path: endpoint.targetPath || "/" });
   };
 
   const renderRoutingCard = (endpoint: PublicEndpoint) => {
@@ -109,8 +126,8 @@ const PublicEndpointsCard: React.FC<PublicEndpointsCardProps> = ({
       : null;
     const readOnlyTarget = !allowPortEdit
       ? {
-          label: hasServer ? "Exposed port" : "Static path",
-          value: hasServer ? (endpoint.port || runtimePort || "Auto") : (endpoint.targetPath || "/"),
+          label: hasServer ? w.exposedPort : w.staticPath,
+          value: hasServer ? (endpoint.port || runtimePort || w.auto) : (endpoint.targetPath || "/"),
           icon: hasServer ? ("port" as const) : ("path" as const),
         }
       : undefined;
@@ -151,52 +168,70 @@ const PublicEndpointsCard: React.FC<PublicEndpointsCardProps> = ({
           <Globe className="size-3.5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground leading-tight">Domain</h3>
+          <h3 className="text-sm font-semibold text-foreground leading-tight">{w.domain}</h3>
           <p className="text-sm text-muted-foreground">
             {hasMultipleEndpoints
-              ? `${endpoints.length} domains routed to this app.`
-              : "Where your site will be accessible"}
+              ? interpolate(w.domainsRouted, { count: String(endpoints.length) })
+              : w.accessibleWhere}
           </p>
         </div>
         <button
           type="button"
           onClick={handleAddEndpoint}
           className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          aria-label="Add domain"
-          title="Add domain"
+          aria-label={w.addDomain}
+          title={w.addDomain}
         >
           <Plus className="size-4" />
         </button>
       </div>
 
       <div className="p-4 space-y-4">
-        {hasMultipleEndpoints ? endpoints.map((endpoint, index) => (
-          <div key={endpoint.id} className="rounded-xl border border-border/50 bg-background/50 overflow-hidden">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/40">
-              <div>
-                <h4 className="text-sm font-semibold text-foreground leading-tight">
-                  {index === 0 ? "Primary domain" : `Domain ${index + 1}`}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {describeEndpointTarget(endpoint)}
-                </p>
+        {hasMultipleEndpoints ? endpoints.map((endpoint, index) => {
+          const isOpen = expandedIds.has(endpoint.id);
+          const summary =
+            (endpoint.domainType === "custom" ? endpoint.customDomain : endpoint.domain) ||
+            describeEndpointTarget(endpoint);
+          return (
+            <div key={endpoint.id} className="rounded-xl border border-border/50 bg-background/50 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(endpoint.id)}
+                  aria-expanded={isOpen}
+                  className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                >
+                  <ChevronDown
+                    className={`size-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground leading-tight">
+                      {index === 0 ? w.primaryDomain : interpolate(w.domainN, { n: String(index + 1) })}
+                    </span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {isOpen ? describeEndpointTarget(endpoint) : summary}
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveEndpoint(endpoint.id)}
+                  disabled={endpoints.length <= 1}
+                  className="inline-flex shrink-0 items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+                >
+                  <Trash2 className="size-3.5" />
+                  {w.remove}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => handleRemoveEndpoint(endpoint.id)}
-                disabled={endpoints.length <= 1}
-                className="inline-flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
-              >
-                <Trash2 className="size-3.5" />
-                Remove
-              </button>
-            </div>
 
-            <div className="p-4">
-              {renderRoutingCard(endpoint)}
+              {isOpen && (
+                <div className="p-4 border-t border-border/40">
+                  {renderRoutingCard(endpoint)}
+                </div>
+              )}
             </div>
-          </div>
-        )) : renderRoutingCard(endpoints[0])}
+          );
+        }) : renderRoutingCard(endpoints[0])}
       </div>
     </div>
   );

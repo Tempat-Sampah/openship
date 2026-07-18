@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { systemApi, type ServerInfo } from "@/lib/api/system";
+import { useI18n } from "@/components/i18n-provider";
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 
@@ -53,11 +54,14 @@ function serverInfoToOption(s: ServerInfo): ServerOption {
 export default function ServerSelector({
   onSelect,
   value,
-  label = "Server",
+  label,
   disabled = false,
   compact = false,
 }: ServerSelectorProps) {
   const router = useRouter();
+  const { t } = useI18n();
+  const w = t.widgets.shared.serverSelector;
+  const labelText = label ?? w.serverLabel;
   const [servers, setServers] = useState<ServerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -97,12 +101,12 @@ export default function ServerSelector({
       <div className={compact ? "" : "mb-5"}>
         {!compact && (
           <label className="block text-sm font-medium text-foreground mb-1.5">
-            {label}
+            {labelText}
           </label>
         )}
         <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-muted/20">
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Loading servers…</span>
+          <span className="text-sm text-muted-foreground">{w.loadingServers}</span>
         </div>
       </div>
     );
@@ -118,17 +122,17 @@ export default function ServerSelector({
             <Server className="size-5 text-muted-foreground/60" />
           </div>
           <h3 className="text-base font-medium text-foreground mb-1.5">
-            No server connected
+            {w.noServerConnected}
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed mb-5">
-            Connect a server first, then come back to continue setup.
+            {w.connectServerFirst}
           </p>
           <button
             onClick={() => router.push("/servers/new")}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
           >
             <Plus className="size-4" />
-            Add Server
+            {w.addServer}
           </button>
         </div>
       </div>
@@ -143,7 +147,7 @@ export default function ServerSelector({
       <div className={compact ? "" : "mb-5"}>
         {!compact && (
           <label className="block text-sm font-medium text-foreground mb-1.5">
-            {label}
+            {labelText}
           </label>
         )}
         <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-muted/30">
@@ -176,7 +180,7 @@ export default function ServerSelector({
           type="button"
           onClick={() => !disabled && setOpen(!open)}
           disabled={disabled}
-          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-background hover:bg-muted/20 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-background hover:bg-muted/20 transition-colors text-start disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {selected ? (
             <>
@@ -197,7 +201,7 @@ export default function ServerSelector({
               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                 <Server className="size-4 text-muted-foreground" />
               </div>
-              <span className="text-sm text-muted-foreground">Select a server…</span>
+              <span className="text-sm text-muted-foreground">{w.selectServer}</span>
             </>
           )}
           <ChevronDown
@@ -206,7 +210,7 @@ export default function ServerSelector({
         </button>
 
         {open && (
-          <div className="absolute z-50 left-0 right-0 mt-1.5 bg-popover rounded-xl border border-border shadow-lg overflow-hidden">
+          <div className="absolute z-50 start-0 end-0 mt-1.5 bg-popover rounded-xl border border-border shadow-lg overflow-hidden">
             {servers.map((s) => (
               <button
                 key={s.id}
@@ -215,7 +219,7 @@ export default function ServerSelector({
                   onSelect(s);
                   setOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted/40 ${
+                className={`w-full flex items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40 ${
                   value === s.id ? "bg-muted/30" : ""
                 }`}
               >
@@ -241,12 +245,12 @@ export default function ServerSelector({
                   setOpen(false);
                   router.push("/servers/new");
                 }}
-                className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted/40"
+                className="w-full flex items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40"
               >
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                   <Plus className="size-4 text-muted-foreground" />
                 </div>
-                <span className="text-sm text-muted-foreground">Add new server…</span>
+                <span className="text-sm text-muted-foreground">{w.addNewServer}</span>
               </button>
             </div>
           </div>

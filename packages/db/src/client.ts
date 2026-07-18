@@ -5,6 +5,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgliteDatabase } from "drizzle-orm/pglite";
 import type { Pool } from "pg";
 import * as schema from "./schema";
+import { acquirePgliteLock, releasePgliteLock } from "./pglite-lock";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,35 @@ export function getPgPool(): Pool {
     throw new Error("Postgres pool is unavailable (active driver is not 'pg')");
   }
   return _pgPool;
+}
+
+/** Live PGlite client, kept so closeDb() can close it and free the lock. */
+let _pgliteClient: { close(): Promise<void> } | undefined;
+
+/**
+ * Release all database resources. For PGlite this closes the WASM instance and
+ * frees the single-instance lock so the next process can open the dir cleanly;
+ * for node-postgres it drains the pool. Safe to call more than once; call from
+ * graceful shutdown.
+ */
+export async function closeDb(): Promise<void> {
+  if (_pgliteClient) {
+    try {
+      await _pgliteClient.close();
+    } catch {
+      /* best effort — we're shutting down */
+    }
+    _pgliteClient = undefined;
+  }
+  if (_pgPool) {
+    try {
+      await _pgPool.end();
+    } catch {
+      /* best effort */
+    }
+    _pgPool = undefined;
+  }
+  releasePgliteLock();
 }
 
 // ─── Resolved paths ─────────────────────────────────────────────────────────
@@ -154,53 +184,23 @@ async function createPgClient(url: string): Promise<Database> {
 // ─── PGlite (embedded PostgreSQL) ────────────────────────────────────────────
 
 /**
- * Clear a stale postmaster.pid before opening pglite. PGlite WASM can
- * abort during startup (migration crash, sigkill, OOM) without cleaning
- * up its own lock file — and the next boot then refuses to open the
- * data dir at all. The lock is process-local; if no live process is
- * holding it, removing it is safe.
- *
- * We detect "stale" two ways:
- *   1. The PID line in the file points at a process that no longer
- *      exists (the normal Postgres convention).
- *   2. The PID is pglite's sentinel value -42 — it never refers to a
- *      real process and is always a previous crash that didn't unwind.
+ * Remove PGlite's own leftover `postmaster.pid` before opening. PGlite writes a
+ * `-42` sentinel there and refuses to boot if it finds a stale one after a
+ * crash. This runs ONLY after acquirePgliteLock() has granted us exclusive
+ * access, so any leftover is provably from a dead run — never a live process.
+ * (The real cross-process guard is acquirePgliteLock; this just clears PGlite's
+ * internal bookkeeping so the WASM cluster starts.)
  */
-function clearStalePgliteLock(dataDir: string): void {
-  const lockPath = join(dataDir, "postmaster.pid");
-  if (!existsSync(lockPath)) return;
-  let pid: number | null = null;
+function clearStalePgliteControlFile(dataDir: string): void {
+  const controlPath = join(dataDir, "postmaster.pid");
+  if (!existsSync(controlPath)) return;
   try {
-    const contents = readFileSync(lockPath, "utf8");
-    const firstLine = contents.split("\n", 1)[0]?.trim();
-    pid = firstLine ? Number.parseInt(firstLine, 10) : null;
-  } catch {
-    // Can't read — treat as stale and remove.
-  }
-
-  const isPgliteSentinel = pid === -42 || pid === 0;
-  let processAlive = false;
-  if (!isPgliteSentinel && pid && Number.isFinite(pid) && pid > 0) {
-    try {
-      process.kill(pid, 0); // signal 0 = liveness check
-      processAlive = true;
-    } catch {
-      processAlive = false;
-    }
-  }
-
-  if (!processAlive) {
-    try {
-      unlinkSync(lockPath);
-      console.warn(
-        `[db] removed stale pglite lock at ${lockPath} (pid=${pid ?? "unknown"})`,
-      );
-    } catch (err) {
-      console.warn(
-        `[db] failed to remove stale pglite lock at ${lockPath}:`,
-        err instanceof Error ? err.message : err,
-      );
-    }
+    unlinkSync(controlPath);
+  } catch (err) {
+    console.warn(
+      `[db] failed to remove stale pglite postmaster.pid at ${controlPath}:`,
+      err instanceof Error ? err.message : err,
+    );
   }
 }
 
@@ -249,13 +249,21 @@ async function createPgliteClient(): Promise<Database> {
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true });
   }
-  clearStalePgliteLock(dataDir);
+
+  // Guarantee single-process access BEFORE opening. PGlite has no real
+  // cross-process lock, and two openers corrupt the WASM cluster irrecoverably.
+  // Waits briefly for a clean handoff (restart races), self-heals a crashed
+  // previous run, and never touches cluster data — so it can't lose data.
+  await acquirePgliteLock(dataDir);
+  clearStalePgliteControlFile(dataDir);
 
   const assets = await resolvePgliteAssets();
   const client = assets ? new PGlite({ dataDir, ...assets }) : new PGlite(dataDir);
+  _pgliteClient = client;
   const db = drizzle(client, { schema });
 
-  // Run pending migrations
+  // Run pending migrations. Drizzle wraps each migration in a transaction and
+  // the lock guarantees we're the only writer, so this is atomic and race-free.
   await migrate(db, { migrationsFolder: MIGRATIONS_DIR });
 
   return db;

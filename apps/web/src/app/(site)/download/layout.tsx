@@ -55,7 +55,7 @@ const softwareLd = {
     url: "https://openship.io",
   },
   description: DESCRIPTION,
-  license: "https://www.gnu.org/licenses/agpl-3.0.html",
+  license: "https://www.apache.org/licenses/LICENSE-2.0",
 };
 
 const breadcrumbLd = {

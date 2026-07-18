@@ -23,12 +23,16 @@ import {
 import { getApiErrorMessage, systemApi } from "@/lib/api";
 import type { TunnelInfo } from "@/lib/api/system";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 import { Switch } from "@/components/ui/Switch";
 
 const POLL_MS = 4000;
 
 export function PortForwardingCard({ serverId }: { serverId: string }) {
   const { showToast } = useToast();
+  // Aliased to `tr` because `t` is already used in this file for TunnelInfo
+  // rows and the poll-interval handle.
+  const { t: tr } = useI18n();
   const [tunnels, setTunnels] = useState<TunnelInfo[]>([]);
   const [loading, setLoading] = useState(true);
   /** Per-tunnel in-flight action, keyed by tunnel id. */
@@ -86,7 +90,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
   const handleAdd = useCallback(async () => {
     const rp = Number(remotePort);
     if (!Number.isInteger(rp) || rp < 1 || rp > 65535) {
-      showToast("Remote port must be between 1 and 65535", "error", "Port Forwarding");
+      showToast(tr.servers.ports.toastRemotePortRange, "error", tr.servers.toastTitles.portForwarding);
       return;
     }
     const lpRaw = localPort.trim();
@@ -94,7 +98,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
     if (lpRaw) {
       const n = Number(lpRaw);
       if (!Number.isInteger(n) || n < 0 || n > 65535) {
-        showToast("Local port must be 0 (auto) or 1–65535", "error", "Port Forwarding");
+        showToast(tr.servers.ports.toastLocalPortRange, "error", tr.servers.toastTitles.portForwarding);
         return;
       }
       lp = n;
@@ -111,11 +115,11 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
       setAutoStart(false);
       await refresh({ silent: true });
     } catch (err) {
-      showToast(getApiErrorMessage(err), "error", "Port Forwarding");
+      showToast(getApiErrorMessage(err), "error", tr.servers.toastTitles.portForwarding);
     } finally {
       if (mounted.current) setAdding(false);
     }
-  }, [remotePort, localPort, autoStart, serverId, refresh, showToast]);
+  }, [remotePort, localPort, autoStart, serverId, refresh, showToast, tr]);
 
   const handleStart = useCallback(
     (t: TunnelInfo) =>
@@ -124,10 +128,10 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
           await systemApi.startTunnel(serverId, t.id);
           await refresh({ silent: true });
         } catch (err) {
-          showToast(getApiErrorMessage(err), "error", "Port Forwarding");
+          showToast(getApiErrorMessage(err), "error", tr.servers.toastTitles.portForwarding);
         }
       }),
-    [serverId, refresh, showToast, withBusy],
+    [serverId, refresh, showToast, withBusy, tr],
   );
 
   const handleStop = useCallback(
@@ -137,10 +141,10 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
           await systemApi.stopTunnel(serverId, t.id);
           await refresh({ silent: true });
         } catch (err) {
-          showToast(getApiErrorMessage(err), "error", "Port Forwarding");
+          showToast(getApiErrorMessage(err), "error", tr.servers.toastTitles.portForwarding);
         }
       }),
-    [serverId, refresh, showToast, withBusy],
+    [serverId, refresh, showToast, withBusy, tr],
   );
 
   const handleToggleAutostart = useCallback(
@@ -155,10 +159,10 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
           });
           await refresh({ silent: true });
         } catch (err) {
-          showToast(getApiErrorMessage(err), "error", "Port Forwarding");
+          showToast(getApiErrorMessage(err), "error", tr.servers.toastTitles.portForwarding);
         }
       }),
-    [serverId, refresh, showToast, withBusy],
+    [serverId, refresh, showToast, withBusy, tr],
   );
 
   const handleDelete = useCallback(
@@ -168,33 +172,32 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
           await systemApi.deleteTunnel(serverId, t.id);
           await refresh({ silent: true });
         } catch (err) {
-          showToast(getApiErrorMessage(err), "error", "Port Forwarding");
+          showToast(getApiErrorMessage(err), "error", tr.servers.toastTitles.portForwarding);
         }
       }),
-    [serverId, refresh, showToast, withBusy],
+    [serverId, refresh, showToast, withBusy, tr],
   );
 
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-5">
       <div className="flex items-center gap-2 mb-1">
         <Network className="size-4 text-muted-foreground" />
-        <h3 className="font-semibold text-foreground text-sm">Port Forwarding</h3>
+        <h3 className="font-semibold text-foreground text-sm">{tr.servers.ports.title}</h3>
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground mb-4">
-        Like VS Code: reach a remote server port at{" "}
-        <span className="font-mono text-foreground/80">localhost</span> on this
-        machine. Bound to loopback only, and active only while forwarded.
+        {tr.servers.ports.descBefore}{" "}
+        <span className="font-mono text-foreground/80">localhost</span>{tr.servers.ports.descAfter}
       </p>
 
       {/* Tunnel list */}
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
           <Loader2 className="size-4 animate-spin" />
-          Loading…
+          {tr.servers.ports.loading}
         </div>
       ) : tunnels.length === 0 ? (
         <div className="text-sm text-muted-foreground py-3">
-          No forwards yet.
+          {tr.servers.ports.noForwards}
         </div>
       ) : (
         <ul className="space-y-2 mb-4">
@@ -212,13 +215,13 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
                         className={`size-2 rounded-full shrink-0 ${
                           t.running ? "bg-emerald-500" : "bg-muted-foreground/40"
                         }`}
-                        title={t.running ? "Running" : "Stopped"}
+                        title={t.running ? tr.servers.ports.running : tr.servers.ports.stopped}
                       />
                       <span className="text-sm font-mono text-foreground truncate">
                         {t.remoteHost}:{t.remotePort}
                       </span>
                     </div>
-                    <div className="mt-1 pl-4 text-xs text-muted-foreground">
+                    <div className="mt-1 ps-4 text-xs text-muted-foreground">
                       {t.running && t.url ? (
                         <a
                           href={t.url}
@@ -242,7 +245,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
                       <button
                         onClick={() => void handleStop(t)}
                         disabled={isBusy}
-                        title="Stop"
+                        title={tr.servers.ports.stop}
                         className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
                       >
                         {isBusy ? (
@@ -255,7 +258,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
                       <button
                         onClick={() => void handleStart(t)}
                         disabled={isBusy}
-                        title="Start"
+                        title={tr.servers.ports.start}
                         className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-emerald-600 disabled:opacity-50 transition-colors"
                       >
                         {isBusy ? (
@@ -268,7 +271,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
                     <button
                       onClick={() => void handleDelete(t)}
                       disabled={isBusy}
-                      title="Remove"
+                      title={tr.servers.ports.remove}
                       className="w-7 h-7 rounded-lg hover:bg-red-500/10 flex items-center justify-center text-muted-foreground hover:text-red-600 disabled:opacity-50 transition-colors"
                     >
                       <Trash2 className="size-3.5" />
@@ -277,13 +280,13 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
                 </div>
 
                 <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-2">
-                  <span className="text-xs text-muted-foreground">Open on startup</span>
+                  <span className="text-xs text-muted-foreground">{tr.servers.ports.openOnStartup}</span>
                   <Switch
                     size="sm"
                     checked={t.autoStart}
                     disabled={isBusy}
                     onChange={() => void handleToggleAutostart(t)}
-                    ariaLabel="Open this forward on startup"
+                    ariaLabel={tr.servers.ports.ariaOpenThisForward}
                   />
                 </div>
               </li>
@@ -301,7 +304,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
             max={65535}
             value={remotePort}
             onChange={(e) => setRemotePort(e.target.value)}
-            placeholder="Remote port"
+            placeholder={tr.servers.ports.remotePortPlaceholder}
             className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <input
@@ -310,7 +313,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
             max={65535}
             value={localPort}
             onChange={(e) => setLocalPort(e.target.value)}
-            placeholder="Local (auto)"
+            placeholder={tr.servers.ports.localPortPlaceholder}
             className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -320,9 +323,9 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
               size="sm"
               checked={autoStart}
               onChange={setAutoStart}
-              ariaLabel="Open new forward on startup"
+              ariaLabel={tr.servers.ports.ariaOpenNewForward}
             />
-            Open on startup
+            {tr.servers.ports.openOnStartup}
           </div>
           <button
             onClick={() => void handleAdd()}
@@ -334,7 +337,7 @@ export function PortForwardingCard({ serverId }: { serverId: string }) {
             ) : (
               <Plus className="size-3.5" />
             )}
-            Add
+            {tr.servers.ports.add}
           </button>
         </div>
       </div>

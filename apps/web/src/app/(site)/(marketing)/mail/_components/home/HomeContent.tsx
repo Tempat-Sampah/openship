@@ -108,7 +108,7 @@ export default function HomeContent() {
             className="flex items-center gap-2 text-sm"
           >
             <GitHub className="size-4 fill-white" />
-            <span>100% open source · AGPL-3.0</span>
+            <span>100% open source · Apache 2.0</span>
           </Link>
         </motion.div>
 

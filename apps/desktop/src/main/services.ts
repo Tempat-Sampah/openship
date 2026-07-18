@@ -354,3 +354,68 @@ export function stopLocalServices(): void {
   apiProc = null;
   dashboardProc = null;
 }
+
+/**
+ * Like stopLocalServices, but AWAITS the API's real exit before resolving.
+ *
+ * Used on the auto-update handoff. The API holds a single-instance lock on the
+ * PGlite data dir; the freshly-installed version opens the SAME dir on launch.
+ * If we quit + relaunch without waiting, the old API keeps draining (up to its
+ * ~30s graceful window) as an orphan and still holds the lock, so the new
+ * version fails to acquire it and can refuse to launch. Waiting here guarantees
+ * the lock is released before the new version opens the DB.
+ *
+ * SIGTERM first (lets the API's own shutdown release the lock cleanly), then a
+ * SIGKILL after `graceMs`, then a hard cap so an update never blocks forever.
+ * Force-killing is data-safe: migrations are transactional (roll back if
+ * interrupted) and the lock self-heals from a dead pid on the next boot.
+ */
+export async function stopLocalServicesAndWait(graceMs = 8000): Promise<void> {
+  const p = apiProc;
+
+  // Dashboard shares no data dir — kill it eagerly, nothing to wait on.
+  if (dashboardProc) {
+    try {
+      dashboardProc.kill();
+    } catch {
+      // already gone
+    }
+  }
+  dashboardProc = null;
+
+  if (p && p.exitCode === null) {
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      let killTimer: ReturnType<typeof setTimeout> | undefined;
+      let capTimer: ReturnType<typeof setTimeout> | undefined;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        if (killTimer) clearTimeout(killTimer);
+        if (capTimer) clearTimeout(capTimer);
+        resolve();
+      };
+
+      p.once("exit", done);
+      try {
+        p.kill("SIGTERM");
+      } catch {
+        done(); // already gone
+        return;
+      }
+      killTimer = setTimeout(() => {
+        if (p.exitCode === null) {
+          try {
+            p.kill("SIGKILL");
+          } catch {
+            // already gone
+          }
+        }
+      }, graceMs);
+      // Backstop: resolve even if the 'exit' event is somehow missed after kill.
+      capTimer = setTimeout(done, graceMs + 3000);
+    });
+  }
+
+  apiProc = null;
+}

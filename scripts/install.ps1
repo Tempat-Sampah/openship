@@ -2,9 +2,9 @@
 #
 #   irm https://raw.githubusercontent.com/oblien/openship/main/scripts/install.ps1 | iex
 #
-# Installs the Openship CLI, which sets up and runs the self-hosted server
-# (`openship init`, `openship server`). No Node or npm required — Openship runs
-# on Bun, and this installs Bun for you if it's missing.
+# Installs the Openship CLI. Then `openship up` runs Openship locally (API +
+# dashboard), or `openship install` fetches the desktop app. Bun is the runtime;
+# this installs it for you if it's missing (no Node or npm needed).
 #
 # Env overrides:
 #   $env:OPENSHIP_VERSION = "0.1.9"   # pin a specific CLI version
@@ -33,8 +33,8 @@ bun add -g $pkg
 
 Write-Host ""
 Write-Host "Openship installed." -ForegroundColor Green
-Write-Host "  openship init      # configure your self-hosted server"
-Write-Host "  openship server    # run it"
-Write-Host "  openship --help"
+Write-Host "  openship up        # run Openship locally (API + dashboard)"
+Write-Host "  openship install   # or install the desktop app"
+Write-Host "  openship --help    # all commands"
 Write-Host ""
 Write-Host "If 'openship' isn't found, restart your terminal (PATH was updated)."

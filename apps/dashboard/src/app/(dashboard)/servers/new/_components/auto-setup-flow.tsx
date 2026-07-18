@@ -13,14 +13,12 @@ import { useEffect, useRef, useState } from "react";
 import type { ComponentState, Step } from "./types";
 import type { SetupComponentProgress, SetupLogEvent } from "@/lib/api/system";
 import { ComponentRow } from "./component-row";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
-const SETUP_STEPS = [
-  { label: "Connect", Icon: Wifi },
-  { label: "Check", Icon: Search },
-  { label: "Install", Icon: Download },
-];
+const SETUP_STEP_ICONS = [Wifi, Search, Download];
 
 function ProgressRow({ component }: { component: SetupComponentProgress }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 py-2 px-3 rounded-lg">
       <div className="shrink-0">
@@ -49,12 +47,12 @@ function ProgressRow({ component }: { component: SetupComponentProgress }) {
         }`}
       >
         {component.status === "installing"
-          ? "Installing\u2026"
+          ? t.servers.setup.statusInstalling
           : component.status === "installed"
-            ? "Done"
+            ? t.servers.setup.statusDone
             : component.status === "failed"
-              ? "Failed"
-              : "Waiting"}
+              ? t.servers.setup.statusFailed
+              : t.servers.setup.statusWaiting}
       </span>
     </div>
   );
@@ -85,8 +83,15 @@ export function AutoSetupFlow({
   onDone,
   onRetry,
 }: AutoSetupFlowProps) {
+  const { t } = useI18n();
   const [logsOpen, setLogsOpen] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  const SETUP_STEPS = [
+    { label: t.servers.setup.stepConnect, Icon: SETUP_STEP_ICONS[0] },
+    { label: t.servers.setup.stepCheck, Icon: SETUP_STEP_ICONS[1] },
+    { label: t.servers.setup.stepInstall, Icon: SETUP_STEP_ICONS[2] },
+  ];
 
   useEffect(() => {
     if (logsOpen && logEndRef.current) {
@@ -132,7 +137,7 @@ export function AutoSetupFlow({
       <div className="bg-card rounded-2xl border border-border/50 p-8 transition-all duration-300">
         <div className="relative">
           {/* Progress line */}
-          <div className="absolute top-6 left-[24px] right-[24px] h-[2px] bg-border/50">
+          <div className="absolute top-6 start-[24px] end-[24px] h-[2px] bg-border/50">
             <div
               className="h-full transition-all duration-500 bg-primary"
               style={{
@@ -190,7 +195,7 @@ export function AutoSetupFlow({
         {step === "installing" && !streamDone && (
           <div className="mt-6">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground font-medium">Overall Progress</span>
+              <span className="text-muted-foreground font-medium">{t.servers.setup.overallProgress}</span>
               <span className="font-bold text-foreground">{pct}%</span>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden bg-border/50">
@@ -205,7 +210,7 @@ export function AutoSetupFlow({
         {/* Connecting message */}
         {step === "checking" && (
           <p className="mt-6 text-sm text-muted-foreground text-center">
-            Connecting to {serverHost} and checking requirements&#8230;
+            {interpolate(t.servers.setup.connectingChecking, { host: serverHost })}
           </p>
         )}
       </div>
@@ -237,14 +242,18 @@ export function AutoSetupFlow({
               <h2 className="font-semibold text-foreground text-[15px]">
                 {streamDone
                   ? streamFinalStatus === "completed"
-                    ? "All Components Installed"
-                    : "Setup Finished with Errors"
-                  : "Installing Components"}
+                    ? t.servers.setup.allComponentsInstalled
+                    : t.servers.setup.setupFinishedErrors
+                  : t.servers.setup.installingComponents}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {streamDone
-                  ? `${installed} of ${total} installed on ${serverHost}`
-                  : `Setting up ${serverHost}\u2026`}
+                  ? interpolate(t.servers.setup.installedOf, {
+                      count: String(installed),
+                      total: String(total),
+                      host: serverHost,
+                    })
+                  : interpolate(t.servers.setup.settingUp, { host: serverHost })}
               </p>
             </div>
             {!streamDone && (
@@ -270,8 +279,8 @@ export function AutoSetupFlow({
               <CheckCircle2 className="size-[18px] text-emerald-500" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground text-[15px]">All Requirements Met</h2>
-              <p className="text-xs text-muted-foreground">{serverHost} is ready to deploy</p>
+              <h2 className="font-semibold text-foreground text-[15px]">{t.servers.setup.allRequirementsMetTitle}</h2>
+              <p className="text-xs text-muted-foreground">{interpolate(t.servers.setup.readyToDeploy, { host: serverHost })}</p>
             </div>
           </div>
           <div className="p-5 space-y-1">
@@ -287,16 +296,16 @@ export function AutoSetupFlow({
         <div className="bg-card rounded-2xl border border-border/50">
           <button
             onClick={() => setLogsOpen(!logsOpen)}
-            className="flex items-center gap-2 w-full px-5 py-3 text-left hover:bg-muted/30 transition-colors rounded-2xl"
+            className="flex items-center gap-2 w-full px-5 py-3 text-start hover:bg-muted/30 transition-colors rounded-2xl"
           >
             {logsOpen ? (
               <ChevronDown className="size-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
             )}
-            <span className="text-sm font-medium text-foreground">Install Logs</span>
+            <span className="text-sm font-medium text-foreground">{t.servers.setup.installLogs}</span>
             <span className="text-xs text-muted-foreground">
-              ({streamLogs.length} {streamLogs.length === 1 ? "line" : "lines"})
+              ({streamLogs.length} {streamLogs.length === 1 ? t.servers.setup.line : t.servers.setup.lines})
             </span>
           </button>
 
@@ -305,7 +314,7 @@ export function AutoSetupFlow({
               <div className="max-h-[400px] overflow-y-auto p-4 bg-muted/20 rounded-b-2xl">
                 {streamLogs.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-4">
-                    Waiting for output&#8230;
+                    {t.servers.setup.waitingForOutput}
                   </p>
                 ) : (
                   <div className="space-y-0.5">
@@ -344,7 +353,7 @@ export function AutoSetupFlow({
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all"
           >
             <CheckCircle2 className="size-4" />
-            {done ? "Done \u2014 Go to Servers" : "Go to Servers"}
+            {done ? t.servers.setup.doneGoToServers : t.servers.setup.goToServers}
           </button>
           {failed && failedCount > 0 && (
             <button
@@ -352,7 +361,7 @@ export function AutoSetupFlow({
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
             >
               <XCircle className="size-4" />
-              Retry Failed ({failedCount})
+              {interpolate(t.servers.setup.retryFailed, { count: String(failedCount) })}
             </button>
           )}
         </div>

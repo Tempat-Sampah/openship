@@ -14,13 +14,14 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { ResourcePicker } from "@/components/permissions/ResourcePicker";
 import type { PickerGrant, ResourceType } from "@/lib/api";
+import { useI18n } from "@/components/i18n-provider";
 
 export function GrantPickerModal({
   title,
   subtitle,
   initial,
   availableTypes,
-  saveLabel = "Save",
+  saveLabel,
   onSave,
   onClose,
 }: {
@@ -33,6 +34,7 @@ export function GrantPickerModal({
   onSave: (grants: PickerGrant[]) => Promise<void> | void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [grants, setGrants] = useState<PickerGrant[]>(initial);
   const [saving, setSaving] = useState(false);
 
@@ -68,7 +70,7 @@ export function GrantPickerModal({
           disabled={saving}
           className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
-          Cancel
+          {t.settings.common.cancel}
         </button>
         <button
           type="button"
@@ -77,7 +79,7 @@ export function GrantPickerModal({
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
           {saving && <Loader2 className="size-4 animate-spin" />}
-          {saveLabel}
+          {saveLabel ?? t.settings.common.save}
         </button>
       </div>
     </div>

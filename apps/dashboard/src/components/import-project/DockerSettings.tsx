@@ -1,10 +1,14 @@
+"use client";
+
 import React from "react";
 import { Container, Hash } from "lucide-react";
 import { useDeployment } from "@/context/DeploymentContext";
 import { STACK_ICONS } from "@repo/core";
+import { useI18n } from "@/components/i18n-provider";
 
 const DockerSettings: React.FC = () => {
   const { config, updateConfig } = useDeployment();
+  const { t } = useI18n();
   const iconUrl = STACK_ICONS["docker"];
 
   return (
@@ -20,9 +24,9 @@ const DockerSettings: React.FC = () => {
             )}
           </div>
           <div>
-            <h3 className="text-[15px] font-semibold text-foreground">Dockerfile Detected</h3>
+            <h3 className="text-[15px] font-semibold text-foreground">{t.importProject.dockerSettings.title}</h3>
             <p className="text-xs text-muted-foreground">
-              Your project will be built and deployed using its Dockerfile
+              {t.importProject.dockerSettings.subtitle}
             </p>
           </div>
         </div>
@@ -30,8 +34,7 @@ const DockerSettings: React.FC = () => {
         {/* Info card */}
         <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            No build settings needed - your Dockerfile defines the build process.
-            Just configure the port your application listens on.
+            {t.importProject.dockerSettings.infoCard}
           </p>
         </div>
 
@@ -41,7 +44,7 @@ const DockerSettings: React.FC = () => {
             <span className="text-muted-foreground">
               <Hash className="size-4" />
             </span>
-            Exposed Port
+            {t.importProject.dockerSettings.exposedPort}
           </label>
           <input
             type="number"
@@ -60,7 +63,7 @@ const DockerSettings: React.FC = () => {
             className="w-full px-4 py-2.5 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
           <p className="text-xs text-muted-foreground mt-1.5">
-            The port your container exposes (from EXPOSE or CMD)
+            {t.importProject.dockerSettings.portHint}
           </p>
         </div>
       </div>

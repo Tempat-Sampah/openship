@@ -177,7 +177,7 @@ export function CustomSelect<T extends string>({
                   aria-selected={isSelected}
                   onClick={() => handleSelect(option.value)}
                   className={`
-                    w-full px-4 py-2.5 text-left flex items-center justify-between gap-2
+                    w-full px-4 py-2.5 text-start flex items-center justify-between gap-2
                     text-sm transition-all duration-150
                     ${isSelected
                       ? 'bg-accent text-accent-foreground font-medium'
@@ -203,7 +203,7 @@ export function CustomSelect<T extends string>({
               <button
                 type="button"
                 onClick={handleFooterAction}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
               >
                 {footerAction.icon}
                 {footerAction.label}

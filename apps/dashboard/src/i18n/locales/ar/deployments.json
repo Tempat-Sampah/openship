@@ -1,0 +1,173 @@
+{
+  "time": {
+    "secondsAgo": "منذ {n} ث",
+    "minutesAgo": "منذ {n} د",
+    "hoursAgo": "منذ {n} س",
+    "daysAgo": "منذ {n} ي",
+    "monthsAgo": "منذ {n} ش",
+    "yearsAgo": "منذ {n} سنة"
+  },
+  "header": {
+    "title": "عمليات النشر",
+    "loading": "جارٍ التحميل…",
+    "countProjectOne": "{count} عملية نشر",
+    "countProjectOther": "{count} عمليات نشر",
+    "countAllOne": "{deployments} إجمالاً عبر {projects} مشروع",
+    "countAllOther": "{deployments} إجمالاً عبر {projects} مشاريع"
+  },
+  "filters": {
+    "searchPlaceholder": "ابحث في عمليات النشر...",
+    "all": "الكل",
+    "success": "ناجحة",
+    "failed": "فاشلة",
+    "building": "قيد البناء",
+    "canceled": "ملغاة"
+  },
+  "projectFilter": {
+    "allProjects": "جميع المشاريع"
+  },
+  "sidebar": {
+    "overview": {
+      "title": "نظرة عامة",
+      "total": "الإجمالي",
+      "successful": "ناجحة",
+      "failed": "فاشلة",
+      "inProgress": "قيد التنفيذ"
+    },
+    "autoDeploy": {
+      "title": "النشر التلقائي",
+      "description": "فعّل النشر التلقائي لتشغيل عمليات النشر تلقائياً عند كل دفع إلى فرعك الرئيسي.",
+      "cta": "الانتقال إلى إعدادات المشروع"
+    },
+    "getStarted": {
+      "title": "ابدأ الآن",
+      "description": "استورد مستودع Git أو استخدم قالباً لإنشاء أول عملية نشر لك.",
+      "cta": "نشر مشروع"
+    },
+    "recent": {
+      "title": "الأحدث",
+      "empty": "ستظهر عمليات النشر الخاصة بك هنا",
+      "unknown": "غير معروف"
+    }
+  },
+  "stats": {
+    "total": "الإجمالي",
+    "projectCountOne": "{count} مشروع",
+    "projectCountOther": "{count} مشاريع",
+    "success": "ناجحة",
+    "failed": "فاشلة",
+    "inProgress": "قيد التنفيذ",
+    "buildingNow": "قيد البناء الآن"
+  },
+  "status": {
+    "deployed": "تم النشر",
+    "failed": "فاشلة",
+    "canceled": "ملغاة",
+    "building": "قيد البناء",
+    "deploying": "جارٍ النشر",
+    "partial": "جزئية",
+    "rejected": "مرفوضة",
+    "verifying": "قيد التحقق",
+    "pending": "قيد الانتظار"
+  },
+  "serviceStatus": {
+    "deployed": "تم النشر",
+    "failed": "فاشلة",
+    "cancelled": "ملغاة",
+    "skipped": "تم التخطي",
+    "building": "قيد البناء",
+    "deploying": "جارٍ النشر",
+    "running": "قيد التشغيل",
+    "removedOnHost": "أُزيلت من المضيف",
+    "verifying": "قيد التحقق",
+    "pending": "قيد الانتظار"
+  },
+  "card": {
+    "unknownProject": "مشروع غير معروف",
+    "versionTitle": "الإصدار {version}",
+    "active": "نشط",
+    "activeTitle": "هذه هي عملية النشر التي تخدم المشروع حالياً",
+    "pinned": "مثبّت",
+    "pinnedTitle": "مثبّت — معفى من تقليم الاحتفاظ. يبقى قابلاً للاستعادة عبر التراجع إلى أجل غير مسمى.",
+    "snapshotted": "ملتقَط",
+    "snapshottedTitle": "تمت أرشفة الأداة — هذا الإصدار متاح للتراجع إليه",
+    "manualDeploy": "نشر يدوي",
+    "serviceTitle": "{name}: {label}",
+    "serviceTitleReason": "{name}: {label} ({reason})"
+  },
+  "empty": {
+    "filtered": {
+      "title": "لم يتم العثور على عمليات نشر",
+      "description": "حاول تعديل عوامل التصفية أو مسح بحثك."
+    },
+    "none": {
+      "title": "لا توجد عمليات نشر بعد",
+      "description": "انشر مشروعك الأول وسيظهر هنا مع حالة البناء وتفاصيل الالتزام ومقاييس الأداء.",
+      "deployButton": "نشر مشروع",
+      "browseButton": "تصفّح القوالب"
+    }
+  },
+  "modal": {
+    "title": "تفاصيل الالتزام",
+    "project": "المشروع",
+    "unknownProject": "مشروع غير معروف",
+    "domain": "النطاق",
+    "noDomain": "لا يوجد نطاق",
+    "status": "الحالة",
+    "environment": "البيئة",
+    "statusName": {
+      "success": "ناجحة",
+      "failed": "فاشلة",
+      "building": "قيد البناء",
+      "deploying": "جارٍ النشر",
+      "canceled": "ملغاة",
+      "pending": "قيد الانتظار"
+    },
+    "changedFiles": "الملفات المتغيّرة ({count})",
+    "fileTypes": {
+      "added": "+ مُضاف",
+      "modified": "~ مُعدّل",
+      "removed": "- محذوف"
+    },
+    "viewOnGithub": "عرض على GitHub",
+    "visitSite": "زيارة الموقع",
+    "manual": {
+      "title": "نشر يدوي",
+      "description": "تم تشغيل عملية النشر هذه يدوياً ولا تحتوي على معلومات الالتزام.",
+      "deploymentId": "معرّف النشر",
+      "created": "تاريخ الإنشاء",
+      "type": "النوع",
+      "typeManual": "يدوي"
+    }
+  },
+  "menu": {
+    "openDeployment": "فتح النشر",
+    "viewRepository": "عرض المستودع",
+    "copyDomainUrl": "نسخ رابط النطاق",
+    "copyBuildId": "نسخ معرّف البناء",
+    "cancelDeployment": "إلغاء النشر",
+    "rollback": "التراجع إلى هذا الإصدار",
+    "rollbackTitle": {
+      "enabled": "استعادة المشروع إلى هذا الإصدار (الكود فقط — البيانات دون تغيير)",
+      "active": "هذا هو الإصدار النشط بالفعل",
+      "pruned": "تم تقليم أداة التراجع. استخدم ”إعادة نشر هذا الالتزام“ لإعادة البناء من المصدر بدلاً من ذلك.",
+      "notReady": "لا يمكن التراجع إلا إلى عمليات النشر الجاهزة"
+    },
+    "redeploy": "إعادة نشر هذا الالتزام",
+    "redeployTitle": "أعد بناء هذا الالتزام بالضبط من المصدر. أبطأ من التراجع لكنه يعمل بعد تقليم الأداة.",
+    "pin": "تثبيت",
+    "unpin": "إلغاء التثبيت",
+    "pinTitle": {
+      "pin": "أبقِ عملية النشر هذه قابلة للاستعادة عبر التراجع إلى أجل غير مسمى (الحد الأقصى: 10 مثبّتة لكل مشروع)",
+      "unpin": "السماح بتقليم عملية النشر هذه عند تجاوز حد الاحتفاظ",
+      "pruned": "لا يمكن التثبيت — تم تقليم الأداة بالفعل"
+    },
+    "deleteDeployment": "حذف النشر",
+    "confirmRollback": "التراجع إلى هذا الإصدار؟\n\nيؤدي هذا إلى استعادة كود التطبيق فقط. بيانات قاعدة البيانات والأقراص دون تغيير.",
+    "rollbackFailed": "فشل التراجع",
+    "confirmRedeploy": "إعادة نشر الالتزام {hash}؟\n\nيعيد بناء هذا الالتزام بالضبط من المصدر. أبطأ من التراجع (يُعاد تشغيل البناء الكامل)، لكنه يعمل حتى بعد تقليم أداة التراجع. ستظهر عملية نشر جديدة في القائمة.",
+    "redeployFailed": "فشلت إعادة النشر",
+    "pinFailed": "فشل تثبيت النشر",
+    "unpinFailed": "فشل إلغاء تثبيت النشر"
+  }
+}

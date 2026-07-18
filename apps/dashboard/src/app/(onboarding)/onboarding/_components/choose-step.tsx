@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/i18n-provider";
 import type { StepProps } from "./step-props";
 
 /* ── Inline SVGs matching old design exactly ── */
@@ -17,21 +18,21 @@ const ServerIcon = () => (
   </svg>
 );
 const ArrowIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  <svg className="rtl:rotate-180" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
 );
 const SwapIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
 );
 
 export function ChooseStep({ onUpdate, onNext }: StepProps) {
+  const { t } = useI18n();
   return (
     <div className="ob-screen ob-screen--choose">
       <div className="ob-screen-inner ob-screen-inner--wide">
         <div className="ob-choose-header ob-anim-fade ob-anim-d1">
-          <h1>Welcome to Openship</h1>
+          <h1>{t.onboarding.choose.title}</h1>
           <p className="ob-subtitle">
-            Choose how you&apos;d like to run Openship. Both options give you every
-            feature - and you can switch anytime.
+            {t.onboarding.choose.subtitle}
           </p>
         </div>
 
@@ -39,20 +40,20 @@ export function ChooseStep({ onUpdate, onNext }: StepProps) {
           {/* Cloud card */}
           <div className="ob-choice-card">
             <div className="ob-card-icon"><CloudIcon /></div>
-            <h3>Openship Cloud</h3>
+            <h3>{t.onboarding.choose.cloud.name}</h3>
             <p className="ob-card-desc">
-              We handle infrastructure, updates, and backups. Just sign in and start deploying.
+              {t.onboarding.choose.cloud.desc}
             </p>
             <ul className="ob-card-perks">
-              <li>No server needed</li>
-              <li>Free tier included</li>
-              <li>Managed &amp; always up to date</li>
+              <li>{t.onboarding.choose.cloud.perk1}</li>
+              <li>{t.onboarding.choose.cloud.perk2}</li>
+              <li>{t.onboarding.choose.cloud.perk3}</li>
             </ul>
             <button
               className="ob-btn-card ob-btn-card--accent"
               onClick={() => { onUpdate({ path: "cloud" }); onNext(); }}
             >
-              Continue with Cloud
+              {t.onboarding.choose.cloud.cta}
               <ArrowIcon />
             </button>
           </div>
@@ -60,27 +61,27 @@ export function ChooseStep({ onUpdate, onNext }: StepProps) {
           {/* Vertical divider */}
           <div className="ob-cards-divider">
             <div className="ob-divider-line" />
-            <span className="ob-divider-label">or</span>
+            <span className="ob-divider-label">{t.onboarding.choose.or}</span>
             <div className="ob-divider-line" />
           </div>
 
           {/* Self-host card */}
           <div className="ob-choice-card">
             <div className="ob-card-icon"><ServerIcon /></div>
-            <h3>Self-Hosted</h3>
+            <h3>{t.onboarding.choose.selfhost.name}</h3>
             <p className="ob-card-desc">
-              Run Openship on your own hardware. Connect a remote server or use this machine.
+              {t.onboarding.choose.selfhost.desc}
             </p>
             <ul className="ob-card-perks">
-              <li>Full data ownership</li>
-              <li>Remote server or this Mac</li>
-              <li>We handle the rest</li>
+              <li>{t.onboarding.choose.selfhost.perk1}</li>
+              <li>{t.onboarding.choose.selfhost.perk2}</li>
+              <li>{t.onboarding.choose.selfhost.perk3}</li>
             </ul>
             <button
               className="ob-btn-card ob-btn-card--outline"
               onClick={() => { onUpdate({ path: "selfhost" }); onNext(); }}
             >
-              Set Up My Server
+              {t.onboarding.choose.selfhost.cta}
               <ArrowIcon />
             </button>
           </div>
@@ -88,7 +89,7 @@ export function ChooseStep({ onUpdate, onNext }: StepProps) {
 
         <p className="ob-migrate-note ob-anim-fade ob-anim-d3">
           <SwapIcon />
-          Switch between Cloud and Self-Hosted anytime with one click - no lock-in, ever.
+          {t.onboarding.choose.migrateNote}
         </p>
       </div>
     </div>

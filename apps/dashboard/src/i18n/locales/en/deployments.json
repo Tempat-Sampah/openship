@@ -1,0 +1,173 @@
+{
+  "time": {
+    "secondsAgo": "{n}s ago",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago",
+    "monthsAgo": "{n}mo ago",
+    "yearsAgo": "{n}y ago"
+  },
+  "header": {
+    "title": "Deployments",
+    "loading": "Loading…",
+    "countProjectOne": "{count} deployment",
+    "countProjectOther": "{count} deployments",
+    "countAllOne": "{deployments} total across {projects} project",
+    "countAllOther": "{deployments} total across {projects} projects"
+  },
+  "filters": {
+    "searchPlaceholder": "Search deployments...",
+    "all": "All",
+    "success": "Success",
+    "failed": "Failed",
+    "building": "Building",
+    "canceled": "Canceled"
+  },
+  "projectFilter": {
+    "allProjects": "All Projects"
+  },
+  "sidebar": {
+    "overview": {
+      "title": "Overview",
+      "total": "Total",
+      "successful": "Successful",
+      "failed": "Failed",
+      "inProgress": "In Progress"
+    },
+    "autoDeploy": {
+      "title": "Auto-Deploy",
+      "description": "Enable auto-deploy to trigger deployments automatically on every push to your main branch.",
+      "cta": "Go to project settings"
+    },
+    "getStarted": {
+      "title": "Get Started",
+      "description": "Import a Git repository or use a template to create your first deployment.",
+      "cta": "Deploy a project"
+    },
+    "recent": {
+      "title": "Recent",
+      "empty": "Your deployments will appear here",
+      "unknown": "Unknown"
+    }
+  },
+  "stats": {
+    "total": "Total",
+    "projectCountOne": "{count} project",
+    "projectCountOther": "{count} projects",
+    "success": "Success",
+    "failed": "Failed",
+    "inProgress": "In Progress",
+    "buildingNow": "building now"
+  },
+  "status": {
+    "deployed": "Deployed",
+    "failed": "Failed",
+    "canceled": "Canceled",
+    "building": "Building",
+    "deploying": "Deploying",
+    "partial": "Partial",
+    "rejected": "Rejected",
+    "verifying": "Verifying",
+    "pending": "Pending"
+  },
+  "serviceStatus": {
+    "deployed": "Deployed",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "skipped": "Skipped",
+    "building": "Building",
+    "deploying": "Deploying",
+    "running": "Running",
+    "removedOnHost": "Removed on host",
+    "verifying": "Verifying",
+    "pending": "Pending"
+  },
+  "card": {
+    "unknownProject": "Unknown Project",
+    "versionTitle": "Version {version}",
+    "active": "Active",
+    "activeTitle": "This is the deployment currently serving the project",
+    "pinned": "Pinned",
+    "pinnedTitle": "Pinned — exempt from retention prune. Stays rollback-restorable indefinitely.",
+    "snapshotted": "Snapshotted",
+    "snapshottedTitle": "Artifact archived — this version is available to roll back to",
+    "manualDeploy": "Manual deploy",
+    "serviceTitle": "{name}: {label}",
+    "serviceTitleReason": "{name}: {label} ({reason})"
+  },
+  "empty": {
+    "filtered": {
+      "title": "No deployments found",
+      "description": "Try adjusting your filters or clearing your search."
+    },
+    "none": {
+      "title": "No deployments yet",
+      "description": "Deploy your first project and it will appear here with build status, commit details, and performance metrics.",
+      "deployButton": "Deploy Project",
+      "browseButton": "Browse Templates"
+    }
+  },
+  "modal": {
+    "title": "Commit Details",
+    "project": "Project",
+    "unknownProject": "Unknown Project",
+    "domain": "Domain",
+    "noDomain": "No domain",
+    "status": "Status",
+    "environment": "Environment",
+    "statusName": {
+      "success": "Success",
+      "failed": "Failed",
+      "building": "Building",
+      "deploying": "Deploying",
+      "canceled": "Canceled",
+      "pending": "Pending"
+    },
+    "changedFiles": "Changed Files ({count})",
+    "fileTypes": {
+      "added": "+ Added",
+      "modified": "~ Modified",
+      "removed": "- Removed"
+    },
+    "viewOnGithub": "View on GitHub",
+    "visitSite": "Visit Site",
+    "manual": {
+      "title": "Manual Deployment",
+      "description": "This deployment was triggered manually and doesn't have commit information.",
+      "deploymentId": "Deployment ID",
+      "created": "Created",
+      "type": "Type",
+      "typeManual": "Manual"
+    }
+  },
+  "menu": {
+    "openDeployment": "Open Deployment",
+    "viewRepository": "View Repository",
+    "copyDomainUrl": "Copy Domain URL",
+    "copyBuildId": "Copy Build ID",
+    "cancelDeployment": "Cancel Deployment",
+    "rollback": "Rollback to this version",
+    "rollbackTitle": {
+      "enabled": "Restore the project to this version (code only — data is unchanged)",
+      "active": "This is already the active version",
+      "pruned": "Rollback artifact has been pruned. Use 'Redeploy this commit' to rebuild from source instead.",
+      "notReady": "Only ready deployments can be rolled back to"
+    },
+    "redeploy": "Redeploy this commit",
+    "redeployTitle": "Rebuild this exact commit from source. Slower than rollback but works after the artifact has been pruned.",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinTitle": {
+      "pin": "Keep this deployment rollback-restorable indefinitely (cap: 10 pinned per project)",
+      "unpin": "Allow this deployment to be pruned when retention overflows",
+      "pruned": "Cannot pin — artifact has already been pruned"
+    },
+    "deleteDeployment": "Delete Deployment",
+    "confirmRollback": "Roll back to this version?\n\nThis restores the application code only. Database and volume data are unchanged.",
+    "rollbackFailed": "Rollback failed",
+    "confirmRedeploy": "Redeploy commit {hash}?\n\nRebuilds this exact commit from source. Slower than rollback (full build runs again), but works even after the rollback artifact has been pruned. A new deployment will appear in the list.",
+    "redeployFailed": "Redeploy failed",
+    "pinFailed": "Failed to pin deployment",
+    "unpinFailed": "Failed to unpin deployment"
+  }
+}

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { X, AlertTriangle, CheckCircle2, XCircle, Loader2, Activity, Shield } from "lucide-react";
 import { backupsApi, getApiErrorMessage, type BackupRun, type BackupRestore } from "@/lib/api";
 import { useRestoreRunStream } from "@/hooks/useRestoreRunStream";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface Props {
   sourceRun: BackupRun;
@@ -14,6 +15,8 @@ interface Props {
 type WizardStep = "review" | "preparing" | "prepared" | "applying" | "done";
 
 export function RestoreWizard({ sourceRun, serviceName, onClose }: Props): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   const [step, setStep] = useState<WizardStep>("review");
   const [restoreId, setRestoreId] = useState<string | null>(null);
   const [confirmationToken, setConfirmationToken] = useState<string | null>(null);
@@ -57,7 +60,7 @@ export function RestoreWizard({ sourceRun, serviceName, onClose }: Props): React
       setConfirmationToken(res.data.confirmationToken);
       setStep("preparing");
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Failed to start restore"));
+      window.alert(getApiErrorMessage(err, m.startFailed));
     } finally {
       setBusy(false);
     }
@@ -66,7 +69,7 @@ export function RestoreWizard({ sourceRun, serviceName, onClose }: Props): React
   const applyRestore = async () => {
     if (!restoreId || !confirmationToken) return;
     if (typed !== (serviceName ?? sourceRun.serviceId ?? "")) {
-      window.alert("Type the service name exactly to confirm");
+      window.alert(m.typeToConfirm);
       return;
     }
     setBusy(true);
@@ -74,7 +77,7 @@ export function RestoreWizard({ sourceRun, serviceName, onClose }: Props): React
       await backupsApi.applyRestore(restoreId, confirmationToken);
       setStep("applying");
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Failed to apply restore"));
+      window.alert(getApiErrorMessage(err, m.applyFailed));
     } finally {
       setBusy(false);
     }
@@ -101,14 +104,14 @@ export function RestoreWizard({ sourceRun, serviceName, onClose }: Props): React
       <div className="relative max-h-[90vh] w-[640px] max-w-[95vw] overflow-y-auto rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
+          className="absolute end-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
         >
           <X className="size-4" />
         </button>
 
-        <h2 className="text-lg font-semibold text-foreground">Restore backup</h2>
+        <h2 className="text-lg font-semibold text-foreground">{m.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {serviceName ? `Service: ${serviceName}` : "Service restore"}
+          {serviceName ? interpolate(m.serviceLabel, { name: serviceName }) : m.serviceRestore}
         </p>
 
         <StepIndicator step={step} />
@@ -149,13 +152,15 @@ export function RestoreWizard({ sourceRun, serviceName, onClose }: Props): React
 }
 
 function StepIndicator({ step }: { step: WizardStep }): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   const order: WizardStep[] = ["review", "preparing", "prepared", "applying", "done"];
   const labels: Record<WizardStep, string> = {
-    review: "Review",
-    preparing: "Prepare",
-    prepared: "Confirm",
-    applying: "Apply",
-    done: "Done",
+    review: m.stepReview,
+    preparing: m.stepPrepare,
+    prepared: m.stepConfirm,
+    applying: m.stepApply,
+    done: m.stepDone,
   };
   const currentIdx = order.indexOf(step);
   return (
@@ -204,16 +209,21 @@ function ReviewStep({
   onContinue: () => void;
   busy: boolean;
 }): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   return (
     <div className="mt-6 space-y-4">
       <div className="rounded-xl bg-muted/40 p-4 text-sm">
         <p className="text-foreground/80">
-          You're about to restore from backup taken on{" "}
-          <strong>{new Date(sourceRun.startedAt).toLocaleString()}</strong>.
+          {m.reviewPre}
+          <strong>{new Date(sourceRun.startedAt).toLocaleString()}</strong>
+          {m.reviewPost}
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Size: {sourceRun.bytesTransferred ? formatBytes(sourceRun.bytesTransferred) : "—"}
-          {" · "}Artifacts: {Array.isArray(sourceRun.artifacts) ? sourceRun.artifacts.length : 0}
+          {interpolate(m.sizeArtifacts, {
+            size: sourceRun.bytesTransferred ? formatBytes(sourceRun.bytesTransferred) : "—",
+            count: String(Array.isArray(sourceRun.artifacts) ? sourceRun.artifacts.length : 0),
+          })}
         </p>
       </div>
 
@@ -221,10 +231,9 @@ function ReviewStep({
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-0.5 size-4 text-amber-500 shrink-0" />
           <div className="text-sm text-foreground/80">
-            <p className="font-medium">This will overwrite current data.</p>
+            <p className="font-medium">{m.overwriteWarning}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              The next step (Prepare) will verify the backup is downloadable. Nothing
-              destructive happens until you confirm at the Apply step.
+              {m.overwriteHint}
             </p>
           </div>
         </div>
@@ -240,11 +249,10 @@ function ReviewStep({
         <span className="flex-1 text-foreground/80">
           <span className="flex items-center gap-1.5">
             <Shield className="size-3.5 text-muted-foreground" />
-            <strong className="font-medium">Protect the latest backup from retention prune</strong>
+            <strong className="font-medium">{m.protectLabel}</strong>
           </span>
           <span className="block text-xs text-muted-foreground">
-            Keeps the most recent successful backup safe from automatic deletion, so you
-            can return to "right before this restore" if something goes wrong.
+            {m.protectHint}
           </span>
         </span>
       </label>
@@ -255,14 +263,14 @@ function ReviewStep({
           disabled={busy}
           className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
         >
-          Cancel
+          {m.cancel}
         </button>
         <button
           onClick={onContinue}
           disabled={busy}
           className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
-          {busy ? "Starting…" : "Continue → Prepare"}
+          {busy ? m.starting : m.continuePrepare}
         </button>
       </div>
     </div>
@@ -276,15 +284,16 @@ function PreparingStep({
   restore: BackupRestore | null;
   onCancel: () => void;
 }): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   return (
     <div className="mt-6 space-y-3">
       <div className="rounded-xl bg-muted/40 p-4 text-sm flex items-center gap-3">
         <Loader2 className="size-4 animate-spin text-primary" />
         <div className="flex-1">
-          <p className="font-medium text-foreground">Verifying backup…</p>
+          <p className="font-medium text-foreground">{m.verifying}</p>
           <p className="text-xs text-muted-foreground">
-            Checking artifact presence + integrity at the destination. Service is still
-            running normally.
+            {m.verifyingHint}
           </p>
         </div>
         {restore && (
@@ -299,7 +308,7 @@ function PreparingStep({
           onClick={onCancel}
           className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
         >
-          Cancel restore
+          {m.cancelRestore}
         </button>
       </div>
     </div>
@@ -323,6 +332,8 @@ function ConfirmStep({
   onApply: () => void;
   busy: boolean;
 }): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   const ok = typed === serviceName;
   return (
     <div className="mt-6 space-y-4">
@@ -330,10 +341,11 @@ function ConfirmStep({
         <div className="flex items-start gap-2">
           <CheckCircle2 className="mt-0.5 size-4 text-emerald-500 shrink-0" />
           <div className="text-sm text-foreground/80">
-            <p className="font-medium">Backup verified, ready to apply.</p>
+            <p className="font-medium">{m.verified}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {restore?.bytesRestored ? formatBytes(restore.bytesRestored) : "—"} prepared.
-              Service will stop briefly while restore runs.
+              {interpolate(m.preparedInfo, {
+                size: restore?.bytesRestored ? formatBytes(restore.bytesRestored) : "—",
+              })}
             </p>
           </div>
         </div>
@@ -343,11 +355,11 @@ function ConfirmStep({
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-0.5 size-4 text-red-500 shrink-0" />
           <p className="text-sm text-foreground/80">
-            Current volume data will be <strong>permanently replaced</strong>. Type{" "}
+            {m.confirmPre}<strong>{m.confirmStrong}</strong>{m.confirmMid}
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
               {serviceName}
-            </code>{" "}
-            to confirm.
+            </code>
+            {m.confirmPost}
           </p>
         </div>
       </div>
@@ -366,14 +378,14 @@ function ConfirmStep({
           disabled={busy}
           className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
         >
-          Cancel
+          {m.cancel}
         </button>
         <button
           onClick={onApply}
           disabled={busy || !ok}
           className="rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
         >
-          {busy ? "Applying…" : "Apply restore"}
+          {busy ? m.applying : m.applyRestore}
         </button>
       </div>
     </div>
@@ -381,14 +393,16 @@ function ConfirmStep({
 }
 
 function ApplyingStep({ restore }: { restore: BackupRestore | null }): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   return (
     <div className="mt-6 space-y-3">
       <div className="rounded-xl bg-muted/40 p-4 text-sm flex items-center gap-3">
         <Loader2 className="size-4 animate-spin text-red-500" />
         <div className="flex-1">
-          <p className="font-medium text-foreground">Restoring data…</p>
+          <p className="font-medium text-foreground">{m.restoringData}</p>
           <p className="text-xs text-muted-foreground">
-            Service is stopping → data swap → restarting. Do not close this window.
+            {m.restoringHint}
           </p>
         </div>
         {restore && (
@@ -409,6 +423,8 @@ function DoneStep({
   restore: BackupRestore | null;
   onClose: () => void;
 }): React.JSX.Element {
+  const { t } = useI18n();
+  const m = t.misc.restoreWizard;
   const success = restore?.status === "succeeded";
   return (
     <div className="mt-6 space-y-3">
@@ -427,7 +443,9 @@ function DoneStep({
           )}
           <div className="text-sm">
             <p className="font-medium">
-              {success ? "Restore complete." : `Restore ${restore?.status ?? "failed"}`}
+              {success
+                ? m.restoreComplete
+                : interpolate(m.restoreStatus, { status: restore?.status ?? m.failed })}
             </p>
             {restore?.errorMessage && (
               <p className="mt-1 text-xs text-muted-foreground font-mono">
@@ -443,7 +461,7 @@ function DoneStep({
           onClick={onClose}
           className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Close
+          {m.close}
         </button>
       </div>
     </div>

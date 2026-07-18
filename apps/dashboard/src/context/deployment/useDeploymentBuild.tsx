@@ -653,6 +653,9 @@ export function useDeploymentBuild(
               prepareCommand: config.monorepoWorkspace.prepareCommand,
             }
           : undefined,
+        // Persist the repo's vercel.json routing so the backend compiles it to
+        // OpenResty at deploy (single-domain rewrites, redirects, headers).
+        routingConfig: config.routingConfig ?? undefined,
       });
 
       if (!projectData.success || !projectData.project_id) {
@@ -712,8 +715,11 @@ export function useDeploymentBuild(
           config.projectType === "docker" || isServiceDeployment
             ? "docker"
             : (overrides?.runtimeMode ?? config.runtimeMode),
+        // Send the mode for BOTH multi-app shapes so the operator's per-app vs
+        // single choice reaches the backend. Monorepo was previously omitted,
+        // leaving the backend to guess via shouldUseProjectServicePipeline.
         serviceDeploymentMode:
-          config.projectType === "services"
+          config.projectType === "services" || config.projectType === "monorepo"
             ? config.serviceDeploymentMode
             : undefined,
         // Cloud resource tier only matters for a server-backed Oblien deploy.

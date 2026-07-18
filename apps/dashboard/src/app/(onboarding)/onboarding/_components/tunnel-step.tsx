@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import type { TunnelConfig } from "@repo/onboarding";
 import type { StepProps } from "./step-props";
 
@@ -15,7 +16,7 @@ const GlobeIcon = () => (
   </svg>
 );
 const BackIcon = () => (
-  <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+  <svg className="rtl:rotate-180" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
   </svg>
 );
@@ -44,35 +45,37 @@ const TerminalIcon = () => (
   </svg>
 );
 
-const PROVIDERS: {
-  id: Provider;
-  title: string;
-  desc: string;
-  icon: () => React.JSX.Element;
-  badge?: string;
-}[] = [
-  {
-    id: "edge",
-    title: "Openship Edge",
-    desc: "Zero config. Automatic SSL, high availability, and DDoS protection - all built in.",
-    icon: BoltIcon,
-    badge: "Recommended",
-  },
-  {
-    id: "cloudflare",
-    title: "Cloudflare Tunnel",
-    desc: "Use your own Cloudflare account. Free tier available.",
-    icon: ShieldIcon,
-  },
-  {
-    id: "ngrok",
-    title: "ngrok",
-    desc: "Expose services with your ngrok auth token.",
-    icon: TerminalIcon,
-  },
-];
-
 export function TunnelStep({ state, onUpdate, onNext, onBack }: StepProps) {
+  const { t } = useI18n();
+
+  const PROVIDERS: {
+    id: Provider;
+    title: string;
+    desc: string;
+    icon: () => React.JSX.Element;
+    badge?: string;
+  }[] = [
+    {
+      id: "edge",
+      title: t.onboarding.tunnel.providers.edge.title,
+      desc: t.onboarding.tunnel.providers.edge.desc,
+      icon: BoltIcon,
+      badge: t.onboarding.tunnel.providers.edge.badge,
+    },
+    {
+      id: "cloudflare",
+      title: t.onboarding.tunnel.providers.cloudflare.title,
+      desc: t.onboarding.tunnel.providers.cloudflare.desc,
+      icon: ShieldIcon,
+    },
+    {
+      id: "ngrok",
+      title: t.onboarding.tunnel.providers.ngrok.title,
+      desc: t.onboarding.tunnel.providers.ngrok.desc,
+      icon: TerminalIcon,
+    },
+  ];
+
   const [selected, setSelected] = useState<Provider>(
     state.tunnel?.provider ?? "edge",
   );
@@ -94,7 +97,7 @@ export function TunnelStep({ state, onUpdate, onNext, onBack }: StepProps) {
     <div className="ob-screen">
       <div className="ob-screen-inner">
         {onBack && (
-          <button className="ob-btn-back" aria-label="Go back" onClick={onBack}>
+          <button className="ob-btn-back" aria-label={t.onboarding.common.goBack} onClick={onBack}>
             <BackIcon />
           </button>
         )}
@@ -103,9 +106,9 @@ export function TunnelStep({ state, onUpdate, onNext, onBack }: StepProps) {
           <GlobeIcon />
         </div>
 
-        <h2>Internet Access</h2>
+        <h2>{t.onboarding.tunnel.title}</h2>
         <p className="ob-subtitle">
-          Your server needs a way to be reachable from the internet for webhooks, SSL, and public access.
+          {t.onboarding.tunnel.subtitle}
         </p>
 
         <div className="ob-tunnel-choices">
@@ -138,7 +141,7 @@ export function TunnelStep({ state, onUpdate, onNext, onBack }: StepProps) {
         {needsToken && (
           <div className="ob-form-group">
             <label htmlFor="ob-tunnel-token">
-              {selected === "cloudflare" ? "Cloudflare Tunnel Token" : "ngrok Auth Token"}
+              {selected === "cloudflare" ? t.onboarding.tunnel.cloudflareTokenLabel : t.onboarding.tunnel.ngrokTokenLabel}
             </label>
             <input
               id="ob-tunnel-token"
@@ -146,7 +149,7 @@ export function TunnelStep({ state, onUpdate, onNext, onBack }: StepProps) {
               value={token}
               onChange={(e) => setToken(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleContinue()}
-              placeholder={`Paste your ${selected === "cloudflare" ? "tunnel" : "ngrok auth"} token`}
+              placeholder={selected === "cloudflare" ? t.onboarding.tunnel.cloudflarePlaceholder : t.onboarding.tunnel.ngrokPlaceholder}
               autoComplete="off"
             />
           </div>
@@ -156,12 +159,12 @@ export function TunnelStep({ state, onUpdate, onNext, onBack }: StepProps) {
         {selected === "edge" && (
           <div className="ob-pref-hint">
             <InfoIcon />
-            Openship Edge requires an Openship account. You&apos;ll sign in to continue.
+            {t.onboarding.tunnel.edgeHint}
           </div>
         )}
 
         <button className="ob-btn-primary" onClick={handleContinue}>
-          {selected === "edge" ? "Sign In & Continue" : "Continue"}
+          {selected === "edge" ? t.onboarding.tunnel.signInContinue : t.onboarding.common.continue}
         </button>
       </div>
     </div>

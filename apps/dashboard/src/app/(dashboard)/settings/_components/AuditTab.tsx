@@ -18,6 +18,7 @@ import { Loader2, Search, Filter, User as UserIcon, Copy, Check } from "lucide-r
 import { api } from "@/lib/api";
 import { useModal } from "@/context/ModalContext";
 import { AUDIT_EVENT_LABELS, getAuditLabel } from "@/lib/audit-labels";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface AuditActor {
   id: string;
@@ -50,14 +51,17 @@ interface AuditEvent {
  * falls back to email, then to the raw user id (which is rarely seen —
  * only when both columns are empty on the user row).
  */
-function actorDisplay(e: AuditEvent): string {
+function actorDisplay(
+  e: AuditEvent,
+  labels: { system: string; actorPrefix: string },
+): string {
   if (e.actor) {
     if (e.actor.name && e.actor.name.trim()) return e.actor.name;
     if (e.actor.email) return e.actor.email;
     return e.actor.id.slice(0, 8);
   }
-  if (e.actorUserId) return `Actor ${e.actorUserId.slice(0, 8)}`;
-  return "System";
+  if (e.actorUserId) return interpolate(labels.actorPrefix, { id: e.actorUserId.slice(0, 8) });
+  return labels.system;
 }
 
 /**
@@ -121,6 +125,7 @@ function absoluteTime(iso: string): string {
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -133,8 +138,8 @@ function CopyButton({ value }: { value: string }) {
         }
       }}
       className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-      aria-label={copied ? "Copied" : "Copy"}
-      title={copied ? "Copied" : "Copy"}
+      aria-label={copied ? t.settings.common.copied : t.settings.common.copy}
+      title={copied ? t.settings.common.copied : t.settings.common.copy}
     >
       {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
     </button>
@@ -190,6 +195,7 @@ function DetailRow({
 }
 
 function AuditDetailsBody({ event, onClose }: { event: AuditEvent; onClose: () => void }) {
+  const { t } = useI18n();
   const labelInfo = getAuditLabel(event.eventType);
   const hasBefore = event.before !== null && event.before !== undefined;
   const hasAfter = event.after !== null && event.after !== undefined;
@@ -217,28 +223,28 @@ function AuditDetailsBody({ event, onClose }: { event: AuditEvent; onClose: () =
           type="button"
           onClick={onClose}
           className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-          aria-label="Close"
+          aria-label={t.settings.common.close}
         >
-          Close
+          {t.settings.common.close}
         </button>
       </div>
 
       {/* Actor */}
       <section className="rounded-xl border border-border/50 bg-card p-4">
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Actor
+          {t.settings.audit.actor}
         </h3>
-        <DetailRow label="Name" value={event.actor?.name || (event.actor ? "—" : "System")} />
-        <DetailRow label="Email" value={event.actor?.email || "—"} />
+        <DetailRow label={t.settings.audit.name} value={event.actor?.name || (event.actor ? "—" : t.settings.audit.system)} />
+        <DetailRow label={t.settings.audit.email} value={event.actor?.email || "—"} />
         <DetailRow
-          label="User ID"
+          label={t.settings.audit.userId}
           value={event.actorUserId || "—"}
           copyable={!!event.actorUserId}
           mono
         />
-        <DetailRow label="IP" value={event.ipAddress || "—"} copyable={!!event.ipAddress} mono />
+        <DetailRow label={t.settings.audit.ip} value={event.ipAddress || "—"} copyable={!!event.ipAddress} mono />
         <DetailRow
-          label="User agent"
+          label={t.settings.audit.userAgent}
           value={event.userAgent ? event.userAgent.slice(0, 200) : "—"}
         />
       </section>
@@ -247,11 +253,11 @@ function AuditDetailsBody({ event, onClose }: { event: AuditEvent; onClose: () =
       {(event.resourceType || event.resourceId) && (
         <section className="rounded-xl border border-border/50 bg-card p-4">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Resource
+            {t.settings.audit.resource}
           </h3>
-          <DetailRow label="Type" value={event.resourceType || "—"} mono />
+          <DetailRow label={t.settings.audit.type} value={event.resourceType || "—"} mono />
           <DetailRow
-            label="ID"
+            label={t.settings.audit.id}
             value={event.resourceId || "—"}
             copyable={!!event.resourceId}
             mono
@@ -263,17 +269,17 @@ function AuditDetailsBody({ event, onClose }: { event: AuditEvent; onClose: () =
       {(hasBefore || hasAfter) && (
         <section className="rounded-xl border border-border/50 bg-card p-4">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Changes
+            {t.settings.audit.changes}
           </h3>
           {hasBefore && hasAfter ? (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <JsonBlock value={event.before} label="Before" />
-              <JsonBlock value={event.after} label="After" />
+              <JsonBlock value={event.before} label={t.settings.audit.before} />
+              <JsonBlock value={event.after} label={t.settings.audit.after} />
             </div>
           ) : hasAfter ? (
-            <JsonBlock value={event.after} label="After" />
+            <JsonBlock value={event.after} label={t.settings.audit.after} />
           ) : (
-            <JsonBlock value={event.before} label="Removed" />
+            <JsonBlock value={event.before} label={t.settings.audit.removed} />
           )}
         </section>
       )}
@@ -286,6 +292,7 @@ function AuditDetailsBody({ event, onClose }: { event: AuditEvent; onClose: () =
 /* ──────────────────────────────────────────────────────────────────── */
 
 export function AuditTab() {
+  const { t } = useI18n();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -351,37 +358,37 @@ export function AuditTab() {
           className="text-xl font-medium text-foreground/80"
           style={{ letterSpacing: "-0.2px" }}
         >
-          Audit log
+          {t.settings.audit.heading}
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Every change in this organization, who made it, and when.
+          {t.settings.audit.subtitle}
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search events, actors, resources..."
-            className="w-full pl-10 pr-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            placeholder={t.settings.audit.searchPlaceholder}
+            className="w-full ps-10 pe-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
         <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+          <Filter className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
           <select
             value={eventType}
             onChange={(e) => {
               setEventType(e.target.value);
               setPage(1);
             }}
-            className="pl-10 pr-8 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            className="ps-10 pe-8 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           >
             {EVENT_TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {opt.value === "" ? t.settings.audit.allEvents : opt.label}
               </option>
             ))}
           </select>
@@ -396,7 +403,7 @@ export function AuditTab() {
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">
-              {search ? "No events match your search." : "No events yet."}
+              {search ? t.settings.audit.noMatch : t.settings.audit.noEvents}
             </p>
           </div>
         ) : (
@@ -408,7 +415,7 @@ export function AuditTab() {
                   key={e.id}
                   type="button"
                   onClick={() => openDetails(e)}
-                  className="w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-muted/30 transition-colors focus:outline-none focus:bg-muted/40"
+                  className="w-full px-5 py-3.5 flex items-center gap-4 text-start hover:bg-muted/30 transition-colors focus:outline-none focus:bg-muted/40"
                 >
                   <div className="w-8 h-8 rounded-full bg-muted/60 flex items-center justify-center shrink-0">
                     <UserIcon className="size-3.5 text-muted-foreground" />
@@ -426,10 +433,10 @@ export function AuditTab() {
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
                       <span className="text-foreground/80 font-medium">
-                        {actorDisplay(e)}
+                        {actorDisplay(e, { system: t.settings.audit.system, actorPrefix: t.settings.audit.actorPrefix })}
                       </span>
                       {e.actor?.name && e.actor.email && (
-                        <span className="ml-1.5">{e.actor.email}</span>
+                        <span className="ms-1.5">{e.actor.email}</span>
                       )}
                       {e.ipAddress && <span> - {e.ipAddress}</span>}
                     </p>
@@ -450,7 +457,7 @@ export function AuditTab() {
       {total > 50 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Showing {(page - 1) * 50 + 1}-{Math.min(page * 50, total)} of {total}
+            {interpolate(t.settings.audit.showing, { from: String((page - 1) * 50 + 1), to: String(Math.min(page * 50, total)), total: String(total) })}
           </span>
           <div className="flex gap-2">
             <button
@@ -459,7 +466,7 @@ export function AuditTab() {
               disabled={page === 1 || loading}
               className="px-3 py-1.5 rounded-lg border border-border/50 hover:bg-muted/40 transition-colors disabled:opacity-50"
             >
-              Previous
+              {t.settings.common.previous}
             </button>
             <button
               type="button"
@@ -467,7 +474,7 @@ export function AuditTab() {
               disabled={page * 50 >= total || loading}
               className="px-3 py-1.5 rounded-lg border border-border/50 hover:bg-muted/40 transition-colors disabled:opacity-50"
             >
-              Next
+              {t.settings.common.next}
             </button>
           </div>
         </div>

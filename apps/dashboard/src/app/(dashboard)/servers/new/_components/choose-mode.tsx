@@ -1,5 +1,6 @@
 import { Zap, ListChecks, ChevronRight } from "lucide-react";
 import type { SetupMode } from "./types";
+import { useI18n } from "@/components/i18n-provider";
 
 export function ChooseMode({
   onSelect,
@@ -8,45 +9,44 @@ export function ChooseMode({
   onSelect: (mode: SetupMode) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-3">
       <button
         onClick={() => onSelect("auto")}
         disabled={disabled}
-        className="w-full text-left bg-card rounded-2xl border border-border/50 p-6 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group"
+        className="w-full text-start bg-card rounded-2xl border border-border/50 p-6 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group"
       >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <Zap className="size-6 text-primary" />
           </div>
           <div className="flex-1">
-            <p className="text-[15px] font-semibold text-foreground">Automatic Setup</p>
+            <p className="text-[15px] font-semibold text-foreground">{t.servers.setup.autoTitle}</p>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Check requirements and install everything automatically.
-              One click - Openship handles Docker, OpenResty, and Git.
+              {t.servers.setup.autoDesc}
             </p>
           </div>
-          <ChevronRight className="size-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          <ChevronRight className="size-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
         </div>
       </button>
 
       <button
         onClick={() => onSelect("manual")}
         disabled={disabled}
-        className="w-full text-left bg-card rounded-2xl border border-border/50 p-6 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group"
+        className="w-full text-start bg-card rounded-2xl border border-border/50 p-6 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group"
       >
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
             <ListChecks className="size-6 text-orange-500" />
           </div>
           <div className="flex-1">
-            <p className="text-[15px] font-semibold text-foreground">Step-by-Step Setup</p>
+            <p className="text-[15px] font-semibold text-foreground">{t.servers.setup.stepTitle}</p>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Review each component and choose what to install.
-              See detailed status before proceeding.
+              {t.servers.setup.stepDesc}
             </p>
           </div>
-          <ChevronRight className="size-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          <ChevronRight className="size-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity rtl:rotate-180" />
         </div>
       </button>
     </div>

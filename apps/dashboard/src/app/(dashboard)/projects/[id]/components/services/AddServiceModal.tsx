@@ -28,6 +28,7 @@ import { getApiErrorMessage } from "@/lib/api";
 import EnvironmentVariables from "@/components/import-project/EnvironmentVariables";
 import { RoutingSettingsCard } from "@/components/routing/RoutingSettingsCard";
 import { LOCAL_SERVICE_CATALOG } from "./local-service-catalog";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface AddServiceModalProps {
   open: boolean;
@@ -207,6 +208,7 @@ function bucketEntry(entry: ImageCatalogEntry): string {
 }
 
 export function AddServiceModal({ open, projectName, isCloudProject, onClose, onSubmit }: AddServiceModalProps) {
+  const { t } = useI18n();
   const { deployMode } = usePlatform();
   // Cloud-only catalog when EITHER the install is the SaaS dashboard
   // (deployMode === "cloud") OR this specific project is deployed to
@@ -330,17 +332,18 @@ export function AddServiceModal({ open, projectName, isCloudProject, onClose, on
     for (const { bucket } of bucketed) {
       counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
     }
+    const catLabels = t.projectDetail.services.addModal.categories as Record<string, string>;
     const ordered: Array<{ id: string; label: string; icon: React.ElementType; count: number }> = [];
     for (const cat of CATEGORIES) {
       const count = counts.get(cat.id) ?? 0;
-      if (count > 0) ordered.push({ id: cat.id, label: cat.label, icon: cat.icon, count });
+      if (count > 0) ordered.push({ id: cat.id, label: catLabels[cat.id] ?? cat.label, icon: cat.icon, count });
     }
     const otherCount = counts.get(OTHER_CATEGORY_ID) ?? 0;
     if (otherCount > 0) {
-      ordered.push({ id: OTHER_CATEGORY_ID, label: "Other", icon: Box, count: otherCount });
+      ordered.push({ id: OTHER_CATEGORY_ID, label: catLabels.other, icon: Box, count: otherCount });
     }
     return ordered;
-  }, [bucketed]);
+  }, [bucketed, t]);
 
   // Filter the catalog by active category and search query.
   const visibleCatalog = useMemo(() => {
@@ -402,11 +405,11 @@ export function AddServiceModal({ open, projectName, isCloudProject, onClose, on
     const trimmedImage = image.trim();
 
     if (!trimmedName) {
-      setError("Service name is required.");
+      setError(t.projectDetail.services.addModal.serviceNameRequired);
       return;
     }
     if (!trimmedImage) {
-      setError("Image is required.");
+      setError(t.projectDetail.services.addModal.imageRequired);
       return;
     }
 
@@ -443,7 +446,7 @@ export function AddServiceModal({ open, projectName, isCloudProject, onClose, on
       await onSubmit(payload);
       onClose();
     } catch (err) {
-      setError(getApiErrorMessage(err, "Failed to add service"));
+      setError(getApiErrorMessage(err, t.projectDetail.services.addModal.addServiceFailed));
     } finally {
       setSaving(false);
     }
@@ -466,19 +469,21 @@ export function AddServiceModal({ open, projectName, isCloudProject, onClose, on
                 type="button"
                 onClick={handleBackToCatalog}
                 className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                aria-label="Back to catalog"
+                aria-label={t.projectDetail.services.addModal.backToCatalog}
               >
-                <ArrowLeft className="size-4" />
+                <ArrowLeft className="size-4 rtl:rotate-180" />
               </button>
             )}
             <div className="min-w-0">
               <h2 className="text-base font-semibold text-foreground truncate">
-                {step === "pick" ? "Add a service" : `Configure ${selected?.name ?? "service"}`}
+                {step === "pick"
+                  ? t.projectDetail.services.addModal.addTitle
+                  : interpolate(t.projectDetail.services.addModal.configureTitle, { name: selected?.name ?? t.projectDetail.services.addModal.fallbackService })}
               </h2>
               <p className="mt-0.5 text-xs text-muted-foreground truncate">
                 {step === "pick"
-                  ? "Pick from the catalog or use a custom image."
-                  : "Set the service name, environment, and exposure."}
+                  ? t.projectDetail.services.addModal.pickSubtitle
+                  : t.projectDetail.services.addModal.configureSubtitle}
               </p>
             </div>
           </div>
@@ -498,7 +503,7 @@ export function AddServiceModal({ open, projectName, isCloudProject, onClose, on
               type="button"
               onClick={onClose}
               className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              aria-label="Close"
+              aria-label={t.projectDetail.services.addModal.close}
             >
               <X className="size-4" />
             </button>
@@ -581,25 +586,27 @@ function CatalogPickStep({
   showCustomTile: boolean;
   onPick: (entry: ImageCatalogEntry) => void;
 }) {
+  const { t } = useI18n();
+  const m = t.projectDetail.services.addModal;
   const hasNoResults = !loading && catalog.length === 0 && !showCustomTile;
   const activeLabel =
     activeCategory === null
-      ? "All services"
+      ? m.allServices
       : activeCategory === CUSTOM_CATEGORY_ID
-        ? "Custom image"
-        : categories.find((c) => c.id === activeCategory)?.label ?? "Services";
+        ? m.customImage
+        : categories.find((c) => c.id === activeCategory)?.label ?? m.services;
 
   return (
     <div className="flex flex-1 min-h-0">
       {/* ── Left rail: curated categories ───────────────────────────── */}
-      <aside className="hidden md:flex md:flex-col w-[240px] shrink-0 border-r border-border/40 bg-muted/[0.04]">
+      <aside className="hidden md:flex md:flex-col w-[240px] shrink-0 border-e border-border/40 bg-muted/[0.04]">
         <div className="px-5 pt-5 pb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60">
-          Browse
+          {m.browse}
         </div>
         <div className="flex-1 overflow-y-auto px-2.5 pb-3 space-y-0.5">
           <CategoryItem
             icon={Sparkles}
-            label="All services"
+            label={m.allServices}
             count={totalCount}
             active={activeCategory === null}
             onClick={() => onCategoryChange(null)}
@@ -618,7 +625,7 @@ function CatalogPickStep({
         <div className="border-t border-border/30 px-2.5 py-3">
           <CategoryItem
             icon={Plus}
-            label="Custom image"
+            label={m.customImage}
             active={activeCategory === CUSTOM_CATEGORY_ID}
             onClick={() => onCategoryChange(CUSTOM_CATEGORY_ID)}
           />
@@ -632,26 +639,25 @@ function CatalogPickStep({
             <h3 className="text-[15px] font-semibold text-foreground truncate">{activeLabel}</h3>
             {!loading && catalog.length > 0 && (
               <span className="text-[11px] font-medium text-muted-foreground/70 tabular-nums shrink-0">
-                {catalog.length} {catalog.length === 1 ? "service" : "services"}
+                {interpolate(catalog.length === 1 ? m.serviceCountOne : m.serviceCountOther, { count: String(catalog.length) })}
               </span>
             )}
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search by name, image, or tag…"
+              placeholder={m.searchPlaceholder}
               spellCheck={false}
               autoComplete="off"
-              className="h-10 w-full rounded-xl border border-border/50 bg-muted/20 pl-9 pr-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
+              className="h-10 w-full rounded-xl border border-border/50 bg-muted/20 ps-9 pe-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
             />
           </div>
           {cloudConnected === false && (
             <p className="text-[12px] text-muted-foreground">
-              Connect Openship Cloud to browse the cloud service catalog.
-              You can still add any image manually.
+              {m.cloudConnectHint}
             </p>
           )}
         </div>
@@ -671,10 +677,9 @@ function CatalogPickStep({
               <div className="size-11 rounded-xl bg-muted/40 flex items-center justify-center mb-3">
                 <Search className="size-4 text-muted-foreground/60" />
               </div>
-              <p className="text-sm font-medium text-foreground">No matches</p>
+              <p className="text-sm font-medium text-foreground">{m.noMatchesTitle}</p>
               <p className="text-xs text-muted-foreground/70 mt-1 max-w-[280px]">
-                Try a different category or search term - or pick Custom image
-                from the rail.
+                {m.noMatchesBody}
               </p>
             </div>
           ) : (
@@ -708,9 +713,10 @@ function SourceSwitcher({
   value: "local" | "cloud";
   onChange: (v: "local" | "cloud") => void;
 }) {
+  const { t } = useI18n();
   const options: Array<{ value: "local" | "cloud"; label: string; icon: React.ElementType }> = [
-    { value: "local", label: "Local images", icon: Cpu },
-    { value: "cloud", label: "Openship Cloud", icon: Cloud },
+    { value: "local", label: t.projectDetail.services.addModal.localImages, icon: Cpu },
+    { value: "cloud", label: t.projectDetail.services.addModal.openshipCloud, icon: Cloud },
   ];
   return (
     <div className="inline-flex items-center gap-0.5 rounded-xl bg-muted/40 p-0.5 w-fit">
@@ -754,7 +760,7 @@ function CategoryItem({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all ${
+      className={`w-full group flex items-center gap-3 rounded-xl px-3 py-2.5 text-start transition-all ${
         active
           ? "bg-foreground/[0.06] text-foreground"
           : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -790,13 +796,15 @@ function CatalogCard({
   onClick: () => void;
   highlight?: boolean;
 }) {
+  const { t } = useI18n();
+  const m = t.projectDetail.services.addModal;
   const custom = isCustom(entry);
   return (
     <button
       type="button"
       onClick={onClick}
-      title={entry.description ?? undefined}
-      className={`group relative flex items-center gap-3 text-left rounded-xl border p-3 transition-all ${
+      title={custom ? m.customEntryDescription : (entry.description ?? undefined)}
+      className={`group relative flex items-center gap-3 text-start rounded-xl border p-3 transition-all ${
         highlight
           ? "border-dashed border-border/60 bg-muted/[0.04] hover:border-primary/50 hover:bg-primary/[0.03]"
           : "border-border/40 bg-card hover:border-primary/40 hover:bg-foreground/[0.015]"
@@ -819,7 +827,7 @@ function CatalogCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-semibold text-foreground truncate leading-tight">
-          {entry.name ?? entry.image ?? "Unnamed"}
+          {custom ? m.customImage : (entry.name ?? entry.image ?? m.unnamed)}
         </p>
         {!custom && entry.image && (
           <p className="text-[11px] text-muted-foreground/60 truncate font-mono mt-0.5">
@@ -888,6 +896,8 @@ function ConfigureStep({
   onCancel: () => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const m = t.projectDetail.services.addModal;
   const portList = useMemo(
     () =>
       ports
@@ -931,7 +941,7 @@ function ConfigureStep({
         {/* Two-col: name + ports together - most services have one short port,
             wasting a full row on it just for "5432" felt off. */}
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-3">
-          <Field label="Service name">
+          <Field label={m.serviceName}>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -941,7 +951,7 @@ function ConfigureStep({
               className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
             />
           </Field>
-          <Field label="Ports">
+          <Field label={m.ports}>
             <input
               type="text"
               value={ports}
@@ -954,7 +964,7 @@ function ConfigureStep({
           </Field>
         </div>
 
-        <Field label="Image">
+        <Field label={m.image}>
           <input
             value={image}
             onChange={(e) => setImage(e.target.value)}
@@ -968,11 +978,11 @@ function ConfigureStep({
         {/* Volumes - structured name/path pairs instead of raw compose syntax */}
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Persistent volumes</span>
+            <span className="text-xs font-medium text-muted-foreground">{m.persistentVolumes}</span>
             <span className="text-[11px] text-muted-foreground/60">
               {selected?.defaultVolumes?.length
-                ? "Pre-seeded for this service"
-                : "Optional"}
+                ? m.preSeeded
+                : m.optional}
             </span>
           </div>
           {volumeRows.length > 0 ? (
@@ -1006,7 +1016,7 @@ function ConfigureStep({
                     type="button"
                     onClick={() => setVolumeRows((rows) => rows.filter((_, i) => i !== idx))}
                     className="size-10 shrink-0 rounded-xl text-muted-foreground/60 transition-colors hover:bg-muted/40 hover:text-foreground inline-flex items-center justify-center"
-                    aria-label="Remove volume"
+                    aria-label={m.removeVolume}
                   >
                     <X className="size-4" />
                   </button>
@@ -1022,16 +1032,16 @@ function ConfigureStep({
             }`}
           >
             <Plus className="size-3.5" />
-            Add volume
+            {m.addVolume}
           </button>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Volumes keep data across restarts. Name on the left, container path on the right.
+            {m.volumesHint}
           </p>
         </div>
 
         {/* Env vars - reuses the shared editor in settings mode (no DeploymentContext required). */}
         <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Environment variables</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">{m.environmentVariables}</p>
           <EnvironmentVariables
             mode="settings"
             envVars={envRows}
@@ -1071,7 +1081,7 @@ function ConfigureStep({
           className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground/[0.06] px-4 text-sm font-medium text-foreground transition-colors hover:bg-foreground/[0.1] disabled:opacity-50"
         >
           <X className="size-4" />
-          Cancel
+          {m.cancel}
         </button>
         <button
           type="submit"
@@ -1079,7 +1089,7 @@ function ConfigureStep({
           className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {saving ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-          Add service
+          {m.addService}
         </button>
       </div>
     </form>
@@ -1107,11 +1117,12 @@ function Field({
 }
 
 function ModeBadge({ mode }: { mode: "cloud" | "local" }) {
+  const { t } = useI18n();
   const Icon = mode === "cloud" ? Cloud : Cpu;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
       <Icon className="size-3" />
-      {mode === "cloud" ? "Openship Cloud" : "Local Docker"}
+      {mode === "cloud" ? t.projectDetail.services.addModal.openshipCloud : t.projectDetail.services.addModal.localDocker}
     </span>
   );
 }

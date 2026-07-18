@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useOptionalDeployment } from "@/context/DeploymentContext";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 
 type EnvironmentVariableRow = { key: string; value: string; visible: boolean };
 
@@ -70,6 +72,8 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
 }) => {
   const deployment = useOptionalDeployment();
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const ev = t.importProject.environmentVariables;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pasteZoneRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -183,16 +187,20 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
   const showEnvPasteResult = useCallback(
     (parsedCount: number, added: number, updated: number) => {
       const parts: string[] = [];
-      if (added > 0) parts.push(`${added} added`);
-      if (updated > 0) parts.push(`${updated} updated`);
+      if (added > 0) parts.push(interpolate(ev.toast.added, { count: String(added) }));
+      if (updated > 0) parts.push(interpolate(ev.toast.updated, { count: String(updated) }));
+      const detail = parts.length ? ` (${parts.join(", ")})` : "";
 
       showToast(
-        `Pasted ${parsedCount} variable${parsedCount !== 1 ? "s" : ""}${parts.length ? ` (${parts.join(", ")})` : ""}`,
+        interpolate(parsedCount === 1 ? ev.toast.pastedOne : ev.toast.pastedOther, {
+          count: String(parsedCount),
+          detail,
+        }),
         "success",
-        "Environment Variables"
+        ev.toast.title
       );
     },
-    [showToast]
+    [showToast, ev]
   );
 
   const maybeAutoApplyDetectedPort = useCallback(
@@ -223,9 +231,9 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
           productionPort: detectedPort,
         },
       });
-      showToast(`Runtime port set to ${detectedPort} from PORT`, "success", "Environment Variables");
+      showToast(interpolate(ev.toast.portSet, { port: detectedPort }), "success", ev.toast.title);
     },
-    [deployment, mode, showToast]
+    [deployment, mode, showToast, ev]
   );
 
   const applyEnvText = useCallback(
@@ -286,9 +294,9 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
       !navigator.clipboard?.readText
     ) {
       showToast(
-        "Clipboard access is not available here. Click inside the environment box and paste with Cmd/Ctrl+V.",
+        ev.toast.clipboardUnavailable,
         "error",
-        "Environment Variables"
+        ev.toast.title
       );
       return;
     }
@@ -297,15 +305,15 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
       const text = await navigator.clipboard.readText();
 
       if (!text.trim()) {
-        showToast("Clipboard is empty", "error", "Environment Variables");
+        showToast(ev.toast.clipboardEmpty, "error", ev.toast.title);
         return;
       }
 
       if (!looksLikeEnvPaste(text, true) || !applyEnvText(text)) {
         showToast(
-          "Clipboard does not contain valid KEY=VALUE environment variables",
+          ev.toast.clipboardInvalid,
           "error",
-          "Environment Variables"
+          ev.toast.title
         );
       } else {
         // Successful paste — reveal the body so the operator sees the
@@ -314,12 +322,12 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
       }
     } catch {
       showToast(
-        "Clipboard access was blocked. Click inside the environment box and paste with Cmd/Ctrl+V.",
+        ev.toast.clipboardBlocked,
         "error",
-        "Environment Variables"
+        ev.toast.title
       );
     }
-  }, [applyEnvText, isEditingMode, showToast]);
+  }, [applyEnvText, isEditingMode, showToast, ev]);
 
   const handlePasteZoneClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isEditingMode) return;
@@ -448,9 +456,9 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
             <Key className="size-[18px] text-violet-500" />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">Environment Variables</p>
+            <p className="text-sm font-medium text-foreground">{ev.title}</p>
             <p className="text-xs text-muted-foreground">
-              {currentEnvVars.length === 0 ? 'None set' : `${currentEnvVars.length} variable${currentEnvVars.length !== 1 ? 's' : ''}`}
+              {currentEnvVars.length === 0 ? ev.noneSet : interpolate(currentEnvVars.length === 1 ? t.importProject.counts.variableOne : t.importProject.counts.variableOther, { count: String(currentEnvVars.length) })}
             </p>
           </div>
         </div>
@@ -469,7 +477,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <FileText className="size-3.5" />
-                Paste .env
+                {ev.pasteEnv}
               </button>
               <button
                 onClick={() => {
@@ -479,14 +487,14 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <Upload className="size-3.5" />
-                Upload .env
+                {ev.uploadEnv}
               </button>
               <button
                 onClick={() => setIsEditingMode(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <Pencil className="size-3.5" />
-                Edit
+                {ev.edit}
               </button>
             </>
           )}
@@ -496,7 +504,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                 <button
                   onClick={onCancel}
                   className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                  title="Cancel"
+                  title={ev.cancel}
                 >
                   <X className="size-4" />
                 </button>
@@ -506,14 +514,14 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <FileText className="size-3.5" />
-                Paste .env
+                {ev.pasteEnv}
               </button>
               <button
                 onClick={handleUploadClick}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <Upload className="size-3.5" />
-                Upload .env
+                {ev.uploadEnv}
               </button>
               {showSettingsActions && (
                 <button
@@ -521,7 +529,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                   disabled={isSaving}
                   className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isSaving ? ev.saving : ev.saveChanges}
                 </button>
               )}
             </>
@@ -533,14 +541,14 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <FileText className="size-3.5" />
-                Paste .env
+                {ev.pasteEnv}
               </button>
               <button
                 onClick={handleUploadClick}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
               >
                 <Upload className="size-3.5" />
-                Upload .env
+                {ev.uploadEnv}
               </button>
             </>
           )}
@@ -549,7 +557,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
               type="button"
               onClick={() => setExpanded((v) => !v)}
               className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              aria-label={expanded ? "Collapse environment variables" : "Expand environment variables"}
+              aria-label={expanded ? ev.collapse : ev.expand}
             >
               {expanded ? (
                 <ChevronUp className="size-4" />
@@ -586,7 +594,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
         onClick={handlePasteZoneClick}
       >
         {currentEnvVars.map((env, index) => {
-          const resolution = getEnvResolutionState(envMeta?.[env.key], env.value);
+          const resolution = getEnvResolutionState(envMeta?.[env.key], env.value, t);
           const inputStateClass = resolution?.inputClass ?? "";
           return (
             <div key={index} data-env-index={index} className="space-y-1.5">
@@ -612,15 +620,15 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                     type={env.visible ? "text" : "password"}
                     value={env.value}
                     onChange={(e) => handleValueChange(index, e.target.value)}
-                    placeholder="value"
+                    placeholder={ev.valuePlaceholder}
                     readOnly={!isEditingMode}
-                    className={`w-full px-3.5 py-2.5 pr-9 border border-border/50 rounded-lg text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
+                    className={`w-full px-3.5 py-2.5 pe-9 border border-border/50 rounded-lg text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${
                       !isEditingMode ? 'cursor-default bg-muted/20' : 'bg-muted/30'
                     } ${inputStateClass}`}
                   />
                   <button
                     onClick={() => toggleEnvVisibility(index)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                     type="button"
                   >
                     {env.visible ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
@@ -632,7 +640,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
                     onClick={() => removeEnvVar(index)}
                     className="flex size-8 items-center justify-center rounded-lg text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                     type="button"
-                    title="Delete"
+                    title={ev.delete}
                   >
                     <Trash2 className="size-3.5" />
                   </button>
@@ -652,12 +660,12 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
           >
             <Key className={`size-10 mb-3 ${isDragging ? 'text-primary' : 'text-muted-foreground/30'}`} />
             <p className={`text-sm font-medium mb-1 ${isDragging ? 'text-primary' : 'text-foreground'}`}>
-              {isDragging ? 'Drop .env file here' : 'No environment variables'}
+              {isDragging ? ev.dropHere : ev.noneTitle}
             </p>
             <p className="text-xs text-muted-foreground max-w-xs">
               {isEditingMode
-                ? 'Click "Add Variable", use "Paste .env", upload a file, or paste anywhere inside this box'
-                : 'Click "Edit" to manage environment variables'}
+                ? ev.emptyHintEditing
+                : ev.emptyHintReadonly}
             </p>
           </div>
         )}
@@ -665,7 +673,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
         {isEditingMode && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Paste a full .env block anywhere inside this box.
+              {ev.pasteHint}
             </p>
             <div className="flex items-center gap-2">
             <button
@@ -673,7 +681,7 @@ const EnvironmentVariables: React.FC<EnvironmentVariablesPropsOptional> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-lg transition-colors"
             >
               <Plus className="size-3.5" />
-              Add Variable
+              {ev.addVariable}
             </button>
             </div>
           </div>
@@ -757,13 +765,14 @@ function detectContainerPort(envVars: EnvironmentVariableRow[]) {
   return String(port);
 }
 
-function getEnvResolutionState(meta: EnvironmentVariableMeta | undefined, value: string) {
+function getEnvResolutionState(meta: EnvironmentVariableMeta | undefined, value: string, t: Dictionary) {
   if (!meta) return null;
+  const res = t.importProject.environmentVariables.resolution;
 
   if (meta.source === "missing" && !value) {
     return {
       icon: AlertTriangle,
-      label: "Needs value",
+      label: res.needsValue,
       badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
       inputClass: "border-amber-400/70 bg-amber-500/5 focus:ring-amber-500/20",
     };
@@ -772,7 +781,7 @@ function getEnvResolutionState(meta: EnvironmentVariableMeta | undefined, value:
   if (meta.source === "default" && value === meta.resolvedValue) {
     return {
       icon: RotateCcw,
-      label: "Fallback default",
+      label: res.fallbackDefault,
       badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
       inputClass: "border-blue-400/50 bg-blue-500/5 focus:ring-blue-500/20",
     };
@@ -781,7 +790,7 @@ function getEnvResolutionState(meta: EnvironmentVariableMeta | undefined, value:
   if (meta.source === "env-file" && value === meta.resolvedValue) {
     return {
       icon: FileText,
-      label: "Loaded from .env",
+      label: res.loadedFromEnv,
       badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
       inputClass: "border-emerald-400/50 bg-emerald-500/5 focus:ring-emerald-500/20",
     };
@@ -790,7 +799,7 @@ function getEnvResolutionState(meta: EnvironmentVariableMeta | undefined, value:
   if (meta.source === "interpolated" && value === meta.resolvedValue) {
     return {
       icon: RotateCcw,
-      label: "Interpolated",
+      label: res.interpolated,
       badgeClass: "bg-muted text-muted-foreground",
       inputClass: "border-border/70",
     };

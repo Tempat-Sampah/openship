@@ -11,7 +11,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun install && cd apps/dashboard && bun run build
 
 # ─── Production stage ──────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 COPY --from=builder /app/apps/dashboard/.next/standalone ./

@@ -4,6 +4,8 @@ import React, { useState, useEffect, memo } from "react";
 import { Clock, Container } from "lucide-react";
 import { useDeployment } from "@/context/DeploymentContext";
 import { resolveBuildElapsedMs, type DeploymentStatus } from "@/context/deployment/types";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -13,32 +15,35 @@ function formatTime(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function statusBadge(status: DeploymentStatus, hasWarning: boolean) {
+function statusBadge(status: DeploymentStatus, hasWarning: boolean, t: Dictionary) {
+  const s = t.importProject.composeSidebar.status;
   if (status === "failed" || status === "cancelled") {
     return {
-      label: status === "cancelled" ? "Cancelled" : "Failed",
+      label: status === "cancelled" ? s.cancelled : s.failed,
       cls: "bg-destructive/10 text-destructive border-destructive/20",
     };
   }
   if (hasWarning) {
     return {
-      label: "Warnings",
+      label: s.warnings,
       cls: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
     };
   }
   if (status === "ready") {
-    return { label: "Ready", cls: "bg-primary/10 text-primary border-primary/20" };
+    return { label: s.ready, cls: "bg-primary/10 text-primary border-primary/20" };
   }
-  return { label: "Deploying", cls: "bg-primary/10 text-primary border-primary/20" };
+  return { label: s.deploying, cls: "bg-primary/10 text-primary border-primary/20" };
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const ComposeSidebar: React.FC = () => {
   const { state, config, deploymentStatus } = useDeployment();
+  const { t } = useI18n();
+  const sb = t.importProject.composeSidebar;
 
   const hasWarning = deploymentStatus === "ready" && !!state.warningMessage;
-  const badge = statusBadge(deploymentStatus, hasWarning);
+  const badge = statusBadge(deploymentStatus, hasWarning, t);
 
   // ── Build timer ──────────────────────────────────────────────────────
   const [elapsed, setElapsed] = useState<number>(() => {
@@ -83,15 +88,15 @@ const ComposeSidebar: React.FC = () => {
 
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-6">
-      <h3 className="text-base font-normal text-foreground mb-3">Deployment Details</h3>
+      <h3 className="text-base font-normal text-foreground mb-3">{sb.detailsTitle}</h3>
       <div className="space-y-0">
-        <Row label="Status">
+        <Row label={sb.rowStatus}>
           <span className={`text-sm font-normal px-3 py-1 rounded-full border ${badge.cls}`}>
             {badge.label}
           </span>
         </Row>
 
-        <Row label="Build Time">
+        <Row label={sb.rowBuildTime}>
           <span className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
             {formatTime(elapsed)}
@@ -99,24 +104,24 @@ const ComposeSidebar: React.FC = () => {
         </Row>
 
         {total > 0 && (
-          <Row label="Services">
+          <Row label={sb.rowServices}>
             <span>
-              {running}/{total} running
+              {running}/{total} {sb.running}
               {building > 0 && (
-                <span className="ml-1">· {building} building</span>
+                <span className="ms-1">{interpolate(sb.buildingSuffix, { count: String(building) })}</span>
               )}
               {failed > 0 && (
-                <span className="text-destructive ml-1">· {failed} failed</span>
+                <span className="text-destructive ms-1">{interpolate(sb.failedSuffix, { count: String(failed) })}</span>
               )}
             </span>
           </Row>
         )}
 
-        <Row label="Project">
+        <Row label={sb.rowProject}>
           {config.projectName || `${config.owner}/${config.repo}`}
         </Row>
 
-        <Row label="Type" border={false}>
+        <Row label={sb.rowType} border={false}>
           <span className="flex items-center gap-1.5">
             <Container className="w-3.5 h-3.5 text-muted-foreground" />
             Compose

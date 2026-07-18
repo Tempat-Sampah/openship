@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { DnsRecord, DnsRecords } from "@/lib/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -82,6 +83,8 @@ export function DnsRecordCard({
   rec: DnsRecord;
   domain: string;
 }) {
+  const { t } = useI18n();
+  const w = t.widgets.shared.dnsRecords;
   const [copied, setCopied] = useState<"name" | "value" | null>(null);
   const displayedName = displayDnsName(rec.name, domain);
 
@@ -103,25 +106,25 @@ export function DnsRecordCard({
         </span>
         {rec.type === "MX" && rec.priority !== undefined && (
           <span className="text-xs text-muted-foreground/70">
-            priority {rec.priority}
+            {interpolate(w.priority, { n: String(rec.priority) })}
           </span>
         )}
         {rec.required === false && (
-          <span className="text-xs text-muted-foreground/70 ml-auto">
-            recommended
+          <span className="text-xs text-muted-foreground/70 ms-auto">
+            {w.recommended}
           </span>
         )}
       </div>
 
       <div className="space-y-2 font-mono text-[12px]">
         <DnsRecordField
-          fieldLabel="Name"
+          fieldLabel={w.name}
           value={displayedName}
           copied={copied === "name"}
           onCopy={() => copy("name", displayedName)}
         />
         <DnsRecordField
-          fieldLabel="Value"
+          fieldLabel={w.value}
           value={rec.value}
           copied={copied === "value"}
           onCopy={() => copy("value", rec.value)}
@@ -142,6 +145,7 @@ function DnsRecordField({
   copied: boolean;
   onCopy: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-start gap-2">
       <span className="text-xs text-muted-foreground/70 font-sans w-10 shrink-0 mt-0.5">
@@ -153,7 +157,7 @@ function DnsRecordField({
       <button
         onClick={onCopy}
         className="text-muted-foreground/70 hover:text-foreground transition-colors p-1.5"
-        title="Copy"
+        title={t.widgets.shared.dnsRecords.copy}
       >
         {copied ? (
           <Check className="size-3.5 text-emerald-500" />

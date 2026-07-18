@@ -37,6 +37,7 @@ import { apiCommand } from "./commands/api";
 
 // Distribution
 import { installCommand } from "./commands/install";
+import { updateCommand } from "./commands/update";
 import { cacheCommand } from "./commands/cache";
 
 // Injected at build time by tsup (define). Always present in the built binary.
@@ -56,6 +57,7 @@ program
 // Run the platform / auth / workspace
 program.addCommand(upCommand);
 program.addCommand(installCommand);
+program.addCommand(updateCommand);
 program.addCommand(openCommand);
 program.addCommand(loginCommand);
 program.addCommand(logoutCommand);

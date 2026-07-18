@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import ServerSelector, { type ServerOption } from "@/components/shared/ServerSelector";
 import { AdoptMailModal } from "./adopt-mail-modal";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 /**
  * Browser-side strong-password generation. 18 random bytes →
@@ -54,6 +55,7 @@ export function MailSetupForm({
   onStart,
   onAdopted,
 }: MailSetupFormProps) {
+  const { t } = useI18n();
   const [adoptOpen, setAdoptOpen] = useState(false);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
@@ -64,9 +66,9 @@ export function MailSetupForm({
             <Mail className="size-5 text-violet-500" />
           </div>
           <div>
-            <h2 className="text-lg font-medium text-foreground">Mail Server Setup</h2>
+            <h2 className="text-lg font-medium text-foreground">{t.emails.setup.title}</h2>
             <p className="text-sm text-muted-foreground">
-              Deploy a complete self-hosted mail stack on this server
+              {t.emails.setup.subtitle}
             </p>
           </div>
         </div>
@@ -85,24 +87,25 @@ export function MailSetupForm({
         <div className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
-              Domain
+              {t.emails.setup.domainLabel}
             </label>
             <input
               type="text"
               value={domain}
               onChange={(e) => onDomainChange(e.target.value)}
-              placeholder="example.com"
+              placeholder={t.emails.setup.domainPlaceholder}
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
             <p className="text-xs text-muted-foreground mt-1.5">
-              Your mail server will be at <strong>mail.{domain || "example.com"}</strong>
+              {t.emails.setup.willBeAtBefore}
+              <strong>mail.{domain || "example.com"}</strong>
             </p>
           </div>
 
           <div>
             <div className="flex items-baseline justify-between mb-1.5">
               <label className="block text-sm font-medium text-foreground">
-                Admin Password
+                {t.emails.setup.adminPasswordLabel}
               </label>
               <span className="text-xs text-muted-foreground/70">
                 postmaster@{domain || "your-domain.com"}
@@ -111,11 +114,10 @@ export function MailSetupForm({
             <PasswordField
               value={adminPassword}
               onChange={onPasswordChange}
-              placeholder="Strong password - or click Generate"
+              placeholder={t.emails.setup.passwordPlaceholder}
             />
             <p className="text-xs text-muted-foreground mt-1.5">
-              Used to log into the mailbox after setup. You can change it later from
-              the admin panel below.
+              {t.emails.setup.passwordHint}
             </p>
           </div>
         </div>
@@ -127,7 +129,7 @@ export function MailSetupForm({
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Play className="size-4" />
-            Start Setup
+            {t.emails.setup.startSetup}
           </button>
           {/* Disaster recovery: re-adopt a mail server already installed on a
               server (e.g. after losing the orchestrator PC) without reinstalling. */}
@@ -137,7 +139,7 @@ export function MailSetupForm({
             disabled={running}
             className="text-sm text-muted-foreground hover:text-foreground underline-offset-2 hover:underline disabled:opacity-50"
           >
-            Already have a mail server? Adopt it
+            {t.emails.setup.adoptCta}
           </button>
         </div>
       </div>
@@ -152,14 +154,14 @@ export function MailSetupForm({
       <div className="space-y-4">
         <div className="bg-card rounded-2xl border border-border/50 p-5">
           <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-semibold mb-4">
-            What gets installed
+            {t.emails.setup.whatInstalled}
           </p>
           <div className="space-y-3">
             {[
-              { icon: Server, label: "Mail server stack", desc: "Postfix, Dovecot, anti-spam" },
-              { icon: Shield, label: "SSL Certificate", desc: "Let's Encrypt auto-SSL" },
-              { icon: Globe, label: "DNS Configuration", desc: "DKIM, SPF, DMARC records" },
-              { icon: Key, label: "Admin Panel", desc: "Manage mailboxes, domains, and aliases" },
+              { icon: Server, label: t.emails.setup.features.stackLabel, desc: t.emails.setup.features.stackDesc },
+              { icon: Shield, label: t.emails.setup.features.sslLabel, desc: t.emails.setup.features.sslDesc },
+              { icon: Globe, label: t.emails.setup.features.dnsLabel, desc: t.emails.setup.features.dnsDesc },
+              { icon: Key, label: t.emails.setup.features.adminLabel, desc: t.emails.setup.features.adminDesc },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -178,11 +180,11 @@ export function MailSetupForm({
           <div className="flex items-start gap-3">
             <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-foreground">Prerequisites</p>
+              <p className="text-sm font-medium text-foreground">{t.emails.setup.prerequisites}</p>
               <ul className="text-xs text-muted-foreground mt-1.5 space-y-1 list-disc list-inside">
-                <li>A domain with DNS access</li>
-                <li>Port 25 not blocked by your provider</li>
-                <li>Clean Ubuntu/Debian server (recommended)</li>
+                <li>{t.emails.setup.prereq1}</li>
+                <li>{t.emails.setup.prereq2}</li>
+                <li>{t.emails.setup.prereq3}</li>
               </ul>
             </div>
           </div>
@@ -210,6 +212,7 @@ function PasswordField({
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const { t } = useI18n();
   const [revealed, setRevealed] = useState(false);
 
   const generate = () => {
@@ -225,13 +228,13 @@ function PasswordField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-3 py-2.5 pr-10 rounded-xl border border-border bg-background text-sm font-mono placeholder:font-sans placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full px-3 py-2.5 pe-10 rounded-xl border border-border bg-background text-sm font-mono placeholder:font-sans placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
         <button
           type="button"
           onClick={() => setRevealed((v) => !v)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground/70 hover:text-foreground transition-colors"
-          title={revealed ? "Hide" : "Reveal"}
+          className="absolute end-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground/70 hover:text-foreground transition-colors"
+          title={revealed ? t.emails.setup.hide : t.emails.setup.reveal}
         >
           {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
@@ -240,10 +243,10 @@ function PasswordField({
         type="button"
         onClick={generate}
         className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-border/60 bg-background text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
-        title="Generate a strong random password"
+        title={t.emails.setup.generateTitle}
       >
         <Sparkles className="size-3.5" />
-        Generate
+        {t.emails.setup.generate}
       </button>
     </div>
   );

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Plus, Github, GitBranch, Zap, ShieldCheck } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 const FEATURES = [
   { icon: Zap, label: "Zero config", sub: "Push to deploy" },
@@ -17,6 +18,7 @@ const FEATURES = [
  * identical. Neutral --th-* vars only; the primary accent lives on the CTA.
  */
 const HomeWelcome: React.FC = () => {
+  const { t } = useI18n();
   return (
     <div className="px-6 py-12 sm:py-14">
       {/* Illustration */}
@@ -61,11 +63,10 @@ const HomeWelcome: React.FC = () => {
       {/* Copy */}
       <div className="text-center">
         <h3 className="text-xl font-medium text-foreground/85 mb-1.5" style={{ letterSpacing: "-0.2px" }}>
-          Launch your first project
+          {t.overview.welcome.title}
         </h3>
         <p className="text-sm text-muted-foreground/80 max-w-sm mx-auto mb-6 leading-relaxed">
-          Connect a repository or start from a template — Openship builds it, ships it,
-          and hands you a live URL in minutes.
+          {t.overview.welcome.subtitle}
         </p>
 
         {/* CTAs */}
@@ -75,14 +76,14 @@ const HomeWelcome: React.FC = () => {
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
           >
             <Plus className="size-4" />
-            Create project
+            {t.overview.welcome.createProject}
           </Link>
           <Link
             href="/library"
             className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
           >
             <Github className="size-4" />
-            Import from GitHub
+            {t.overview.welcome.importGithub}
           </Link>
         </div>
       </div>
@@ -101,9 +102,9 @@ const HomeWelcome: React.FC = () => {
       </div> */}
 
       <p className="text-center text-xs text-muted-foreground/60 mt-7">
-        Tip: press{" "}
+        {t.overview.welcome.tipPrefix}{" "}
         <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">⌘ K</kbd>{" "}
-        to jump anywhere
+        {t.overview.welcome.tipSuffix}
       </p>
     </div>
   );

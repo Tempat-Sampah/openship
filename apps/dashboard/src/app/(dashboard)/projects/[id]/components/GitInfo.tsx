@@ -3,12 +3,14 @@ import { Github, GitCommit, Zap, GitBranch, Check, X } from "lucide-react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { projectsApi } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import generateIcon from "@/utils/icons";
 import { formatDate } from "@/utils/date";
 
 export const GitInfo = () => {
   const { projectData, id, updateProjectData } = useProjectSettings();
   const { showToast } = useToast();
+  const { t } = useI18n();
   
   const [isEditingBranch, setIsEditingBranch] = useState(false);
   const [tempBranch, setTempBranch] = useState(projectData?.branch || 'main');
@@ -28,11 +30,11 @@ export const GitInfo = () => {
         setIsEditingBranch(true);
         setTempBranch(projectData.branch || 'main');
       } else {
-        showToast('Failed to fetch branches', 'error', 'Error');
+        showToast(t.projectSettings.gitInfo.toast.fetchBranchesFailed, 'error', t.projectSettings.gitInfo.toast.errorTitle);
       }
     } catch (error) {
       console.error('Error fetching branches:', error);
-      showToast('Failed to fetch branches', 'error', 'Error');
+      showToast(t.projectSettings.gitInfo.toast.fetchBranchesFailed, 'error', t.projectSettings.gitInfo.toast.errorTitle);
     } finally {
       setLoadingBranch(false);
     }
@@ -46,14 +48,14 @@ export const GitInfo = () => {
       const response = await projectsApi.setBranch(projectData.id, tempBranch);
       if (response.success) {
         setIsEditingBranch(false);
-        showToast('Branch updated successfully', 'success', 'Updated');
+        showToast(t.projectSettings.gitInfo.toast.branchUpdated, 'success', t.projectSettings.gitInfo.toast.updatedTitle);
         // You might need to refresh project data here
       } else {
-        showToast(response.message || 'Failed to update branch', 'error', 'Error');
+        showToast(response.message || t.projectSettings.gitInfo.toast.branchUpdateFailed, 'error', t.projectSettings.gitInfo.toast.errorTitle);
       }
     } catch (error) {
       console.error('Error updating branch:', error);
-      showToast('Failed to update branch', 'error', 'Error');
+      showToast(t.projectSettings.gitInfo.toast.branchUpdateFailed, 'error', t.projectSettings.gitInfo.toast.errorTitle);
     } finally {
       setLoadingBranch(false);
     }
@@ -74,17 +76,17 @@ export const GitInfo = () => {
       
       if (response.success) {
         showToast(
-          newAutoDeployState ? 'Auto-deploy enabled' : 'Auto-deploy disabled', 
-          'success', 
-          'Updated'
+          newAutoDeployState ? t.projectSettings.gitInfo.toast.autoDeployEnabled : t.projectSettings.gitInfo.toast.autoDeployDisabled,
+          'success',
+          t.projectSettings.gitInfo.toast.updatedTitle
         );
         updateProjectData({ auto_deploy: newAutoDeployState });
       } else {
-        showToast(response.message || 'Failed to update auto-deploy', 'error', 'Error');
+        showToast(response.message || t.projectSettings.gitInfo.toast.autoDeployFailed, 'error', t.projectSettings.gitInfo.toast.errorTitle);
       }
     } catch (error) {
       console.error('Error updating auto-deploy:', error);
-      showToast('Failed to update auto-deploy', 'error', 'Error');
+      showToast(t.projectSettings.gitInfo.toast.autoDeployFailed, 'error', t.projectSettings.gitInfo.toast.errorTitle);
     } finally {
       setLoadingAutoDeploy(false);
     }
@@ -97,7 +99,7 @@ export const GitInfo = () => {
         <div className="flex items-center gap-3 mb-5">
           {generateIcon('https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg', 24, 'white', {}, true)}
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-base text-foreground truncate">{projectData?.owner + '/' + projectData?.repo || 'Repository'}</p>
+            <p className="font-semibold text-base text-foreground truncate">{projectData?.owner + '/' + projectData?.repo || t.projectSettings.gitInfo.repository}</p>
             <p className="text-sm text-muted-foreground">{projectData?.branch || 'main'}</p>
           </div>
         </div>
@@ -107,7 +109,7 @@ export const GitInfo = () => {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">Auto-deploy</span>
+              <span className="text-sm font-medium text-foreground">{t.projectSettings.gitInfo.autoDeploy}</span>
             </div>
             <button
               type="button"
@@ -127,7 +129,7 @@ export const GitInfo = () => {
                 <span
                   className={`
                     inline-block h-4 w-4 transform rounded-full bg-card transition-transform
-                    ${projectData?.auto_deploy ? 'translate-x-6' : 'translate-x-1'}
+                    ${projectData?.auto_deploy ? 'translate-x-6 rtl:-translate-x-6' : 'translate-x-1 rtl:-translate-x-1'}
                   `}
                 />
               )}
@@ -135,15 +137,15 @@ export const GitInfo = () => {
           </div>
           <p className="text-xs text-muted-foreground">
             {projectData?.auto_deploy
-              ? 'Deploys on every push'
-              : 'Manual deploys only'}
+              ? t.projectSettings.gitInfo.deploysOnPush
+              : t.projectSettings.gitInfo.manualOnly}
           </p>
         </div>
 
         {/* Branch Selection */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-normal text-foreground">Branch to Deploy</label>
+            <label className="block text-sm font-normal text-foreground">{t.projectSettings.gitInfo.branchToDeploy}</label>
             {!isEditingBranch && (
               <button
                 onClick={handleEditBranch}
@@ -173,7 +175,7 @@ export const GitInfo = () => {
                 ))}
               </select>
               <p className="text-xs text-muted-foreground mt-2">
-                Choose which branch to deploy from your repository
+                {t.projectSettings.gitInfo.chooseBranch}
               </p>
               <div className="flex gap-2">
                 <button
@@ -182,14 +184,14 @@ export const GitInfo = () => {
                   className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-full transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <Check className="w-4 h-4" />
-                  Save
+                  {t.projectSettings.gitInfo.save}
                 </button>
                 <button
                   onClick={handleCancelBranch}
                   className="px-4 py-2 bg-muted/60 hover:bg-muted text-foreground rounded-full transition-all text-sm font-medium flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
-                  Cancel
+                  {t.projectSettings.gitInfo.cancel}
                 </button>
               </div>
             </div>
@@ -212,7 +214,7 @@ export const GitInfo = () => {
             className="w-full px-4 py-2.5 bg-muted/60 hover:bg-muted text-foreground rounded-full font-medium text-sm transition-all flex items-center justify-center gap-2"
           >
             {generateIcon('External_link_HtLszLDBXqHilHK674zh2aKoSL7xUhyboAzP.png', 16, 'currentColor')}
-            View on GitHub
+            {t.projectSettings.gitInfo.viewOnGithub}
           </a>
         </div>
       </div>
@@ -223,10 +225,10 @@ export const GitInfo = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               {generateIcon('commit%20git-24-1658431404.png', 20, 'currentColor')}
-              Recent Commits
+              {t.projectSettings.gitInfo.recentCommits}
             </h3>
             <span className="text-xs text-muted-foreground bg-muted/60 px-2 py-1 rounded-full">
-              {projectData?.commitCount || 0} total
+              {interpolate(t.projectSettings.gitInfo.totalCommits, { count: String(projectData?.commitCount || 0) })}
             </span>
           </div>
           
@@ -251,7 +253,7 @@ export const GitInfo = () => {
           ) : (
             <div className="text-center py-6">
               <GitCommit className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No commits yet</p>
+              <p className="text-xs text-muted-foreground">{t.projectSettings.gitInfo.noCommits}</p>
             </div>
           )}
         </div>

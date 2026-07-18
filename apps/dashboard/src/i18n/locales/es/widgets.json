@@ -1,0 +1,291 @@
+{
+  "shared": {
+    "dnsRecords": {
+      "priority": "prioridad {n}",
+      "recommended": "recomendado",
+      "name": "Nombre",
+      "value": "Valor",
+      "copy": "Copiar"
+    },
+    "errorState": {
+      "commonCauses": "Causas comunes",
+      "needHelp": "¿Necesitas ayuda?",
+      "needHelpDesc": "Consulta la documentación o ponte en contacto si el problema persiste.",
+      "documentation": "Documentación",
+      "repoNotFound": {
+        "title": "Repositorio no encontrado",
+        "subtitle": "No pudimos encontrar el repositorio que buscas.",
+        "hints": [
+          "El repositorio es privado y no has concedido acceso",
+          "El nombre del repositorio o del propietario está mal escrito",
+          "El repositorio ha sido eliminado o movido",
+          "Tu conexión con GitHub ha caducado"
+        ],
+        "backToLibrary": "Volver a la biblioteca",
+        "importRepository": "Importar repositorio"
+      },
+      "projectNotFound": {
+        "title": "Proyecto no encontrado",
+        "subtitle": "El proyecto que buscas no existe o ha sido eliminado.",
+        "hints": [
+          "El proyecto ha sido eliminado",
+          "No tienes acceso a este proyecto",
+          "La URL del proyecto es incorrecta"
+        ],
+        "backToDashboard": "Volver al panel",
+        "createNewProject": "Crear nuevo proyecto"
+      },
+      "accessDenied": {
+        "title": "Acceso denegado",
+        "subtitle": "No tienes permiso para acceder a este recurso.",
+        "hints": [
+          "No eres el propietario del proyecto",
+          "Tu cuenta no tiene los permisos necesarios",
+          "Tu membresía en el equipo ha cambiado"
+        ],
+        "backToDashboard": "Volver al panel"
+      }
+    },
+    "machineSettings": {
+      "title": "Configuración de la máquina",
+      "configureFor": "Configura los recursos de cómputo para",
+      "docs": "Documentación",
+      "cpu": "CPU",
+      "memory": "Memoria",
+      "storage": "Almacenamiento",
+      "base": "Base",
+      "current": "Actual",
+      "creditsPerMonth": "créditos/mes",
+      "fromCurrent": "respecto al actual",
+      "viewPricing": "Ver precios",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "saveChanges": "Guardar cambios",
+      "toastUpdated": "Configuración de la máquina actualizada",
+      "toastFailed": "Error al actualizar la configuración"
+    },
+    "serverSelector": {
+      "serverLabel": "Servidor",
+      "loadingServers": "Cargando servidores…",
+      "noServerConnected": "No hay ningún servidor conectado",
+      "connectServerFirst": "Conecta un servidor primero y luego vuelve para continuar con la configuración.",
+      "addServer": "Añadir servidor",
+      "selectServer": "Selecciona un servidor…",
+      "addNewServer": "Añadir nuevo servidor…"
+    }
+  },
+  "backup": {
+    "runCard": {
+      "streamError": "No se pudo transmitir el progreso de la ejecución: {message}",
+      "loading": "Cargando…",
+      "live": "En vivo",
+      "started": "Iniciado",
+      "finished": "Finalizado",
+      "elapsed": "Transcurrido",
+      "bytes": "Bytes",
+      "runId": "ID de ejecución",
+      "status": {
+        "queued": "En cola",
+        "preparing": "Preparando",
+        "snapshotting": "Creando instantánea",
+        "uploading": "Subiendo",
+        "verifying": "Verificando",
+        "succeeded": "Completado",
+        "failed": "Fallido",
+        "cancelled": "Cancelado",
+        "serverError": "Error del servidor"
+      },
+      "phase": {
+        "queued": "Esperando a un trabajador…",
+        "preparing": "Resolviendo destino y servicio…",
+        "snapshotting": "Generando artefactos (ejecutando pre-hook)…",
+        "uploading": "Transmitiendo al destino…",
+        "verifying": "Escribiendo el manifiesto…"
+      }
+    },
+    "policyEditor": {
+      "presetHourly": "Cada hora",
+      "presetDaily": "Diario (03:17)",
+      "presetWeekly": "Semanal (dom. 03:17)",
+      "presetMonthly": "Mensual (día 1 a las 03:17)",
+      "presetManual": "Solo manual",
+      "selectDestinationAlert": "Selecciona un destino",
+      "failedSave": "Error al guardar la política",
+      "rotateConfirm": "¿Rotar el token del webhook? La URL actual dejará de funcionar.",
+      "failedRotate": "Error al rotar el token",
+      "editTitle": "Editar política de copia de seguridad",
+      "createTitle": "Crear política de copia de seguridad",
+      "serviceLabel": "Servicio: {name}",
+      "projectLevel": "Política a nivel de proyecto",
+      "destination": "Destino",
+      "selectOption": "— seleccionar —",
+      "schedule": "Programación",
+      "cronPlaceholder": "Cron personalizado (5 campos), o déjalo en blanco para solo manual",
+      "retainCount": "Número a retener",
+      "retainCountHint": "Conservar las N ejecuciones completadas más recientes",
+      "retainDays": "Días a retener",
+      "retainDaysHint": "Descartar ejecuciones con más de N días",
+      "preDeployTrigger": "Disparador previo al despliegue",
+      "preDeployLabel": "Hacer copia de seguridad automáticamente antes de cada nuevo despliegue",
+      "preDeployHint": "Se activa en cada compilación exitosa, justo antes de que el nuevo código entre en funcionamiento.",
+      "webhookTrigger": "Disparador por webhook",
+      "webhookLabel": "Habilitar URL de webhook entrante",
+      "webhookHint": "Genera un token por política. Haz un POST a la URL desde cualquier disparador externo (GitHub Actions, monitoreo, tu propio programador).",
+      "copyUrl": "Copiar URL",
+      "rotateToken": "Rotar token",
+      "preHook": "Pre-hook (se ejecuta antes de la instantánea)",
+      "preHookHint": "Habitual para bases de datos: pg_dump > /tmp/dump.sql. Un fallo aborta la ejecución.",
+      "postHook": "Post-hook (se ejecuta después de la subida)",
+      "postHookHint": "Limpieza; los fallos se registran pero no hacen fallar la ejecución.",
+      "policyEnabled": "Política habilitada",
+      "cancel": "Cancelar",
+      "saving": "Guardando…",
+      "saveChanges": "Guardar cambios",
+      "createPolicy": "Crear política"
+    }
+  },
+  "cloud": {
+    "connectionGate": {
+      "reconnect": "Reconectar Openship Cloud",
+      "deployedOn": "Este proyecto está desplegado en Openship Cloud",
+      "sessionMissing": "Falta tu sesión de Openship Cloud. Conéctate para gestionar despliegues, ver registros y acceder a los controles de ejecución de {name}.",
+      "thisProject": "este proyecto",
+      "connecting": "Conectando…",
+      "connect": "Conectar con Openship Cloud",
+      "readOnlyNote": "Aún puedes navegar por esta página en modo de solo lectura mientras estás desconectado."
+    }
+  },
+  "integrations": {
+    "githubPermission": {
+      "title": "Conectar con GitHub",
+      "subtitle": "Elige el nivel de acceso a los repositorios",
+      "intro": "Selecciona a qué repositorios puede acceder Openship. Puedes cambiar esto más tarde en la configuración de GitHub.",
+      "publicTitle": "Solo repositorios públicos",
+      "publicDesc": "Acceso a tus repositorios públicos. Perfecto para proyectos de código abierto.",
+      "publicItem1": "Leer datos de repositorios públicos",
+      "publicItem2": "Desplegar repositorios públicos",
+      "publicItem3": "Crear webhooks para repositorios públicos",
+      "allTitle": "Repositorios públicos y privados",
+      "allDesc": "Acceso completo a todos tus repositorios. Necesario para proyectos privados.",
+      "allItem1": "Leer datos de repositorios públicos y privados",
+      "allItem2": "Desplegar cualquier repositorio",
+      "allItem3": "Crear webhooks para todos los repositorios",
+      "allItem4": "Acceder a repositorios de la organización",
+      "noteLabel": "Nota:",
+      "noteText": "Puedes revocar el acceso en cualquier momento desde la configuración de GitHub en Applications → Authorized OAuth Apps.",
+      "cancel": "Cancelar",
+      "connecting": "Conectando...",
+      "connect": "Conectar con GitHub"
+    }
+  },
+  "permissions": {
+    "resourcePicker": {
+      "failedLoadResources": "Error al cargar los recursos",
+      "searchPlaceholder": "Buscar {type}...",
+      "allResources": "Todos los {type}",
+      "noMatch": "Ningún recurso coincide con tu búsqueda.",
+      "noResourcesYet": "Todavía no hay {type} en esta organización.",
+      "selectedSummaryOne": "{count} recurso seleccionado entre todos los tipos.",
+      "selectedSummaryOther": "{count} recursos seleccionados entre todos los tipos.",
+      "wildcard": "comodín",
+      "coveredByAll": "cubierto por todos",
+      "failedLoadOrgs": "Error al cargar las organizaciones de GitHub",
+      "failedLoadRepos": "Error al cargar los repositorios de {login}",
+      "noOrgs": "No hay organizaciones de GitHub conectadas.",
+      "collapse": "Contraer",
+      "expand": "Expandir",
+      "entireOrg": "toda la organización",
+      "repoCountOne": "{count} repositorio",
+      "repoCountOther": "{count} repositorios",
+      "coveredByOrg": "Cubierto por la concesión a toda la organización de arriba.",
+      "noRepos": "No hay repositorios.",
+      "searchRepos": "Buscar repositorios…"
+    }
+  },
+  "routing": {
+    "domainSwitcher": {
+      "notConfigured": "Sin configurar",
+      "selectDomain": "Seleccionar dominio"
+    },
+    "publicEndpoints": {
+      "mappedToPort": "Asignado al puerto {port}.",
+      "noPortYet": "Todavía no se ha seleccionado ningún puerto.",
+      "mappedTo": "Asignado a {path}.",
+      "exposedPort": "Puerto expuesto",
+      "staticPath": "Ruta estática",
+      "auto": "Automático",
+      "domain": "Dominio",
+      "domainsRouted": "{count} dominios enrutados a esta aplicación.",
+      "accessibleWhere": "Dónde estará accesible tu sitio",
+      "addDomain": "Añadir dominio",
+      "primaryDomain": "Dominio principal",
+      "domainN": "Dominio {n}",
+      "remove": "Eliminar"
+    },
+    "configEditor": {
+      "remove": "Eliminar",
+      "removeHeader": "Eliminar cabecera",
+      "add": "Añadir",
+      "addHeader": "Añadir cabecera",
+      "rewrites": "Reescrituras",
+      "rewritesHint": "Sirve otra ruta/backend sin cambiar la URL (p. ej. /api/(.*) → backend).",
+      "redirects": "Redirecciones",
+      "redirectsHint": "Redirección HTTP (301/308 permanente, si no 307).",
+      "headers": "Cabeceras",
+      "headersHint": "Cabeceras de respuesta añadidas para las rutas coincidentes.",
+      "permanent": "permanente",
+      "cleanUrls": "URLs limpias",
+      "cleanUrlsHint": "(eliminar .html)",
+      "trailingSlash": "Barra final"
+    },
+    "settingsCard": {
+      "recordLabels": {
+        "CNAME": "Enruta el tráfico a través de la red perimetral",
+        "A": "Apunta a la IP de tu servidor",
+        "TXT": "Verifica la propiedad del dominio"
+      },
+      "publiclyExposed": "Expuesto públicamente",
+      "internalOnly": "Solo interno",
+      "freeSubdomain": "Subdominio gratuito",
+      "free": "Gratis",
+      "customDomain": "Dominio personalizado",
+      "custom": "Personalizado",
+      "save": "Guardar",
+      "checkingDns": "Comprobando DNS…",
+      "addRecordHint": "Añade un registro {primary} y uno {txt}",
+      "viewRecords": "Ver registros",
+      "exposedPort": "Puerto expuesto",
+      "staticPath": "Ruta estática",
+      "staticPathHint": "Sirve los archivos desde este subdirectorio dentro del resultado de la compilación. Usa {path} para el resultado raíz.",
+      "dnsConfiguration": "Configuración de DNS",
+      "addRecordsFor": "Añade estos registros para {hostname}",
+      "nameHost": "Nombre / Host",
+      "valueTarget": "Valor / Destino",
+      "dnsHintSelfhosted": "Añade el registro A que apunta a la IP de tu servidor y luego el registro TXT para la verificación.",
+      "dnsHintCloud": "Añade el registro CNAME para el enrutamiento y luego el registro TXT para la verificación.",
+      "dnsPropagation": "Los cambios de DNS pueden tardar hasta 48 horas."
+    }
+  },
+  "updates": {
+    "severity": {
+      "critical": "Crítico",
+      "recommended": "Recomendado",
+      "info": "Aviso"
+    },
+    "viewChangelog": "Ver registro de cambios",
+    "available": "está disponible",
+    "youreOn": "· estás en la {version}",
+    "rerunInstall": "Vuelve a ejecutar tu instalación para actualizar tu servidor autoalojado.",
+    "updateNow": "Actualizar ahora",
+    "changelog": "Registro de cambios",
+    "updatedTo": "Actualizado a Openship {version}",
+    "seeChanges": "Consulta lo que cambió en esta versión.",
+    "onLatest": "Estás en la última versión.",
+    "whatsNew": "Novedades",
+    "whatsNewIn": "Novedades de la {version}",
+    "close": "Cerrar",
+    "noNotes": "No hay notas de la versión para esta versión.",
+    "viewOnGithub": "Ver en GitHub",
+    "dismiss": "Descartar"
+  }
+}

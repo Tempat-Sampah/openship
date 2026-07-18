@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type { PrepareComposeService, PrepareProjectResponse } from "./deploy";
+import type { RoutingConfig } from "@repo/core";
 import { endpoints } from "./endpoints";
 
 /* ------------------------------------------------------------------ */
@@ -106,6 +107,8 @@ export const projectsApi = {
       /** Shell command run ONCE at the repo root before per-app builds. */
       prepareCommand?: string;
     };
+    /** Routing config parsed from the repo's vercel.json (opaque passthrough). */
+    routingConfig?: RoutingConfig | null;
   }) => api.post<any>(endpoints.projects.ensure, body),
 
   /** List local projects only */
@@ -265,6 +268,11 @@ export const projectsApi = {
   /** Enable or disable a project */
   toggle: (id: string | number, enable: boolean) =>
     api.post<any>(endpoints.projects.toggle(id, enable ? "enable" : "disable")),
+
+  /** Retry the free .opsh.io edge-route sync (no rebuild). ok:false + warning
+   *  when it still can't sync; clears the routing warning on success. */
+  retryRouting: (id: string | number) =>
+    api.post<{ ok: boolean; warning?: string; error?: string }>(endpoints.projects.retryRouting(id)),
 
   /** Clear CDN / proxy cache */
   clearCache: (id: string | number) => api.post<any>(endpoints.projects.clearCache(id)),

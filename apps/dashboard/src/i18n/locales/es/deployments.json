@@ -1,0 +1,173 @@
+{
+  "time": {
+    "secondsAgo": "hace {n}s",
+    "minutesAgo": "hace {n}min",
+    "hoursAgo": "hace {n}h",
+    "daysAgo": "hace {n}d",
+    "monthsAgo": "hace {n}mes",
+    "yearsAgo": "hace {n}a"
+  },
+  "header": {
+    "title": "Despliegues",
+    "loading": "Cargando…",
+    "countProjectOne": "{count} despliegue",
+    "countProjectOther": "{count} despliegues",
+    "countAllOne": "{deployments} en total en {projects} proyecto",
+    "countAllOther": "{deployments} en total en {projects} proyectos"
+  },
+  "filters": {
+    "searchPlaceholder": "Buscar despliegues...",
+    "all": "Todos",
+    "success": "Correctos",
+    "failed": "Fallidos",
+    "building": "Compilando",
+    "canceled": "Cancelados"
+  },
+  "projectFilter": {
+    "allProjects": "Todos los proyectos"
+  },
+  "sidebar": {
+    "overview": {
+      "title": "Resumen",
+      "total": "Total",
+      "successful": "Correctos",
+      "failed": "Fallidos",
+      "inProgress": "En curso"
+    },
+    "autoDeploy": {
+      "title": "Despliegue automático",
+      "description": "Activa el despliegue automático para desencadenar despliegues automáticamente con cada push a tu rama principal.",
+      "cta": "Ir a la configuración del proyecto"
+    },
+    "getStarted": {
+      "title": "Empezar",
+      "description": "Importa un repositorio de Git o usa una plantilla para crear tu primer despliegue.",
+      "cta": "Desplegar un proyecto"
+    },
+    "recent": {
+      "title": "Recientes",
+      "empty": "Tus despliegues aparecerán aquí",
+      "unknown": "Desconocido"
+    }
+  },
+  "stats": {
+    "total": "Total",
+    "projectCountOne": "{count} proyecto",
+    "projectCountOther": "{count} proyectos",
+    "success": "Correctos",
+    "failed": "Fallidos",
+    "inProgress": "En curso",
+    "buildingNow": "compilando ahora"
+  },
+  "status": {
+    "deployed": "Desplegado",
+    "failed": "Fallido",
+    "canceled": "Cancelado",
+    "building": "Compilando",
+    "deploying": "Desplegando",
+    "partial": "Parcial",
+    "rejected": "Rechazado",
+    "verifying": "Verificando",
+    "pending": "Pendiente"
+  },
+  "serviceStatus": {
+    "deployed": "Desplegado",
+    "failed": "Fallido",
+    "cancelled": "Cancelado",
+    "skipped": "Omitido",
+    "building": "Compilando",
+    "deploying": "Desplegando",
+    "running": "En ejecución",
+    "removedOnHost": "Eliminado en el host",
+    "verifying": "Verificando",
+    "pending": "Pendiente"
+  },
+  "card": {
+    "unknownProject": "Proyecto desconocido",
+    "versionTitle": "Versión {version}",
+    "active": "Activo",
+    "activeTitle": "Este es el despliegue que actualmente sirve el proyecto",
+    "pinned": "Fijado",
+    "pinnedTitle": "Fijado — exento de la limpieza por retención. Se mantiene restaurable por reversión indefinidamente.",
+    "snapshotted": "Con instantánea",
+    "snapshottedTitle": "Artefacto archivado — esta versión está disponible para revertir",
+    "manualDeploy": "Despliegue manual",
+    "serviceTitle": "{name}: {label}",
+    "serviceTitleReason": "{name}: {label} ({reason})"
+  },
+  "empty": {
+    "filtered": {
+      "title": "No se encontraron despliegues",
+      "description": "Prueba a ajustar tus filtros o a borrar tu búsqueda."
+    },
+    "none": {
+      "title": "Aún no hay despliegues",
+      "description": "Despliega tu primer proyecto y aparecerá aquí con el estado de compilación, los detalles del commit y las métricas de rendimiento.",
+      "deployButton": "Desplegar proyecto",
+      "browseButton": "Explorar plantillas"
+    }
+  },
+  "modal": {
+    "title": "Detalles del commit",
+    "project": "Proyecto",
+    "unknownProject": "Proyecto desconocido",
+    "domain": "Dominio",
+    "noDomain": "Sin dominio",
+    "status": "Estado",
+    "environment": "Entorno",
+    "statusName": {
+      "success": "Correcto",
+      "failed": "Fallido",
+      "building": "Compilando",
+      "deploying": "Desplegando",
+      "canceled": "Cancelado",
+      "pending": "Pendiente"
+    },
+    "changedFiles": "Archivos modificados ({count})",
+    "fileTypes": {
+      "added": "+ Añadido",
+      "modified": "~ Modificado",
+      "removed": "- Eliminado"
+    },
+    "viewOnGithub": "Ver en GitHub",
+    "visitSite": "Visitar el sitio",
+    "manual": {
+      "title": "Despliegue manual",
+      "description": "Este despliegue se desencadenó manualmente y no tiene información de commit.",
+      "deploymentId": "ID del despliegue",
+      "created": "Creado",
+      "type": "Tipo",
+      "typeManual": "Manual"
+    }
+  },
+  "menu": {
+    "openDeployment": "Abrir despliegue",
+    "viewRepository": "Ver repositorio",
+    "copyDomainUrl": "Copiar URL del dominio",
+    "copyBuildId": "Copiar ID de compilación",
+    "cancelDeployment": "Cancelar despliegue",
+    "rollback": "Revertir a esta versión",
+    "rollbackTitle": {
+      "enabled": "Restaura el proyecto a esta versión (solo el código — los datos no cambian)",
+      "active": "Esta ya es la versión activa",
+      "pruned": "El artefacto de reversión se ha eliminado. Usa 'Volver a desplegar este commit' para recompilar desde el código fuente.",
+      "notReady": "Solo se puede revertir a despliegues listos"
+    },
+    "redeploy": "Volver a desplegar este commit",
+    "redeployTitle": "Recompila este commit exacto desde el código fuente. Más lento que la reversión, pero funciona después de que el artefacto se haya eliminado.",
+    "pin": "Fijar",
+    "unpin": "Desfijar",
+    "pinTitle": {
+      "pin": "Mantén este despliegue restaurable por reversión indefinidamente (límite: 10 fijados por proyecto)",
+      "unpin": "Permite que este despliegue se elimine cuando la retención se desborde",
+      "pruned": "No se puede fijar — el artefacto ya se ha eliminado"
+    },
+    "deleteDeployment": "Eliminar despliegue",
+    "confirmRollback": "¿Revertir a esta versión?\n\nEsto restaura únicamente el código de la aplicación. La base de datos y los datos de los volúmenes no cambian.",
+    "rollbackFailed": "La reversión falló",
+    "confirmRedeploy": "¿Volver a desplegar el commit {hash}?\n\nRecompila este commit exacto desde el código fuente. Más lento que la reversión (se ejecuta la compilación completa de nuevo), pero funciona incluso después de que el artefacto de reversión se haya eliminado. Aparecerá un nuevo despliegue en la lista.",
+    "redeployFailed": "El nuevo despliegue falló",
+    "pinFailed": "No se pudo fijar el despliegue",
+    "unpinFailed": "No se pudo desfijar el despliegue"
+  }
+}

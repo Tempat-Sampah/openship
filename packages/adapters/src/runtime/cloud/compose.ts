@@ -391,11 +391,17 @@ export class CloudComposeSupport {
           (currentNetwork as Record<string, unknown> | null)?.ingress_ports,
         )
           ? ((currentNetwork as Record<string, unknown>).ingress_ports as number[])
-          : undefined;
+          : [];
+        // Oblien's firewall drops traffic unless BOTH a source rule (the private
+        // link) AND a port rule (ingress_ports) match — a link alone does not open
+        // any port. So a peer's `http://<name>:<port>` resolves via /etc/hosts but
+        // is dropped unless this service's own listen port is opened here. Merge
+        // the service ports with whatever is already open (public expose, etc.).
+        const ingressPorts = [...new Set([...currentIngress, ...service.ports])];
         await ws.network
           .update({
             private_link_ids: privateLinks,
-            ...(currentIngress ? { ingress_ports: currentIngress } : {}),
+            ...(ingressPorts.length ? { ingress_ports: ingressPorts } : {}),
           })
           .catch((err) => {
             onLog({

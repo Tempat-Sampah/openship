@@ -16,7 +16,7 @@ import {
   type BuildConfigSnapshotLike,
 } from "../build-config";
 import * as sessionManager from "../session-manager";
-import { serviceKind } from "../../../lib/deployable-service";
+import { serviceKind, isStaticService } from "../../../lib/deployable-service";
 import { resolveServicePort } from "./domain-helpers";
 
 function sanitizeComposeImageName(value: string): string {
@@ -276,7 +276,10 @@ export async function buildComposeImages(opts: {
             ...resolveSubAppOverrides({ service, snapshot: opts.snapshot, logger: serviceLogger }),
             rootDirectory: context,
             port: resolveServicePort(service, opts.snapshot.port) ?? opts.snapshot.port,
-            hasServer: true,
+            // A static frontend/static sub-app (no start command) is served as
+            // files by the generated nginx image; a server sub-app runs its start
+            // command. Derived from the sub-app's framework + start command.
+            ...(isStaticService(service) ? { isStatic: true, hasServer: false } : { hasServer: true }),
           },
         })
       : createDockerfileBuildConfig({

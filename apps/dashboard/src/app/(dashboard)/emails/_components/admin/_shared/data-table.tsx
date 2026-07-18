@@ -290,9 +290,9 @@ function useGridTemplate<T>(
 }
 
 function alignClass(align: DataTableColumn<unknown>["align"]): string {
-  if (align === "right") return "text-right justify-self-end";
+  if (align === "right") return "text-end justify-self-end";
   if (align === "center") return "text-center justify-self-center";
-  return "text-left";
+  return "text-start";
 }
 
 function hideBelowClass(hide: DataTableColumn<unknown>["hideBelow"]): string {

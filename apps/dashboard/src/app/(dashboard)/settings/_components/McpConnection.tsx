@@ -13,6 +13,7 @@ import { SettingsSection } from "./SettingsSection";
 import { getRestApiBaseUrl } from "@/lib/api/urls";
 import { tokensApi, getApiErrorMessage, type McpClient } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 function useCopy() {
   const [copied, setCopied] = useState(false);
@@ -30,6 +31,7 @@ function useCopy() {
 
 function CopyRow({ value }: { value: string }) {
   const { copied, copy } = useCopy();
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2">
       <code className="flex-1 min-w-0 truncate rounded-lg bg-muted px-3 py-2 font-mono text-xs text-foreground">
@@ -41,7 +43,7 @@ function CopyRow({ value }: { value: string }) {
         className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
       >
         {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-        {copied ? "Copied" : "Copy"}
+        {copied ? t.settings.common.copied : t.settings.common.copy}
       </button>
     </div>
   );
@@ -49,17 +51,18 @@ function CopyRow({ value }: { value: string }) {
 
 function CopyBlock({ value }: { value: string }) {
   const { copied, copy } = useCopy();
+  const { t } = useI18n();
   return (
     <div className="relative">
-      <pre className="overflow-x-auto rounded-lg bg-muted px-3 py-3 pr-16 font-mono text-xs leading-relaxed text-foreground">
+      <pre className="overflow-x-auto rounded-lg bg-muted px-3 py-3 pe-16 font-mono text-xs leading-relaxed text-foreground">
         {value}
       </pre>
       <button
         onClick={() => copy(value)}
-        className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+        className="absolute end-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
       >
         {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-        {copied ? "Copied" : "Copy"}
+        {copied ? t.settings.common.copied : t.settings.common.copy}
       </button>
     </div>
   );
@@ -212,13 +215,14 @@ const MCP_CLIENTS: McpClientDef[] = [
 /** Client picker: pick your agent, get the exact command/config to add Openship,
  *  pre-filled with this instance's endpoint. */
 function McpClientSetup({ endpoint }: { endpoint: string }) {
+  const { t } = useI18n();
   const [activeId, setActiveId] = useState(MCP_CLIENTS[0].id);
   const active = MCP_CLIENTS.find((c) => c.id === activeId) ?? MCP_CLIENTS[0];
   const setup = active.setup(endpoint || "https://<your-openship>/api/mcp");
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-foreground">Add to your client</p>
+      <p className="text-xs font-medium text-foreground">{t.settings.mcp.addToClient}</p>
 
       {/* Client selector */}
       <div className="flex flex-wrap gap-1.5">
@@ -247,7 +251,7 @@ function McpClientSetup({ endpoint }: { endpoint: string }) {
       <div>
         <p className="mb-1.5 text-xs font-medium text-foreground">{setup.label}</p>
         {setup.steps ? (
-          <ol className="list-decimal space-y-1 rounded-lg border border-border/50 bg-muted/20 py-3 pl-8 pr-4 text-xs text-muted-foreground">
+          <ol className="list-decimal space-y-1 rounded-lg border border-border/50 bg-muted/20 py-3 ps-8 pe-4 text-xs text-muted-foreground">
             {setup.steps.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
@@ -262,7 +266,7 @@ function McpClientSetup({ endpoint }: { endpoint: string }) {
             className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ExternalLink className="size-3.5" />
-            {setup.deeplinkLabel ?? "Install"}
+            {setup.deeplinkLabel ?? t.settings.mcp.install}
           </a>
         )}
 
@@ -271,11 +275,10 @@ function McpClientSetup({ endpoint }: { endpoint: string }) {
 
       {/* Canonical endpoint — needed by the UI-configured clients + as a copy source. */}
       <div>
-        <p className="mb-1.5 text-xs font-medium text-foreground">Endpoint</p>
+        <p className="mb-1.5 text-xs font-medium text-foreground">{t.settings.mcp.endpoint}</p>
         <CopyRow value={endpoint} />
         <p className="mt-1.5 text-xs text-muted-foreground">
-          Streamable-HTTP JSON-RPC. OAuth-capable clients authorize in the browser; on approval you pick read-only +
-          which resources the client may access.
+          {t.settings.mcp.endpointNote}
         </p>
       </div>
     </div>
@@ -284,6 +287,7 @@ function McpClientSetup({ endpoint }: { endpoint: string }) {
 
 export function McpConnection() {
   const { showToast } = useToast();
+  const { t } = useI18n();
 
   // Resolve on the client — getRestApiBaseUrl reads window.location, so compute
   // after mount to avoid an SSR/hydration mismatch.
@@ -317,9 +321,9 @@ export function McpConnection() {
     try {
       await tokensApi.disconnectMcpClient(clientId);
       setClients((prev) => (prev ?? []).filter((c) => c.clientId !== clientId));
-      showToast("MCP client disconnected", "success");
+      showToast(t.settings.mcp.toast.disconnected, "success");
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to disconnect"), "error", "Disconnect");
+      showToast(getApiErrorMessage(err, t.settings.mcp.toast.disconnectFailed), "error", t.settings.common.toast.disconnect);
     } finally {
       setDisconnecting(null);
       setConfirmId(null);
@@ -342,15 +346,15 @@ export function McpConnection() {
   return (
     <SettingsSection
       icon={Boxes}
-      title="MCP"
-      description="Connect AI agents to your Openship API over the Model Context Protocol."
+      title={t.settings.mcp.title}
+      description={t.settings.mcp.description}
       iconBg="bg-emerald-500/10"
       iconColor="text-emerald-500"
     >
       <div className="space-y-4">
         {clients === null ? (
           <div className="flex items-center gap-2 rounded-xl border border-border/50 px-4 py-3 text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" /> Loading…
+            <Loader2 className="size-3.5 animate-spin" /> {t.settings.mcp.loading}
           </div>
         ) : hasClients ? (
           <>
@@ -367,11 +371,11 @@ export function McpConnection() {
               <button
                 type="button"
                 onClick={() => setGuideOpen((o) => !o)}
-                className="flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3 text-left transition-colors hover:bg-muted/20"
+                className="flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3 text-start transition-colors hover:bg-muted/20"
               >
                 <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <ShieldCheck className="size-4 text-emerald-500" />
-                  Connect another client
+                  {t.settings.mcp.connectAnother}
                 </span>
                 <ChevronDown
                   className={`size-4 text-muted-foreground transition-transform ${guideOpen ? "rotate-180" : ""}`}
@@ -390,9 +394,8 @@ export function McpConnection() {
             <div className="flex gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-3">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-500" />
               <div className="text-xs leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Paste the endpoint below into your MCP client</span>{" "}
-                (Claude, Cursor, …) — it opens a browser window where you approve access and choose what the client
-                can reach. No token to copy. Openship is a standards-compliant OAuth 2.1 MCP server.
+                <span className="font-medium text-foreground">{t.settings.mcp.bannerStrong}</span>{" "}
+                {t.settings.mcp.bannerRest}
               </div>
             </div>
             <GuideBody endpoint={endpoint} configSnippet={configSnippet} />
@@ -408,25 +411,26 @@ export function McpConnection() {
  *  together and can't be mixed by mistake. Shared by the onboarding (nothing
  *  connected) and the collapsible "connect another" paths. */
 function GuideBody({ endpoint, configSnippet }: { endpoint: string; configSnippet: string }) {
+  const { t } = useI18n();
   const [authMode, setAuthMode] = useState<"oauth" | "token">("oauth");
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-1.5 text-xs font-medium text-foreground">Authentication</p>
+        <p className="mb-1.5 text-xs font-medium text-foreground">{t.settings.mcp.authentication}</p>
         <div className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-0.5">
-          <ModeTab active={authMode === "oauth"} onClick={() => setAuthMode("oauth")} Icon={ShieldCheck} label="OAuth" />
+          <ModeTab active={authMode === "oauth"} onClick={() => setAuthMode("oauth")} Icon={ShieldCheck} label={t.settings.mcp.oauth} />
           <ModeTab
             active={authMode === "token"}
             onClick={() => setAuthMode("token")}
             Icon={KeyRound}
-            label="Static token"
+            label={t.settings.mcp.staticToken}
           />
         </div>
         <p className="mt-1.5 text-xs text-muted-foreground">
           {authMode === "oauth"
-            ? "The client opens a browser to authorize — you approve access and pick what it can reach. Nothing to copy."
-            : "For clients without OAuth, or when you want a fixed, scoped token in the config."}
+            ? t.settings.mcp.oauthNote
+            : t.settings.mcp.tokenNote}
         </p>
       </div>
 
@@ -468,25 +472,26 @@ function ModeTab({
 
 /** Static-token path: the { url, headers } config + a pointer to mint a token. */
 function StaticTokenSetup({ endpoint, configSnippet }: { endpoint: string; configSnippet: string }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-3">
       <div>
-        <p className="mb-1.5 text-xs font-medium text-foreground">Client config</p>
+        <p className="mb-1.5 text-xs font-medium text-foreground">{t.settings.mcp.clientConfig}</p>
         <CopyBlock value={configSnippet} />
         <p className="mt-1.5 text-xs text-muted-foreground">
-          Create a token in the{" "}
+          {t.settings.mcp.createTokenPrefix}{" "}
           <Link
             href="/settings?tab=tokens"
             className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
           >
-            Tokens
+            {t.settings.mcp.tokensTab}
           </Link>{" "}
-          tab and replace <code className="font-mono">opsh_pat_…</code>. A read-only token limits the agent to reads.
+          {t.settings.mcp.createTokenMid} <code className="font-mono">opsh_pat_…</code>{t.settings.mcp.createTokenSuffix}
         </p>
       </div>
 
       <div>
-        <p className="mb-1.5 text-xs font-medium text-foreground">Endpoint</p>
+        <p className="mb-1.5 text-xs font-medium text-foreground">{t.settings.mcp.endpoint}</p>
         <CopyRow value={endpoint} />
       </div>
     </div>
@@ -517,9 +522,10 @@ function ClientsList({
   disconnecting: string | null;
   onDisconnect: (clientId: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div>
-      <p className="mb-1.5 text-xs font-medium text-foreground">Connected clients</p>
+      <p className="mb-1.5 text-xs font-medium text-foreground">{t.settings.mcp.connectedClients}</p>
       <div className="divide-y divide-border/40 rounded-xl border border-border/50">
         {clients.map((c) => {
           const id = c.clientId ?? "";
@@ -537,18 +543,21 @@ function ClientsList({
                         : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                     }`}
                   >
-                    {c.readOnly ? "Read-only" : "Full control"}
+                    {c.readOnly ? t.settings.mcp.clientReadOnly : t.settings.mcp.clientFullControl}
                   </span>
                   <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                     {c.scoped
-                      ? `${c.grantCount} resource${c.grantCount === 1 ? "" : "s"}`
-                      : "All resources"}
+                      ? interpolate(
+                          c.grantCount === 1 ? t.settings.mcp.resourcesOne : t.settings.mcp.resourcesMany,
+                          { count: String(c.grantCount) },
+                        )
+                      : t.settings.mcp.allResources}
                   </span>
                 </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                  {c.organizationName ? `${c.organizationName} · ` : ""}
-                  Authorized {formatDate(c.authorizedAt)}
-                  {c.lastUsedAt ? ` · last used ${formatDate(c.lastUsedAt)}` : ""}
+                  {c.organizationName ? interpolate(t.settings.mcp.orgPrefix, { org: c.organizationName }) : ""}
+                  {interpolate(t.settings.mcp.authorized, { date: formatDate(c.authorizedAt) })}
+                  {c.lastUsedAt ? interpolate(t.settings.mcp.lastUsedSuffix, { date: formatDate(c.lastUsedAt) }) : ""}
                 </p>
               </div>
               {confirming ? (
@@ -558,7 +567,7 @@ function ClientsList({
                     disabled={busy}
                     className="rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
                   >
-                    Cancel
+                    {t.settings.common.cancel}
                   </button>
                   <button
                     onClick={() => onDisconnect(id)}
@@ -566,7 +575,7 @@ function ClientsList({
                     className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
                   >
                     {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Unplug className="size-3.5" />}
-                    Disconnect
+                    {t.settings.common.disconnect}
                   </button>
                 </div>
               ) : (
@@ -576,7 +585,7 @@ function ClientsList({
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-red-500/40 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
                 >
                   <Unplug className="size-3.5" />
-                  Disconnect
+                  {t.settings.common.disconnect}
                 </button>
               )}
             </div>

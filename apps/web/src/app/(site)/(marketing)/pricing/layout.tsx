@@ -71,7 +71,7 @@ const faqLd = {
       name: "What's the license for Hobby?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "AGPL-3.0. The platform stays open for everyone who deploys with it. You can run it in your cloud, on a Raspberry Pi, or in production for a SaaS - no commercial restrictions.",
+        text: "Apache 2.0 - a permissive license. Use it, modify it, and ship it however you like, including in commercial or closed-source products. Run it in your cloud, on a Raspberry Pi, or in production for a SaaS - no restrictions, no copyleft obligations.",
       },
     },
     {
@@ -100,7 +100,7 @@ const productLd = {
       price: "0",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
-      description: "Self-hosted, AGPL-3. Free forever on your own servers.",
+      description: "Self-hosted, Apache 2.0. Free forever on your own servers.",
       url: "https://openship.io/pricing",
     },
     {

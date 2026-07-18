@@ -3,6 +3,7 @@ import { Project } from "@/constants/mock";
 import { TrendingUp, BarChart3, Activity, Rocket, CheckCircle2, Clock, Zap } from "lucide-react";
 import { generateIcon } from "@/utils/icons";
 import { SlidingToggle } from "@/components/ui/SlidingToggle";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface ActivityChartProps {
   projects: Project[];
@@ -18,6 +19,7 @@ interface DayData {
 type ChartType = 'bar' | 'line' | 'area';
 
 const ActivityChart: React.FC<ActivityChartProps> = ({ projects, numbers }) => {
+  const { t, locale } = useI18n();
   const [chartType, setChartType] = useState<ChartType>('area');
 
   // Generate last 7 days data using actual deployment analytics
@@ -31,7 +33,7 @@ const ActivityChart: React.FC<ActivityChartProps> = ({ projects, numbers }) => {
       date.setDate(date.getDate() - i);
       days.push({
         date: date,
-        label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        label: date.toLocaleDateString(locale, { weekday: 'short' }),
         count: 0
       });
     }
@@ -154,7 +156,12 @@ const ActivityChart: React.FC<ActivityChartProps> = ({ projects, numbers }) => {
                 {/* Tooltip */}
                 {day.count > 0 && (
                   <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground text-xs px-3 py-1.5 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-medium z-10">
-                    {day.count} {day.count === 1 ? 'deployment' : 'deployments'}
+                    {interpolate(
+                      day.count === 1
+                        ? t.overview.activity.deploymentSingular
+                        : t.overview.activity.deploymentPlural,
+                      { count: String(day.count) },
+                    )}
                   </div>
                 )}
                 
@@ -187,10 +194,10 @@ const ActivityChart: React.FC<ActivityChartProps> = ({ projects, numbers }) => {
               {generateIcon('space%20rocket-85-1687505546.png', 20, 'var(--th-text-muted)')}
             </div>
             <div>
-              <h3 className="text-sm font-medium text-foreground/80">Activity</h3>
+              <h3 className="text-sm font-medium text-foreground/80">{t.overview.activity.title}</h3>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <p className="text-xl font-semibold text-foreground">{totalDeployments}</p>
-                <span className="text-xs text-muted-foreground">this week</span>
+                <span className="text-xs text-muted-foreground">{t.overview.activity.thisWeek}</span>
               </div>
             </div>
           </div>

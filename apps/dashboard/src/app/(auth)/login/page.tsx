@@ -156,7 +156,7 @@ function LoginPageInner() {
           disabled={loading}
           onClick={() => { void handleCloudSignIn(callbackUrl); }}
         >
-          {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ExternalLink className="mr-2 size-4" />}
+          {loading ? <Loader2 className="me-2 size-4 animate-spin" /> : <ExternalLink className="me-2 size-4" />}
           {loading ? "Opening Openship Cloud..." : "Sign in with Openship"}
         </Button>
       </AuthShell>
@@ -208,13 +208,13 @@ function LoginPageInner() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="pr-10"
+              className="pe-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

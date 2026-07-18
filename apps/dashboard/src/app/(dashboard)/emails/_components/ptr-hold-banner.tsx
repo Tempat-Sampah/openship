@@ -21,6 +21,7 @@
 
 import { useState } from "react";
 import { Loader2, Network, Copy, Check } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface PtrHoldBannerProps {
   ipv4: string;
@@ -39,6 +40,7 @@ export function PtrHoldBanner({
   acknowledging,
   onAcknowledge,
 }: PtrHoldBannerProps) {
+  const { t } = useI18n();
   return (
     <div className="bg-sky-500/5 border border-sky-500/30 rounded-2xl p-6 mb-6">
       <div className="flex items-start gap-3 mb-5">
@@ -47,13 +49,14 @@ export function PtrHoldBanner({
         </div>
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-sky-900 dark:text-sky-100">
-            Set reverse DNS (PTR) before continuing
+            {t.emails.ptr.heading}
           </h2>
           <p className="text-sm text-sky-900/80 dark:text-sky-100/80 mt-1 leading-snug">
-            PTRs are configured at your <strong>VPS provider's panel</strong>{" "}
-            (Hostinger, DigitalOcean, AWS, etc.), <strong>not</strong> at your
-            DNS provider. Without matching rDNS, Gmail and Outlook reject your
-            outbound mail. The install resumes from step {resumeStep} (SSL).
+            {t.emails.ptr.bodyBefore}
+            <strong>{t.emails.ptr.bodyStrongPanel}</strong>
+            {t.emails.ptr.bodyMid}
+            <strong>{t.emails.ptr.bodyStrongNot}</strong>
+            {interpolate(t.emails.ptr.bodyAfter, { resumeStep: String(resumeStep) })}
           </p>
         </div>
       </div>
@@ -65,15 +68,14 @@ export function PtrHoldBanner({
 
       <div className="rounded-xl bg-sky-500/5 border border-sky-500/20 p-3 mb-5">
         <p className="text-xs text-sky-900/80 dark:text-sky-100/80 leading-relaxed">
-          <strong>How to set it:</strong> log into your VPS provider, find the
-          server's networking / DNS / rDNS settings, and set the PTR record for
-          each IP to <code className="font-mono text-foreground">{target}</code>.
-          Propagation usually takes 5–15 minutes.
+          <strong>{t.emails.ptr.howTo}</strong>{t.emails.ptr.howToBody}
+          <code className="font-mono text-foreground">{target}</code>
+          {t.emails.ptr.howToAfter}
         </p>
         <p className="text-xs text-sky-900/80 dark:text-sky-100/80 leading-relaxed mt-2">
-          <strong>Verify with:</strong>{" "}
-          <code className="font-mono text-foreground">dig +short -x {ipv4}</code>{" "}
-          should return{" "}
+          <strong>{t.emails.ptr.verifyWith}</strong>{" "}
+          <code className="font-mono text-foreground">dig +short -x {ipv4}</code>
+          {t.emails.ptr.shouldReturn}
           <code className="font-mono text-foreground">{target}.</code>
         </p>
       </div>
@@ -89,7 +91,7 @@ export function PtrHoldBanner({
           ) : (
             <Network className="size-4" />
           )}
-          I've set the PTRs - continue
+          {t.emails.ptr.action}
         </button>
       </div>
     </div>
@@ -107,6 +109,7 @@ function PtrCard({
   target: string;
   required?: boolean;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState<"ip" | "target" | null>(null);
   const copy = async (which: "ip" | "target", text: string) => {
     try {
@@ -124,20 +127,20 @@ function PtrCard({
           {label}
         </span>
         {!required && (
-          <span className="text-[11px] text-muted-foreground/70 ml-auto">
-            recommended
+          <span className="text-[11px] text-muted-foreground/70 ms-auto">
+            {t.emails.ptr.recommended}
           </span>
         )}
       </div>
       <div className="space-y-2 font-mono text-[12px]">
         <PtrField
-          fieldLabel="IP"
+          fieldLabel={t.emails.ptr.ipLabel}
           value={ip}
           copied={copied === "ip"}
           onCopy={() => copy("ip", ip)}
         />
         <PtrField
-          fieldLabel="Set to"
+          fieldLabel={t.emails.ptr.setTo}
           value={target}
           copied={copied === "target"}
           onCopy={() => copy("target", target)}
@@ -158,6 +161,7 @@ function PtrField({
   copied: boolean;
   onCopy: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-start gap-2">
       <span className="text-xs text-muted-foreground/70 font-sans w-12 shrink-0 mt-0.5">
@@ -169,7 +173,7 @@ function PtrField({
       <button
         onClick={onCopy}
         className="text-muted-foreground/70 hover:text-foreground transition-colors p-1.5"
-        title="Copy"
+        title={t.emails.ptr.copy}
       >
         {copied ? (
           <Check className="size-3.5 text-emerald-500" />

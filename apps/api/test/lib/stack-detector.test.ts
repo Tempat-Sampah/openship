@@ -35,6 +35,7 @@ interface StackCase {
   /** Optional extra assertions. */
   expectedCategory?: string;
   expectedProjectType?: string;
+  expectedStartCommand?: string;
 }
 
 const POSITIVE_STACK_CASES: StackCase[] = [
@@ -370,13 +371,24 @@ dependencies = ["requests>=2.0"]`,
 
   // ── Elixir ──────────────────────────────────────────────────────────────
   {
-    name: "Phoenix - mix.exs + phoenix dep + lib dir",
+    name: "Phoenix - mix.exs + phoenix dep + lib dir (release name from app:)",
+    files: files("mix.exs", "lib/"),
+    fileContents: {
+      "mix.exs": `defmodule MyApp.MixProject do\n  def project do\n    [app: :my_app, version: "0.1.0"]\n  end\n  defp deps do\n    [{:phoenix, "~> 1.7"}]\n  end\nend`,
+    },
+    expectedStack: "phoenix",
+    expectedCategory: "fullstack",
+    // Release binary derived from `app: :my_app`, not the literal "app".
+    expectedStartCommand: "_build/prod/rel/my_app/bin/my_app start",
+  },
+  {
+    name: "Phoenix - mix.exs without app: falls back to registry default",
     files: files("mix.exs", "lib/"),
     fileContents: {
       "mix.exs": `defmodule MyApp.MixProject do\n  defp deps do\n    [{:phoenix, "~> 1.7"}]\n  end\nend`,
     },
     expectedStack: "phoenix",
-    expectedCategory: "fullstack",
+    expectedStartCommand: "_build/prod/rel/app/bin/app start",
   },
 
   // ── Docker / Compose / Static / Generic ─────────────────────────────────
@@ -419,6 +431,7 @@ describe("detectStack - positive cases across all supported stacks", () => {
       expect(result.stack).toBe(c.expectedStack);
       if (c.expectedCategory) expect(result.category).toBe(c.expectedCategory);
       if (c.expectedProjectType) expect(result.projectType).toBe(c.expectedProjectType);
+      if (c.expectedStartCommand) expect(result.startCommand).toBe(c.expectedStartCommand);
     });
   }
 });

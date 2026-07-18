@@ -1818,6 +1818,30 @@ export async function disable(c: Context) {
   }
 }
 
+/** Re-run the managed free-domain edge-proxy sync (no rebuild). Clears the
+ *  "Action Required" routing warning on success; returns the failure text
+ *  (200, ok:false) when it still can't sync so the UI re-surfaces guidance. */
+export async function retryRouting(c: Context) {
+  const id = param(c, "id");
+  await permission.assert(getRequestContext(c), { resourceType: "project", resourceId: id, action: "write" });
+  const { userId, organizationId } = getRequestContext(c);
+  try {
+    const result = await projectService.retryProjectRouting(id, organizationId);
+    if (result.ok) {
+      audit.recordAsync(auditContextFrom(c, organizationId, userId), {
+        eventType: "project.updated",
+        resourceType: "project",
+        resourceId: id,
+        after: { action: "routing_retried" },
+      });
+    }
+    return c.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to retry routing";
+    return c.json({ ok: false, error: message }, 400);
+  }
+}
+
 // ─── Project deployments ─────────────────────────────────────────────────────
 
 export async function listDeployments(c: Context) {

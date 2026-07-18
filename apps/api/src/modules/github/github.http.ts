@@ -23,6 +23,8 @@
  * data).
  */
 
+import { cacheStore } from "../../lib/cache-store";
+
 export interface GhRequest {
   url: string;
   method?: string;
@@ -102,4 +104,45 @@ export async function ghFetchSoft<T = unknown>(token: string, req: GhRequest): P
   } catch {
     return null;
   }
+}
+
+// Cache POSITIVE verdicts only — a repo confirmed public stays cached for the
+// TTL (public→private is rare). Negatives are never cached, so a transient
+// failure re-probes next time rather than trapping a public repo behind a stale
+// "not public". Backed by the shared cacheStore: on the SaaS that's Redis, so
+// the verdict is deduped ACROSS replicas — a module-local Map would let every
+// replica independently burn the shared 60/hr/IP unauthenticated GitHub budget.
+const PUBLIC_REPO_NS = "gh:public-repo";
+const PUBLIC_REPO_TTL_SECONDS = 10 * 60;
+
+/**
+ * Is `owner/repo` a PUBLIC github.com repo? Tokenless probe — an
+ * UNAUTHENTICATED `GET /repos/{owner}/{repo}` (deliberately NOT ghFetch, which
+ * forces the auth header). Lets a public repo clone/deploy with no credential.
+ *
+ * Fails CLOSED: any error / non-200 / `private:true` returns false, so a
+ * private or unknown repo still requires a credential. github.com only — other
+ * hosts (GitLab, GHES) return false and fall through to the credential path.
+ */
+export async function isPublicRepo(owner: string, repo: string): Promise<boolean> {
+  if (!owner || !repo) return false;
+  const key = `${owner}/${repo}`.toLowerCase();
+  const store = await cacheStore<boolean>(PUBLIC_REPO_NS, { maxSize: 5_000 });
+  if (await store.get(key)) return true; // positives only
+  try {
+    const res = await timedFetch(
+      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      { method: "GET", headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } },
+    );
+    if (res.ok) {
+      const data = (await res.json()) as { private?: boolean };
+      if (data?.private === false) {
+        await store.set(key, true, PUBLIC_REPO_TTL_SECONDS);
+        return true;
+      }
+    }
+  } catch {
+    /* network/timeout → treat as not-known-public */
+  }
+  return false;
 }

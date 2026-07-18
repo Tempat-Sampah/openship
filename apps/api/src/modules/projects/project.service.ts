@@ -42,4 +42,5 @@ export {
   streamRuntimeLogs,
   enableProject,
   disableProject,
+  retryProjectRouting,
 } from "./project-runtime.service";

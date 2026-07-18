@@ -37,6 +37,7 @@ import {
   FormModalContent,
   inputClassName,
 } from "./_shared/form-modal-content";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface MailboxesTabProps {
   serverId: string;
@@ -52,6 +53,7 @@ export function MailboxesTab({
   onSelectDomain,
 }: MailboxesTabProps) {
   const { showModal, hideModal } = useModal();
+  const { t } = useI18n();
   const [domains, setDomains] = useState<AdminDomain[]>([]);
   const [mailboxes, setMailboxes] = useState<AdminMailbox[]>([]);
   const [loadingDomains, setLoadingDomains] = useState(true);
@@ -86,7 +88,7 @@ export function MailboxesTab({
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(getApiErrorMessage(err, "Failed to load domains"));
+        setError(getApiErrorMessage(err, t.emailsAdmin.mailboxes.loadDomainsFailed));
       })
       .finally(() => {
         if (!cancelled) setLoadingDomains(false);
@@ -104,7 +106,7 @@ export function MailboxesTab({
       const res = await mailAdminApi.mailboxes.list(serverId, activeDomain);
       setMailboxes(res.mailboxes);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Failed to load mailboxes"));
+      setError(getApiErrorMessage(err, t.emailsAdmin.mailboxes.loadFailed));
     } finally {
       setLoadingMailboxes(false);
     }
@@ -173,7 +175,7 @@ export function MailboxesTab({
   const columns: DataTableColumn<AdminMailbox>[] = [
     {
       key: "user",
-      header: "Mailbox",
+      header: t.emailsAdmin.mailboxes.colMailbox,
       width: "minmax(240px, 2fr)",
       cell: (r) => (
         <div className="flex items-center gap-3 min-w-0">
@@ -196,14 +198,14 @@ export function MailboxesTab({
     },
     {
       key: "quota",
-      header: "Quota",
+      header: t.emailsAdmin.mailboxes.colQuota,
       width: "120px",
       align: "right",
       hideBelow: "md",
       cell: (r) => (
         <span className="text-sm text-foreground tabular-nums">
           {r.quotaMB === 0 ? (
-            <span className="text-muted-foreground">Unlimited</span>
+            <span className="text-muted-foreground">{t.emailsAdmin.mailboxes.unlimited}</span>
           ) : (
             formatQuota(r.quotaMB)
           )}
@@ -212,21 +214,21 @@ export function MailboxesTab({
     },
     {
       key: "status",
-      header: "Status",
+      header: t.emailsAdmin.mailboxes.colStatus,
       width: "180px",
       cell: (r) => (
         <div className="flex items-center gap-1.5 flex-wrap">
           {r.active ? (
             <StatusPill tone="success" dot>
-              Active
+              {t.emailsAdmin.mailboxes.active}
             </StatusPill>
           ) : (
             <StatusPill tone="neutral" dot>
-              Disabled
+              {t.emailsAdmin.mailboxes.disabled}
             </StatusPill>
           )}
           {r.username.startsWith("postmaster@") && (
-            <StatusPill tone="info">Postmaster</StatusPill>
+            <StatusPill tone="info">{t.emailsAdmin.mailboxes.postmaster}</StatusPill>
           )}
         </div>
       ),
@@ -237,10 +239,9 @@ export function MailboxesTab({
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-foreground">Mailboxes</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t.emailsAdmin.mailboxes.heading}</h2>
           <p className="text-sm text-muted-foreground mt-0.5 max-w-2xl">
-            Each row is an IMAP/SMTP account on the mail server. Passwords are
-            hashed with doveadm SSHA512 before storage.
+            {t.emailsAdmin.mailboxes.description}
           </p>
         </div>
         <button
@@ -249,16 +250,16 @@ export function MailboxesTab({
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50 disabled:hover:shadow-none shrink-0"
         >
           <Plus className="size-4" />
-          Add mailbox
+          {t.emailsAdmin.mailboxes.addMailbox}
         </button>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-muted-foreground">Domain</span>
+        <span className="text-sm text-muted-foreground">{t.emailsAdmin.mailboxes.domainLabel}</span>
         {loadingDomains ? (
           <div className="px-3 py-2 rounded-xl border border-border bg-muted/30 flex items-center gap-2">
             <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Loading…</span>
+            <span className="text-sm text-muted-foreground">{t.emailsAdmin.mailboxes.loading}</span>
           </div>
         ) : (
           <select
@@ -274,9 +275,11 @@ export function MailboxesTab({
           </select>
         )}
         {!loadingMailboxes && mailboxes.length > 0 && (
-          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-            {mailboxes.filter((m) => m.active).length} of {mailboxes.length}{" "}
-            active
+          <span className="ms-auto text-xs text-muted-foreground tabular-nums">
+            {interpolate(t.emailsAdmin.mailboxes.activeCount, {
+              active: String(mailboxes.filter((m) => m.active).length),
+              total: String(mailboxes.length),
+            })}
           </span>
         )}
       </div>
@@ -296,12 +299,12 @@ export function MailboxesTab({
           <>
             <RowIconButton
               icon={Pencil}
-              label="Edit"
+              label={t.emailsAdmin.mailboxes.editAction}
               onClick={() => openEdit(row)}
             />
             <RowIconButton
               icon={Trash2}
-              label="Delete"
+              label={t.emailsAdmin.mailboxes.deleteAction}
               variant="danger"
               onClick={() => openDelete(row)}
             />
@@ -309,8 +312,8 @@ export function MailboxesTab({
         )}
         empty={{
           icon: UserRound,
-          title: "No mailboxes yet",
-          description: `Create the first mailbox for ${activeDomain}. Passwords are hashed with doveadm SSHA512 - only the hash is stored on disk.`,
+          title: t.emailsAdmin.mailboxes.emptyTitle,
+          description: interpolate(t.emailsAdmin.mailboxes.emptyDesc, { domain: activeDomain }),
           action: (
             <button
               onClick={openCreate}
@@ -318,7 +321,7 @@ export function MailboxesTab({
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <Plus className="size-4" />
-              Add mailbox
+              {t.emailsAdmin.mailboxes.addMailbox}
             </button>
           ),
         }}
@@ -347,6 +350,7 @@ function CreateMailboxForm({
   onCancel: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useI18n();
   const [localPart, setLocalPart] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -381,15 +385,15 @@ function CreateMailboxForm({
 
   return (
     <FormModalContent
-      title={`New mailbox · ${domain}`}
-      description="Creates an IMAP/SMTP account on the mail server. Password is hashed with doveadm SSHA512 on the VPS - only the hash is stored."
-      submitLabel="Create mailbox"
-      submittingLabel="Creating…"
+      title={interpolate(t.emailsAdmin.mailboxes.create.title, { domain })}
+      description={t.emailsAdmin.mailboxes.create.description}
+      submitLabel={t.emailsAdmin.mailboxes.create.submit}
+      submittingLabel={t.emailsAdmin.mailboxes.create.submitting}
       onSubmit={submit}
       onCancel={onCancel}
       disabled={!localPart.trim() || password.length < 8}
     >
-      <Field label="Local part" hint="The part before @. Lowercase, alphanumeric.">
+      <Field label={t.emailsAdmin.mailboxes.create.localPartLabel} hint={t.emailsAdmin.mailboxes.create.localPartHint}>
         <div className="flex items-stretch rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary/60 transition-colors">
           <input
             type="text"
@@ -397,14 +401,14 @@ function CreateMailboxForm({
             value={localPart}
             onChange={(e) => setLocalPart(e.target.value)}
             placeholder="alice"
-            className="flex-1 px-3 py-2 text-sm bg-transparent text-foreground placeholder:text-muted-foreground/60 focus:outline-none rounded-l-xl"
+            className="flex-1 px-3 py-2 text-sm bg-transparent text-foreground placeholder:text-muted-foreground/60 focus:outline-none rounded-s-xl"
           />
-          <span className="px-3 py-2 text-sm text-muted-foreground border-l border-border bg-muted/40 rounded-r-xl whitespace-nowrap">
+          <span className="px-3 py-2 text-sm text-muted-foreground border-s border-border bg-muted/40 rounded-e-xl whitespace-nowrap">
             @{domain}
           </span>
         </div>
       </Field>
-      <Field label="Full name" hint="Display name shown in mail clients. Optional.">
+      <Field label={t.emailsAdmin.mailboxes.create.fullNameLabel} hint={t.emailsAdmin.mailboxes.create.fullNameHint}>
         <input
           type="text"
           value={name}
@@ -413,7 +417,7 @@ function CreateMailboxForm({
           className={inputClassName}
         />
       </Field>
-      <Field label="Password" hint="At least 8 characters. Or generate one.">
+      <Field label={t.emailsAdmin.mailboxes.create.passwordLabel} hint={t.emailsAdmin.mailboxes.create.passwordHint}>
         <div className="flex gap-2">
           <input
             type={showPassword ? "text" : "password"}
@@ -427,7 +431,7 @@ function CreateMailboxForm({
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-muted text-foreground hover:bg-muted/80 border border-border transition-colors whitespace-nowrap"
           >
             <KeyRound className="size-3.5" />
-            Generate
+            {t.emailsAdmin.mailboxes.create.generate}
           </button>
         </div>
         {password && (
@@ -438,7 +442,7 @@ function CreateMailboxForm({
           />
         )}
       </Field>
-      <Field label="Quota (GB)" hint="0 or blank = unlimited.">
+      <Field label={t.emailsAdmin.mailboxes.create.quotaLabel} hint={t.emailsAdmin.mailboxes.create.quotaHint}>
         <input
           type="number"
           min={0}
@@ -462,6 +466,7 @@ function PasswordPreview({
   visible: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -482,14 +487,14 @@ function PasswordPreview({
         onClick={onToggle}
         className="text-xs text-muted-foreground hover:text-foreground"
       >
-        {visible ? "Hide" : "Show"}
+        {visible ? t.emailsAdmin.mailboxes.create.hide : t.emailsAdmin.mailboxes.create.show}
       </button>
       <button
         type="button"
         onClick={copy}
         className="p-1 text-muted-foreground hover:text-foreground"
-        title="Copy"
-        aria-label="Copy password"
+        title={t.emailsAdmin.mailboxes.create.copy}
+        aria-label={t.emailsAdmin.mailboxes.create.copyPassword}
       >
         {copied ? (
           <Check className="size-3.5 text-emerald-500" />
@@ -514,6 +519,7 @@ function EditMailboxForm({
   onCancel: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(row.name);
   const [password, setPassword] = useState("");
   const [quotaGB, setQuotaGB] = useState(
@@ -533,13 +539,13 @@ function EditMailboxForm({
 
   return (
     <FormModalContent
-      title={`Edit ${row.username}`}
-      submitLabel="Save changes"
-      submittingLabel="Saving…"
+      title={interpolate(t.emailsAdmin.mailboxes.editForm.title, { username: row.username })}
+      submitLabel={t.emailsAdmin.mailboxes.editForm.submit}
+      submittingLabel={t.emailsAdmin.mailboxes.editForm.submitting}
       onSubmit={submit}
       onCancel={onCancel}
     >
-      <Field label="Full name">
+      <Field label={t.emailsAdmin.mailboxes.editForm.fullNameLabel}>
         <input
           type="text"
           value={name}
@@ -548,8 +554,8 @@ function EditMailboxForm({
         />
       </Field>
       <Field
-        label="New password"
-        hint="Leave blank to keep the current one. At least 8 characters if set."
+        label={t.emailsAdmin.mailboxes.editForm.newPasswordLabel}
+        hint={t.emailsAdmin.mailboxes.editForm.newPasswordHint}
       >
         <input
           type="password"
@@ -559,7 +565,7 @@ function EditMailboxForm({
           className={inputClassName}
         />
       </Field>
-      <Field label="Quota (GB)" hint="0 or blank = unlimited.">
+      <Field label={t.emailsAdmin.mailboxes.editForm.quotaLabel} hint={t.emailsAdmin.mailboxes.editForm.quotaHint}>
         <input
           type="number"
           min={0}
@@ -578,10 +584,10 @@ function EditMailboxForm({
         />
         <span>
           <span className="block text-sm font-medium text-foreground">
-            Active
+            {t.emailsAdmin.mailboxes.editForm.activeLabel}
           </span>
           <span className="block text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            When unchecked, IMAP login fails and incoming mail bounces.
+            {t.emailsAdmin.mailboxes.editForm.activeDesc}
           </span>
         </span>
       </label>
@@ -602,6 +608,7 @@ function DeleteMailboxConfirm({
   onCancel: () => void;
   onDeleted: () => void;
 }) {
+  const { t } = useI18n();
   const [hardDelete, setHardDelete] = useState(false);
   const isPostmaster = row.username.startsWith("postmaster@");
 
@@ -616,14 +623,14 @@ function DeleteMailboxConfirm({
 
   return (
     <FormModalContent
-      title={`Delete ${row.username}?`}
+      title={interpolate(t.emailsAdmin.mailboxes.deleteForm.title, { username: row.username })}
       description={
         hardDelete
-          ? "Hard delete: removes the DB rows AND the Maildir on disk. Cannot be undone."
-          : "Soft delete: sets active = 0 and inserts a row in vmail.deleted_mailboxes. The mail server's cleanup cron picks it up later. The Maildir stays on disk until then."
+          ? t.emailsAdmin.mailboxes.deleteForm.descHard
+          : t.emailsAdmin.mailboxes.deleteForm.descSoft
       }
-      submitLabel={hardDelete ? "Hard-delete mailbox" : "Soft-delete mailbox"}
-      submittingLabel="Deleting…"
+      submitLabel={hardDelete ? t.emailsAdmin.mailboxes.deleteForm.submitHard : t.emailsAdmin.mailboxes.deleteForm.submitSoft}
+      submittingLabel={t.emailsAdmin.mailboxes.deleteForm.submitting}
       submitVariant="danger"
       onSubmit={submit}
       onCancel={onCancel}
@@ -638,17 +645,16 @@ function DeleteMailboxConfirm({
           />
           <span>
             <span className="block text-sm font-medium text-red-600 dark:text-red-400">
-              Hard delete
+              {t.emailsAdmin.mailboxes.deleteForm.hardDeleteLabel}
             </span>
             <span className="block text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              Remove DB rows and Maildir files immediately. Cannot be undone.
+              {t.emailsAdmin.mailboxes.deleteForm.hardDeleteDesc}
             </span>
           </span>
         </label>
       ) : (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-          The postmaster mailbox is hard-delete protected - only soft delete is
-          available, so the mail server's bootstrap account stays intact.
+          {t.emailsAdmin.mailboxes.deleteForm.postmasterNote}
         </div>
       )}
     </FormModalContent>

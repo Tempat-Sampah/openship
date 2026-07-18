@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useState } from "react";
 import { Copy, Check, Server, Info } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 interface DnsRecord {
   type: "CNAME" | "A" | "TXT";
@@ -13,13 +16,13 @@ interface DnsConfigurationProps {
   mode?: "cloud" | "selfhosted";
 }
 
-const RECORD_DESCRIPTIONS: Record<string, string> = {
-  CNAME: "Routes your domain through the edge network",
-  A: "Points your domain to the server",
-  TXT: "Verifies domain ownership",
-};
-
 const DnsConfiguration: React.FC<DnsConfigurationProps> = ({ domain, records, mode }) => {
+  const { t } = useI18n();
+  const recordDescriptions: Record<string, string> = {
+    CNAME: t.deploy.dns.descCname,
+    A: t.deploy.dns.descA,
+    TXT: t.deploy.dns.descTxt,
+  };
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, id: string) => {
@@ -40,9 +43,9 @@ const DnsConfiguration: React.FC<DnsConfigurationProps> = ({ domain, records, mo
           <Server className="size-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-foreground">DNS Configuration</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t.deploy.dns.title}</h3>
           <p className="text-xs text-muted-foreground">
-            Add these records at your DNS provider for <span className="font-medium text-foreground">{domain}</span>
+            {t.deploy.dns.addRecordsFor} <span className="font-medium text-foreground">{domain}</span>
           </p>
         </div>
       </div>
@@ -55,12 +58,12 @@ const DnsConfiguration: React.FC<DnsConfigurationProps> = ({ domain, records, mo
                   {record.type}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {RECORD_DESCRIPTIONS[record.type] ?? ""}
+                  {recordDescriptions[record.type] ?? ""}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Name / Host</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t.deploy.dns.nameHost}</p>
                   <div className="flex items-center gap-2 bg-background rounded-lg border border-border/50 px-3 py-2">
                     <code className="flex-1 text-sm font-medium text-foreground">{record.host}</code>
                     <button
@@ -76,7 +79,7 @@ const DnsConfiguration: React.FC<DnsConfigurationProps> = ({ domain, records, mo
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Value / Target</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t.deploy.dns.valueTarget}</p>
                   <div className="flex items-center gap-2 bg-background rounded-lg border border-border/50 px-3 py-2">
                     <code className="flex-1 text-sm font-medium text-foreground truncate">{record.value}</code>
                     <button
@@ -100,13 +103,11 @@ const DnsConfiguration: React.FC<DnsConfigurationProps> = ({ domain, records, mo
             <div className="text-xs text-muted-foreground leading-relaxed">
               {mode === "selfhosted" ? (
                 <p>
-                  Add the <span className="font-medium text-foreground">A record</span> pointing to your server IP,
-                  then add the <span className="font-medium text-foreground">TXT record</span> for ownership verification.
+                  {t.deploy.dns.selfInfoPre}<span className="font-medium text-foreground">{t.deploy.dns.recordA}</span>{t.deploy.dns.selfInfoMid}<span className="font-medium text-foreground">{t.deploy.dns.recordTxt}</span>{t.deploy.dns.verifySuffix}
                 </p>
               ) : (
                 <p>
-                  Add the <span className="font-medium text-foreground">CNAME record</span> for routing,
-                  then add the <span className="font-medium text-foreground">TXT record</span> for ownership verification.
+                  {t.deploy.dns.cloudInfoPre}<span className="font-medium text-foreground">{t.deploy.dns.recordCname}</span>{t.deploy.dns.cloudInfoMid}<span className="font-medium text-foreground">{t.deploy.dns.recordTxt}</span>{t.deploy.dns.verifySuffix}
                 </p>
               )}
             </div>

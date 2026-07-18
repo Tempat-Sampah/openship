@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { authClient, signOut } from "@/lib/auth-client";
 import { useTheme } from "@/components/theme-provider";
-import { useI18n } from "@/components/i18n-provider";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/context/AuthContext";
 import { usePlatform } from "@/context/PlatformContext";
@@ -254,12 +254,12 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`my-3 ml-3 flex shrink-0 flex-col rounded-2xl border border-border/50 bg-card transition-[width] duration-200 overflow-hidden ${
+      className={`my-3 ms-3 flex shrink-0 flex-col rounded-2xl border border-border/50 bg-card transition-[width] duration-200 overflow-hidden ${
         collapsed ? "w-[72px]" : "w-[260px]"
       }`}
     >
       {/* ── Header ───────────────────────────────────────────── */}
-      <div className={`flex items-center px-5 py-6 ${collapsed ? "flex-col gap-3 pb-3" : "justify-between"}`}>
+      <div className={`app-sidebar-header flex items-center px-5 py-6 ${collapsed ? "flex-col gap-3 pb-3" : "justify-between"}`}>
         <div className="flex items-center gap-2.5 min-w-0">
           <Logo size={26} className="shrink-0" />
           {!collapsed && (
@@ -289,9 +289,9 @@ export function Sidebar() {
             className="flex size-8 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
           >
             {collapsed ? (
-              <PanelLeftOpen className="size-4" />
+              <PanelLeftOpen className="size-4 rtl:rotate-180" />
             ) : (
-              <PanelLeftClose className="size-4" />
+              <PanelLeftClose className="size-4 rtl:rotate-180" />
             )}
           </button>
         </div>
@@ -345,7 +345,7 @@ export function Sidebar() {
         >
           <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
           <Plus className="relative size-4" strokeWidth={2.5} />
-          {!collapsed && <span className="relative">New Project</span>}
+          {!collapsed && <span className="relative">{label("new-project")}</span>}
         </Link>
       </div>
 
@@ -368,7 +368,7 @@ export function Sidebar() {
             <button
               type="button"
               onClick={() => setOrgsOpen((v) => !v)}
-              className={`group flex w-full items-center rounded-xl px-2 py-2 text-left transition-colors hover:bg-foreground/[0.06] ${
+              className={`group flex w-full items-center rounded-xl px-2 py-2 text-start transition-colors hover:bg-foreground/[0.06] ${
                 collapsed ? "justify-center" : "gap-3"
               }`}
               aria-haspopup="dialog"
@@ -384,11 +384,11 @@ export function Sidebar() {
                 <>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold leading-tight text-foreground">
-                      {activeOrg?.name ?? "Workspace"}
+                      {activeOrg?.name ?? t.chrome.sidebar.workspaceFallback}
                     </p>
                     <p className="truncate text-[12px] leading-tight text-muted-foreground">
                       {orgs.length > 1
-                        ? `${orgs.length} workspaces`
+                        ? interpolate(t.chrome.sidebar.workspacesCount, { count: String(orgs.length) })
                         : displayEmail}
                     </p>
                   </div>
@@ -402,14 +402,14 @@ export function Sidebar() {
               <div
                 className={`absolute z-50 overflow-hidden rounded-2xl border border-border/50 bg-popover shadow-xl shadow-black/[0.08] ${
                   collapsed
-                    ? "left-full bottom-0 ml-2 w-72"
-                    : "left-0 right-0 bottom-full mb-2"
+                    ? "start-full bottom-0 ms-2 w-72"
+                    : "start-0 end-0 bottom-full mb-2"
                 }`}
               >
                 {/* Heading */}
                 <div className="px-3 pt-3 pb-2">
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                    Switch organization
+                    {t.chrome.sidebar.switchOrganization}
                   </p>
                 </div>
 
@@ -424,7 +424,7 @@ export function Sidebar() {
                         type="button"
                         onClick={() => handleOrgSwitch(o.id)}
                         disabled={!!switchingOrgId}
-                        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-foreground/[0.05] disabled:opacity-60 ${
+                        className={`flex w-full items-center gap-2.5 px-3 py-2 text-start transition-colors hover:bg-foreground/[0.05] disabled:opacity-60 ${
                           isCurrent ? "bg-foreground/[0.03]" : ""
                         }`}
                       >
@@ -438,10 +438,10 @@ export function Sidebar() {
                           {isCurrent && (
                             <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">
                               <span className="rounded-md bg-foreground/[0.06] px-1.5 py-0.5 font-medium uppercase tracking-wide text-[10px] text-muted-foreground">
-                                Current
+                                {t.chrome.sidebar.current}
                               </span>
                               {activeOrgRole && (
-                                <span className="ml-1.5 capitalize text-muted-foreground/80">
+                                <span className="ms-1.5 capitalize text-muted-foreground/80">
                                   {activeOrgRole}
                                 </span>
                               )}
@@ -475,9 +475,9 @@ export function Sidebar() {
                       {cloudBadge?.email && (
                         <p
                           className="truncate text-[10px] leading-tight text-muted-foreground/70"
-                          title={`Linked to Openship Cloud as ${cloudBadge.email}`}
+                          title={interpolate(t.chrome.sidebar.linkedToCloud, { email: cloudBadge.email })}
                         >
-                          Cloud: {cloudBadge.email}
+                          {interpolate(t.chrome.sidebar.cloudLabel, { email: cloudBadge.email })}
                         </p>
                       )}
                     </div>
@@ -493,7 +493,7 @@ export function Sidebar() {
                     ) : (
                       <LogOut className="size-4" />
                     )}
-                    {isDesktop ? "Back to setup" : t.dashboard.user.logout}
+                    {isDesktop ? t.chrome.sidebar.backToSetup : t.dashboard.user.logout}
                   </button>
                 </div>
               </div>
@@ -525,9 +525,9 @@ export function Sidebar() {
                     {cloudBadge?.email && (
                       <p
                         className="truncate text-[11px] leading-tight text-muted-foreground/70"
-                        title={`Linked to Openship Cloud as ${cloudBadge.email}`}
+                        title={interpolate(t.chrome.sidebar.linkedToCloud, { email: cloudBadge.email })}
                       >
-                        Cloud: {cloudBadge.email}
+                        {interpolate(t.chrome.sidebar.cloudLabel, { email: cloudBadge.email })}
                       </p>
                     )}
                   </div>
@@ -535,8 +535,8 @@ export function Sidebar() {
                     onClick={handleLogout}
                     disabled={loggingOut}
                     className="flex size-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
-                    aria-label={isDesktop ? "Back to setup" : t.dashboard.user.logout}
-                    title={isDesktop ? "Back to setup" : t.dashboard.user.logout}
+                    aria-label={isDesktop ? t.chrome.sidebar.backToSetup : t.dashboard.user.logout}
+                    title={isDesktop ? t.chrome.sidebar.backToSetup : t.dashboard.user.logout}
                   >
                     {loggingOut ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -553,7 +553,7 @@ export function Sidebar() {
                 onClick={handleLogout}
                 disabled={loggingOut}
                 className="mt-2 flex w-full items-center justify-center rounded-xl py-2.5 text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
-                title={isDesktop ? "Back to setup" : t.dashboard.user.logout}
+                title={isDesktop ? t.chrome.sidebar.backToSetup : t.dashboard.user.logout}
               >
                 {loggingOut ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -573,7 +573,7 @@ export function Sidebar() {
             onClick={handleLogout}
             disabled={loggingOut}
             className="mt-2 flex w-full items-center justify-center rounded-xl py-2.5 text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
-            title={isDesktop ? "Back to setup" : t.dashboard.user.logout}
+            title={isDesktop ? t.chrome.sidebar.backToSetup : t.dashboard.user.logout}
           >
             {loggingOut ? (
               <Loader2 className="size-4 animate-spin" />

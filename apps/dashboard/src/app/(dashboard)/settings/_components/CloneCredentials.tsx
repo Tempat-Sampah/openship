@@ -6,6 +6,7 @@ import { settingsApi, type CloneCredentialsState } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 import { SettingsSection } from "./SettingsSection";
+import { useI18n } from "@/components/i18n-provider";
 
 /**
  * GitHub clone credentials - user-global PAT for cloning private repos.
@@ -17,6 +18,7 @@ import { SettingsSection } from "./SettingsSection";
  */
 export function CloneCredentials() {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [state, setState] = useState<CloneCredentialsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [tokenInput, setTokenInput] = useState("");
@@ -44,7 +46,7 @@ export function CloneCredentials() {
   const handleSave = async () => {
     const trimmed = tokenInput.trim();
     if (!trimmed) {
-      showToast("Paste a token before saving", "error", "Clone credentials");
+      showToast(t.settings.cloneCredentials.toast.pasteFirst, "error", t.settings.common.toast.cloneCredentials);
       return;
     }
     // Light validation - accept classic ghp_, fine-grained github_pat_, or
@@ -54,9 +56,9 @@ export function CloneCredentials() {
       /^ghp_/.test(trimmed) || /^github_pat_/.test(trimmed) || trimmed.length >= 40;
     if (!looksLikeGitHubToken) {
       showToast(
-        "That doesn't look like a GitHub token. Save anyway if you're sure.",
+        t.settings.cloneCredentials.toast.notLikeToken,
         "error",
-        "Clone credentials",
+        t.settings.common.toast.cloneCredentials,
       );
     }
     setSaving(true);
@@ -70,9 +72,9 @@ export function CloneCredentials() {
       setState({ hasToken: next.hasToken, setAt: next.setAt, asDefault: next.asDefault });
       setTokenInput("");
       setEditing(false);
-      showToast("Clone token saved", "success", "Clone credentials");
+      showToast(t.settings.cloneCredentials.toast.saved, "success", t.settings.common.toast.cloneCredentials);
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to save token"), "error", "Clone credentials");
+      showToast(getApiErrorMessage(err, t.settings.cloneCredentials.toast.saveFailed), "error", t.settings.common.toast.cloneCredentials);
     } finally {
       setSaving(false);
     }
@@ -85,9 +87,9 @@ export function CloneCredentials() {
       setState({ hasToken: next.hasToken, setAt: next.setAt, asDefault: next.asDefault });
       setTokenInput("");
       setEditing(false);
-      showToast("Clone token cleared", "success", "Clone credentials");
+      showToast(t.settings.cloneCredentials.toast.cleared, "success", t.settings.common.toast.cloneCredentials);
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to clear token"), "error", "Clone credentials");
+      showToast(getApiErrorMessage(err, t.settings.cloneCredentials.toast.clearFailed), "error", t.settings.common.toast.cloneCredentials);
     } finally {
       setSaving(false);
     }
@@ -99,7 +101,7 @@ export function CloneCredentials() {
       const updated = await settingsApi.updateCloneCredentials({ asDefault: next });
       setState({ hasToken: updated.hasToken, setAt: updated.setAt, asDefault: updated.asDefault });
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to update default"), "error", "Clone credentials");
+      showToast(getApiErrorMessage(err, t.settings.cloneCredentials.toast.updateDefaultFailed), "error", t.settings.common.toast.cloneCredentials);
     } finally {
       setTogglingDefault(false);
     }
@@ -108,22 +110,20 @@ export function CloneCredentials() {
   return (
     <SettingsSection
       icon={Key}
-      title="GitHub clone credentials"
-      description="Personal token used to clone private repos when the GitHub App isn't installed"
+      title={t.settings.cloneCredentials.title}
+      description={t.settings.cloneCredentials.description}
       iconBg="bg-violet-500/10"
       iconColor="text-violet-500"
     >
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
           <Loader2 className="size-4 animate-spin" />
-          Loading…
+          {t.settings.cloneCredentials.loading}
         </div>
       ) : (
         <div className="space-y-3.5">
           <p className="text-sm text-muted-foreground">
-            Paste a GitHub personal access token (classic or fine-grained). The
-            clone module uses it as the second-priority credential - after any
-            per-project override, before the GitHub App installation token.
+            {t.settings.cloneCredentials.intro}
           </p>
 
           {!state?.hasToken || editing ? (
@@ -133,16 +133,16 @@ export function CloneCredentials() {
                   type={showToken ? "text" : "password"}
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
-                  placeholder="ghp_… or github_pat_…"
+                  placeholder={t.settings.cloneCredentials.placeholder}
                   spellCheck={false}
                   autoComplete="off"
-                  className="h-10 w-full rounded-xl border border-border/50 bg-muted/20 px-3 pr-10 text-sm font-mono text-foreground outline-none transition-colors focus:border-primary/40"
+                  className="h-10 w-full rounded-xl border border-border/50 bg-muted/20 px-3 pe-10 text-sm font-mono text-foreground outline-none transition-colors focus:border-primary/40"
                 />
                 <button
                   type="button"
                   onClick={() => setShowToken((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
-                  aria-label={showToken ? "Hide token" : "Show token"}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+                  aria-label={showToken ? t.settings.cloneCredentials.hideToken : t.settings.cloneCredentials.showToken}
                 >
                   {showToken ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                 </button>
@@ -155,7 +155,7 @@ export function CloneCredentials() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-                  Save token
+                  {t.settings.cloneCredentials.saveToken}
                 </button>
                 {editing && (
                   <button
@@ -167,25 +167,24 @@ export function CloneCredentials() {
                     disabled={saving}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-foreground/[0.06] px-3.5 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1]"
                   >
-                    Cancel
+                    {t.settings.common.cancel}
                   </button>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                For private repos, give the token the <span className="font-mono">repo</span> scope
-                (classic) or fine-grained read access to the repos you want to deploy.
+                {t.settings.cloneCredentials.scopeHintPrefix} <span className="font-mono">repo</span> {t.settings.cloneCredentials.scopeHintSuffix}
               </p>
             </div>
           ) : (
             <div className="rounded-xl border border-border/50 bg-muted/15 p-3.5 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">Token saved</p>
+                  <p className="text-sm font-medium text-foreground">{t.settings.cloneCredentials.tokenSaved}</p>
                   <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-                    Last updated{" "}
+                    {t.settings.cloneCredentials.lastUpdated}{" "}
                     {state.setAt
                       ? new Date(state.setAt).toLocaleString()
-                      : "just now"}
+                      : t.settings.cloneCredentials.justNow}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -194,7 +193,7 @@ export function CloneCredentials() {
                     onClick={() => setEditing(true)}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-foreground/[0.06] px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1]"
                   >
-                    Replace
+                    {t.settings.cloneCredentials.replace}
                   </button>
                   <button
                     type="button"
@@ -203,7 +202,7 @@ export function CloneCredentials() {
                     className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] font-medium text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400 disabled:opacity-50"
                   >
                     <Trash2 className="size-3" />
-                    Clear
+                    {t.settings.cloneCredentials.clear}
                   </button>
                 </div>
               </div>
@@ -217,12 +216,10 @@ export function CloneCredentials() {
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-foreground">
-                    Use as default clone token
+                    {t.settings.cloneCredentials.useAsDefault}
                   </span>
                   <span className="block text-[12px] text-muted-foreground/80 mt-0.5 leading-relaxed">
-                    When on, the clone module uses this token as the second tier in the chain
-                    (after per-project overrides). When off, the token is stored but not used -
-                    handy if you only want it active for specific deploys.
+                    {t.settings.cloneCredentials.useAsDefaultDesc}
                   </span>
                 </span>
               </label>

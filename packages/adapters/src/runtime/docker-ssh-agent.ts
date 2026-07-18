@@ -1,4 +1,4 @@
-import http from "node:http";
+import net from "node:net";
 import type { Duplex } from "node:stream";
 
 import type { ClientChannel } from "ssh2";
@@ -15,15 +15,6 @@ import { safeErrorMessage } from "@repo/core";
 
 const DEFAULT_REMOTE_DOCKER_SOCKET_PATH = "/var/run/docker.sock";
 const resolvedDockerSocketPathCache = new WeakMap<DockerConnectionOptions, Promise<string>>();
-
-type SshSocket = ClientChannel & {
-  setTimeout?: (msecs: number, callback?: () => void) => SshSocket;
-  setNoDelay?: (noDelay?: boolean) => SshSocket;
-  setKeepAlive?: (enable?: boolean, initialDelay?: number) => SshSocket;
-  ref?: () => SshSocket;
-  unref?: () => SshSocket;
-  destroySoon?: () => void;
-};
 
 function toSshConfig(opts: DockerConnectionOptions): SshConfig {
   return {
@@ -207,35 +198,6 @@ async function collectDockerSocketDiagnostics(
   }
 }
 
-function patchSocket(channel: SshSocket): SshSocket {
-  if (!channel.setTimeout) {
-    channel.setTimeout = (_msecs: number, callback?: () => void) => {
-      if (callback) channel.once("timeout", callback);
-      return channel;
-    };
-  }
-  if (!channel.setNoDelay) {
-    channel.setNoDelay = () => channel;
-  }
-  if (!channel.setKeepAlive) {
-    channel.setKeepAlive = () => channel;
-  }
-  if (!channel.ref) {
-    channel.ref = () => channel;
-  }
-  if (!channel.unref) {
-    channel.unref = () => channel;
-  }
-  if (!channel.destroySoon) {
-    channel.destroySoon = () => {
-      channel.end();
-      channel.destroy();
-    };
-  }
-
-  return channel;
-}
-
 export async function probeDockerSshBridge(opts: DockerConnectionOptions): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     let conn: StreamLocalCapableClient | null = null;
@@ -309,82 +271,98 @@ export async function verifyDockerSshBridge(opts: DockerConnectionOptions): Prom
   }
 }
 
-export function createDockerSshAgent(opts: DockerConnectionOptions): http.Agent {
-  const agent = new http.Agent({ keepAlive: false });
-  const usePooled = !!opts.executor?.forwardUnixSocket;
+/** A loopback TCP listener that tunnels Docker API traffic to the remote socket. */
+export interface DockerSshBridge {
+  /** Bind the listener and return the loopback address dockerode should target. */
+  start(): Promise<{ host: string; port: number }>;
+  /** Tear down the listener and any live connections. */
+  close(): void;
+}
 
-  agent.createConnection = (
-    _options: http.ClientRequestArgs,
-    callback?: (error: Error | null, socket: Duplex) => void,
-  ) => {
-    let reported = false;
+/**
+ * Open a duplex stream to the remote Docker socket over SSH streamlocal
+ * forwarding. Pooled path reuses the executor's persistent SSH connection
+ * (channel multiplexing, no new TCP connection); ephemeral path opens a
+ * fresh SSH connection whose lifetime is tied to the channel.
+ */
+async function openDockerUpstream(opts: DockerConnectionOptions): Promise<Duplex> {
+  const socketPath = await resolveRemoteDockerSocketPath(opts);
 
-    const fail = (error: Error) => {
-      if (reported) return;
-      reported = true;
-      callback?.(error, undefined as unknown as Duplex);
-    };
+  if (opts.executor?.forwardUnixSocket) {
+    return opts.executor.forwardUnixSocket(socketPath);
+  }
 
-    if (usePooled) {
-      // ── Pooled path: reuse the executor’s persistent SSH connection ─────
-      // Opens a streamlocal channel on the existing ssh2.Client.
-      // SSH multiplexes channels, so no new TCP connection is needed.
-      resolveRemoteDockerSocketPath(opts)
-        .then(async (socketPath) => {
-          const stream = await opts.executor!.forwardUnixSocket!(socketPath);
-          const socket = patchSocket(stream as SshSocket);
-          socket.on("error", () => { socket.destroy(); });
-          reported = true;
-          callback?.(null, socket);
-        })
-        .catch((error) => {
-          fail(error instanceof Error ? error : new Error(String(error)));
-        });
+  const client: StreamLocalCapableClient = await connectSshClient(toSshConfig(opts));
+  try {
+    const channel = await openSshUnixSocket(client, socketPath);
+    channel.once("close", () => client.end());
+    channel.on("error", () => client.end());
+    return channel;
+  } catch (error) {
+    client.end();
+    throw error;
+  }
+}
 
-      return undefined;
-    }
+/**
+ * Build a Docker transport bridge for the SSH connection.
+ *
+ * dockerode talks plain HTTP to a loopback TCP port; each accepted
+ * connection is piped to a fresh streamlocal channel to the remote Docker
+ * socket. This is deliberately a real TCP listener rather than a custom
+ * `http.Agent.createConnection` (the previous approach): Bun's HTTP client
+ * ignores `Agent.createConnection` and dials the placeholder host instead,
+ * which broke every SSH-transport Docker call under the Bun-hosted API. A
+ * loopback bridge is honored identically by Node and Bun.
+ */
+export function createDockerSshBridge(opts: DockerConnectionOptions): DockerSshBridge {
+  const clients = new Set<net.Socket>();
 
-    // ── Ephemeral path: new SSH connection per request (fallback) ──────
-    let conn: StreamLocalCapableClient | null = null;
-    let channelClosed = false;
+  const server = net.createServer((client) => {
+    clients.add(client);
+    client.setNoDelay(true);
+    client.once("close", () => clients.delete(client));
 
-    const failEphemeral = (error: Error) => {
-      if (reported) return;
-      reported = true;
-      conn?.end();
-      callback?.(error, undefined as unknown as Duplex);
-    };
-
-    resolveRemoteDockerSocketPath(opts)
-      .then((socketPath) => connectSshClient(toSshConfig(opts)).then((client) => ({ client, socketPath })))
-      .then(async ({ client, socketPath }) => {
-        conn = client;
-        client.once("end", () => {
-          if (!reported && !channelClosed) {
-            failEphemeral(new Error("SSH connection ended before the Docker socket tunnel was established."));
-          }
-        });
-
-        const stream = await openSshUnixSocket(client, socketPath);
-        const socket = patchSocket(stream as SshSocket);
-
-        socket.on("error", () => {
-          client.end();
-        });
-        socket.once("close", () => {
-          channelClosed = true;
-          client.end();
-        });
-
-        reported = true;
-        callback?.(null, socket);
+    openDockerUpstream(opts)
+      .then((upstream) => {
+        const teardown = () => {
+          client.destroy();
+          upstream.destroy();
+        };
+        client.on("error", teardown);
+        upstream.on("error", teardown);
+        client.once("close", () => upstream.destroy());
+        upstream.once("close", () => client.destroy());
+        client.pipe(upstream);
+        upstream.pipe(client);
       })
       .catch((error) => {
-        failEphemeral(error instanceof Error ? error : new Error(String(error)));
+        client.destroy(error instanceof Error ? error : new Error(String(error)));
       });
+  });
 
-    return undefined;
+  return {
+    start: () =>
+      new Promise((resolve, reject) => {
+        const onError = (error: Error) => reject(error);
+        server.once("error", onError);
+        // Loopback only — never expose the remote Docker socket on the network.
+        server.listen(0, "127.0.0.1", () => {
+          server.removeListener("error", onError);
+          const address = server.address();
+          if (address === null || typeof address === "string") {
+            reject(new Error("Docker SSH bridge failed to bind a loopback TCP port."));
+            return;
+          }
+          resolve({ host: "127.0.0.1", port: address.port });
+        });
+      }),
+    close: () => {
+      for (const client of clients) {
+        client.destroy();
+      }
+      clients.clear();
+      server.close();
+    },
   };
-
-  return agent;
 }

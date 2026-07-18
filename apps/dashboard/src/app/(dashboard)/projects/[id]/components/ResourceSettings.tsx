@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateIcon } from '@/utils/icons';
 import { useToast } from '@/context/ToastContext';
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { projectsApi } from "@/lib/api";
 
 interface ResourceTier {
@@ -69,6 +70,10 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
   currentResources 
 }) => {
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const tierMeta = (tier: ResourceTier['tier']) =>
+    t.projectSettings.resources.tiers[tier as keyof typeof t.projectSettings.resources.tiers];
+  const dynamicLabel = t.projectSettings.resources.dynamic;
   const [loading, setLoading] = useState(false);
   const [selectedTier, setSelectedTier] = useState(currentResources?.tier || 'lightweight');
   const [customCpu, setCustomCpu] = useState(currentResources?.cpu_cores || 0.5);
@@ -105,9 +110,9 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
 
     if (response.success) {
       setSelectedTier(tier.tier);
-      showToast('Resources updated successfully', 'success');
+      showToast(t.projectSettings.resources.toast.updated, 'success');
     } else {
-      showToast(response.error || 'Failed to update resources', 'error');
+      showToast(response.error || t.projectSettings.resources.toast.updateFailed, 'error');
     }
     setLoading(false);
   };
@@ -116,12 +121,12 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
     if (loading) return;
 
     if (customCpu < 0.25 || customCpu > 4.0) {
-      showToast('CPU must be between 0.25 and 4.00 cores', 'error');
+      showToast(t.projectSettings.resources.toast.cpuRange, 'error');
       return;
     }
 
     if (customMemory < 128 || customMemory > 8192) {
-      showToast('Memory must be between 128 MB and 8192 MB', 'error');
+      showToast(t.projectSettings.resources.toast.memoryRange, 'error');
       return;
     }
 
@@ -135,9 +140,9 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
     if (response.success) {
       setSelectedTier('custom');
       setShowCustomEdit(false);
-      showToast('Custom resources saved successfully', 'success');
+      showToast(t.projectSettings.resources.toast.customSaved, 'success');
     } else {
-      showToast(response.error || 'Failed to save custom resources', 'error');
+      showToast(response.error || t.projectSettings.resources.toast.customSaveFailed, 'error');
     }
     setLoading(false);
   };
@@ -155,9 +160,9 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
           {generateIcon('cpu%20processor%203-115-1658236937.png', 24, 'hsl(var(--primary))')}
         </div>
         <div>
-        <h3 className="text-lg font-semibold text-foreground">Machine Power</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t.projectSettings.resources.title}</h3>
           <p className="text-xs text-muted-foreground">
-            Configure the machine power for your project.
+            {t.projectSettings.resources.description}
           </p>
         </div>
       </div>
@@ -178,7 +183,7 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
               }`}
             >
               {isSelected && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 end-2">
                   <div className="w-4 h-4 bg-primary/100 rounded-full flex items-center justify-center">
                     {generateIcon('checkmark-7-1662452248.png', 12, 'white')}
                   </div>
@@ -187,20 +192,20 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary' : 'bg-muted'}`}>
                 {generateIcon(tier.icon, 24, isSelected ? 'white' : 'rgb(0, 0, 0, 0.5)')}
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-start">
                 <p className={`text-sm font-semibold mb-0.5 ${isSelected ? 'text-foreground' : 'text-foreground'}`}>
-                  {tier.name}
+                  {tierMeta(tier.tier).name}
                 </p>
                 <p className={`text-xs ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {tier.description}
+                  {tierMeta(tier.tier).description}
                 </p>
                 <div className="flex items-center gap-3 mt-1.5">
                   <div className={`text-[11px] ${isSelected ? 'text-foreground/70' : 'text-muted-foreground'}`}>
-                    <span className="font-medium">{tier.cpu}</span>
+                    <span className="font-medium">{tier.tier === 'autoscale' ? dynamicLabel : tier.cpu}</span>
                   </div>
                   <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
                   <div className={`text-[11px] ${isSelected ? 'text-foreground/70' : 'text-muted-foreground'}`}>
-                    <span className="font-medium">{tier.memory}</span>
+                    <span className="font-medium">{tier.tier === 'autoscale' ? dynamicLabel : tier.memory}</span>
                   </div>
                 </div>
               </div>
@@ -224,7 +229,7 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
           }`}
         >
           {selectedTier === 'custom' && (
-            <div className="absolute top-2 right-2 flex items-center gap-1">
+            <div className="absolute top-2 end-2 flex items-center gap-1">
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -242,17 +247,17 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedTier === 'custom' ? 'bg-primary' : 'bg-muted'}`}>
             {generateIcon('setting-100-1658432731.png', 24, selectedTier === 'custom' ? 'white' : 'rgb(0, 0, 0, 0.5)')}
           </div>
-          <div className="flex-1 text-left">
+          <div className="flex-1 text-start">
             <p className={`text-sm font-semibold mb-0.5 ${selectedTier === 'custom' ? 'text-foreground' : 'text-foreground'}`}>
-              Custom
+              {t.projectSettings.resources.custom.name}
             </p>
             <p className={`text-xs ${selectedTier === 'custom' ? 'text-primary' : 'text-muted-foreground'}`}>
-              Define your own resources
+              {t.projectSettings.resources.custom.description}
             </p>
             {selectedTier === 'custom' ? (
               <div className="flex items-center gap-3 mt-1.5">
                 <div className={`text-[11px] ${selectedTier === 'custom' ? 'text-foreground/70' : 'text-muted-foreground'}`}>
-                  <span className="font-medium">{customCpu} vCPU</span>
+                  <span className="font-medium">{interpolate(t.projectSettings.resources.cpuValue, { cpu: String(customCpu) })}</span>
                 </div>
                 <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
                 <div className={`text-[11px] ${selectedTier === 'custom' ? 'text-foreground/70' : 'text-muted-foreground'}`}>
@@ -261,7 +266,7 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
               </div>
             ) : (
               <div className={`text-xs mt-1.5 ${selectedTier === 'custom' ? 'text-foreground/70' : 'text-muted-foreground'}`}>
-                Click to configure
+                {t.projectSettings.resources.custom.clickToConfigure}
               </div>
             )}
           </div>
@@ -272,7 +277,7 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
       {showCustomEdit && selectedTier === 'custom' && (
         <div className="mt-3 p-4 bg-primary/10 rounded-xl border border-primary/20 space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-foreground">Configure Custom Resources</h4>
+            <h4 className="text-sm font-semibold text-foreground">{t.projectSettings.resources.customPanel.title}</h4>
             <button
               onClick={() => setShowCustomEdit(false)}
               className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary/10 transition-all"
@@ -282,7 +287,7 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-foreground/70 mb-2 block">CPU Cores</label>
+              <label className="text-xs font-medium text-foreground/70 mb-2 block">{t.projectSettings.resources.customPanel.cpuCores}</label>
               <input
                 type="number"
                 min="0.25"
@@ -293,10 +298,10 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
                 className="w-full px-3 py-2 bg-card border border-primary/20 rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="0.50"
               />
-              <p className="text-xs text-primary/60 mt-1">Range: 0.25 - 4.00</p>
+              <p className="text-xs text-primary/60 mt-1">{t.projectSettings.resources.customPanel.cpuRange}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-foreground/70 mb-2 block">Memory (MB)</label>
+              <label className="text-xs font-medium text-foreground/70 mb-2 block">{t.projectSettings.resources.customPanel.memory}</label>
               <input
                 type="number"
                 min="128"
@@ -307,7 +312,7 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
                 className="w-full px-3 py-2 bg-card border border-primary/20 rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="512"
               />
-              <p className="text-xs text-primary/60 mt-1">Range: 128 - 8192</p>
+              <p className="text-xs text-primary/60 mt-1">{t.projectSettings.resources.customPanel.memoryRange}</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -316,14 +321,14 @@ export const ResourceSettings: React.FC<ResourceSettingsProps> = ({
               disabled={loading}
               className="flex-1 px-4 py-2.5 bg-card border border-primary/20 hover:bg-primary/10 text-foreground font-medium text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {t.projectSettings.resources.customPanel.cancel}
             </button>
             <button
               onClick={handleCustomSave}
               disabled={loading}
               className="flex-1 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : 'Save Configuration'}
+              {loading ? t.projectSettings.resources.customPanel.saving : t.projectSettings.resources.customPanel.save}
             </button>
           </div>
         </div>

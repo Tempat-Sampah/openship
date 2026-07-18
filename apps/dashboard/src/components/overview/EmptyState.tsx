@@ -84,28 +84,28 @@ const EmptyState: React.FC = () => {
           {emptyState.zeroConfig}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <Zap className="size-4 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground">{emptyState.instant}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{emptyState.instantDesc}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <Globe className="size-4 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground">{emptyState.global}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{emptyState.globalDesc}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <Eye className="size-4 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground">{emptyState.previews}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{emptyState.previewsDesc}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <RotateCcw className="size-4 text-muted-foreground" />
             </div>

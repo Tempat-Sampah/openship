@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { ComponentRow } from "./component-row";
 import type { ComponentState, SetupMode } from "./types";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 export function ResultsPanel({
   components,
@@ -27,6 +28,7 @@ export function ResultsPanel({
   onRecheck: () => void;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const requiredComps = components.filter((c) => !c.status?.optional);
   const infraComps = components.filter((c) => c.status?.optional);
 
@@ -41,8 +43,10 @@ export function ResultsPanel({
             <h2 className="font-semibold text-foreground text-[15px]">{serverHost}</h2>
             <p className="text-xs text-muted-foreground">
               {overallReady
-                ? "All requirements met"
-                : `${requiredComps.filter((c) => !c.status?.healthy).length} component(s) need attention`}
+                ? t.servers.setup.allRequirementsMet
+                : interpolate(t.servers.setup.needAttention, {
+                    count: String(requiredComps.filter((c) => !c.status?.healthy).length),
+                  })}
             </p>
           </div>
         </div>
@@ -56,7 +60,7 @@ export function ResultsPanel({
               <div className="flex items-center gap-2 pt-3 pb-1">
                 <div className="h-px flex-1 bg-border/50" />
                 <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">
-                  Detected Infrastructure
+                  {t.servers.setup.detectedInfrastructure}
                 </span>
                 <div className="h-px flex-1 bg-border/50" />
               </div>
@@ -75,7 +79,7 @@ export function ResultsPanel({
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all"
           >
             <CheckCircle2 className="size-4" />
-            Done - Go to Servers
+            {t.servers.setup.doneGoToServers}
           </button>
         ) : mode === "auto" ? (
           <button
@@ -83,7 +87,7 @@ export function ResultsPanel({
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all"
           >
             <Download className="size-4" />
-            Install All Missing
+            {t.servers.setup.installAllMissing}
           </button>
         ) : (
           <button
@@ -91,7 +95,7 @@ export function ResultsPanel({
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all"
           >
             <Play className="size-4" />
-            Install Missing Components
+            {t.servers.setup.installMissingComponents}
           </button>
         )}
         <button
@@ -99,7 +103,7 @@ export function ResultsPanel({
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
         >
           <RotateCcw className="size-4" />
-          Re-check
+          {t.servers.setup.recheck}
         </button>
       </div>
     </div>

@@ -1,0 +1,291 @@
+{
+  "shared": {
+    "dnsRecords": {
+      "priority": "الأولوية {n}",
+      "recommended": "موصى به",
+      "name": "الاسم",
+      "value": "القيمة",
+      "copy": "نسخ"
+    },
+    "errorState": {
+      "commonCauses": "الأسباب الشائعة",
+      "needHelp": "بحاجة إلى مساعدة؟",
+      "needHelpDesc": "راجع الوثائق أو تواصل معنا إذا استمرت المشكلة.",
+      "documentation": "الوثائق",
+      "repoNotFound": {
+        "title": "لم يتم العثور على المستودع",
+        "subtitle": "لم نتمكن من العثور على المستودع الذي تبحث عنه.",
+        "hints": [
+          "المستودع خاص ولم تمنح إذن الوصول",
+          "اسم المستودع أو المالك مكتوب بشكل خاطئ",
+          "تم حذف المستودع أو نقله",
+          "انتهت صلاحية اتصالك بـ GitHub"
+        ],
+        "backToLibrary": "العودة إلى المكتبة",
+        "importRepository": "استيراد مستودع"
+      },
+      "projectNotFound": {
+        "title": "لم يتم العثور على المشروع",
+        "subtitle": "المشروع الذي تبحث عنه غير موجود أو تم حذفه.",
+        "hints": [
+          "تم حذف المشروع",
+          "ليس لديك وصول إلى هذا المشروع",
+          "رابط المشروع غير صحيح"
+        ],
+        "backToDashboard": "العودة إلى لوحة التحكم",
+        "createNewProject": "إنشاء مشروع جديد"
+      },
+      "accessDenied": {
+        "title": "تم رفض الوصول",
+        "subtitle": "ليس لديك إذن للوصول إلى هذا المورد.",
+        "hints": [
+          "أنت لست مالك المشروع",
+          "حسابك لا يملك الأذونات المطلوبة",
+          "تغيّرت عضويتك في الفريق"
+        ],
+        "backToDashboard": "العودة إلى لوحة التحكم"
+      }
+    },
+    "machineSettings": {
+      "title": "إعدادات الجهاز",
+      "configureFor": "تكوين موارد الحوسبة لـ",
+      "docs": "الوثائق",
+      "cpu": "المعالج",
+      "memory": "الذاكرة",
+      "storage": "التخزين",
+      "base": "الأساسي",
+      "current": "الحالي",
+      "creditsPerMonth": "رصيد/شهر",
+      "fromCurrent": "عن الحالي",
+      "viewPricing": "عرض الأسعار",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "saveChanges": "حفظ التغييرات",
+      "toastUpdated": "تم تحديث إعدادات الجهاز",
+      "toastFailed": "فشل تحديث الإعدادات"
+    },
+    "serverSelector": {
+      "serverLabel": "الخادم",
+      "loadingServers": "جارٍ تحميل الخوادم…",
+      "noServerConnected": "لا يوجد خادم متصل",
+      "connectServerFirst": "قم بتوصيل خادم أولاً، ثم عد لمتابعة الإعداد.",
+      "addServer": "إضافة خادم",
+      "selectServer": "اختر خادمًا…",
+      "addNewServer": "إضافة خادم جديد…"
+    }
+  },
+  "backup": {
+    "runCard": {
+      "streamError": "تعذّر بث تقدّم التشغيل: {message}",
+      "loading": "جارٍ التحميل…",
+      "live": "مباشر",
+      "started": "بدأ",
+      "finished": "انتهى",
+      "elapsed": "المنقضي",
+      "bytes": "البايتات",
+      "runId": "معرّف التشغيل",
+      "status": {
+        "queued": "في قائمة الانتظار",
+        "preparing": "قيد التحضير",
+        "snapshotting": "جارٍ أخذ اللقطة",
+        "uploading": "جارٍ الرفع",
+        "verifying": "جارٍ التحقق",
+        "succeeded": "نجح",
+        "failed": "فشل",
+        "cancelled": "أُلغي",
+        "serverError": "خطأ في الخادم"
+      },
+      "phase": {
+        "queued": "في انتظار عامل…",
+        "preparing": "جارٍ تحديد الوجهة والخدمة…",
+        "snapshotting": "جارٍ إنتاج الملفات (تشغيل ما قبل الخطاف)…",
+        "uploading": "جارٍ البث إلى الوجهة…",
+        "verifying": "جارٍ كتابة البيان…"
+      }
+    },
+    "policyEditor": {
+      "presetHourly": "كل ساعة",
+      "presetDaily": "يوميًا (03:17)",
+      "presetWeekly": "أسبوعيًا (الأحد 03:17)",
+      "presetMonthly": "شهريًا (الأول 03:17)",
+      "presetManual": "يدوي فقط",
+      "selectDestinationAlert": "اختر وجهة",
+      "failedSave": "فشل حفظ السياسة",
+      "rotateConfirm": "تدوير رمز الويب هوك؟ سيتوقف الرابط الحالي عن العمل.",
+      "failedRotate": "فشل تدوير الرمز",
+      "editTitle": "تعديل سياسة النسخ الاحتياطي",
+      "createTitle": "إنشاء سياسة نسخ احتياطي",
+      "serviceLabel": "الخدمة: {name}",
+      "projectLevel": "سياسة على مستوى المشروع",
+      "destination": "الوجهة",
+      "selectOption": "— اختر —",
+      "schedule": "الجدولة",
+      "cronPlaceholder": "cron مخصص (5 حقول)، أو اتركه فارغًا للتشغيل اليدوي فقط",
+      "retainCount": "عدد الاحتفاظ",
+      "retainCountHint": "الاحتفاظ بأحدث N من عمليات التشغيل الناجحة",
+      "retainDays": "أيام الاحتفاظ",
+      "retainDaysHint": "حذف عمليات التشغيل الأقدم من N يومًا",
+      "preDeployTrigger": "مشغّل ما قبل النشر",
+      "preDeployLabel": "النسخ الاحتياطي تلقائيًا قبل نزول كل عملية نشر جديدة",
+      "preDeployHint": "يعمل عند كل بناء ناجح، قبل أن يصبح الكود الجديد مباشرًا مباشرةً.",
+      "webhookTrigger": "مشغّل الويب هوك",
+      "webhookLabel": "تفعيل رابط ويب هوك وارد",
+      "webhookHint": "يُنشئ رمزًا لكل سياسة. أرسل POST إلى الرابط من أي مشغّل خارجي (GitHub Actions أو المراقبة أو مجدولك الخاص).",
+      "copyUrl": "نسخ الرابط",
+      "rotateToken": "تدوير الرمز",
+      "preHook": "خطاف ما قبل (يعمل قبل اللقطة)",
+      "preHookHint": "شائع لقواعد البيانات: pg_dump > /tmp/dump.sql. الفشل يوقف التشغيل.",
+      "postHook": "خطاف ما بعد (يعمل بعد الرفع)",
+      "postHookHint": "التنظيف؛ يُسجَّل الفشل لكنه لا يفشل التشغيل.",
+      "policyEnabled": "السياسة مفعّلة",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ…",
+      "saveChanges": "حفظ التغييرات",
+      "createPolicy": "إنشاء السياسة"
+    }
+  },
+  "cloud": {
+    "connectionGate": {
+      "reconnect": "إعادة الاتصال بـ Openship Cloud",
+      "deployedOn": "هذا المشروع منشور على Openship Cloud",
+      "sessionMissing": "جلسة Openship Cloud الخاصة بك مفقودة. اتصل لإدارة عمليات النشر وعرض السجلات والوصول إلى عناصر التحكم في وقت التشغيل لـ {name}.",
+      "thisProject": "هذا المشروع",
+      "connecting": "جارٍ الاتصال…",
+      "connect": "الاتصال بـ Openship Cloud",
+      "readOnlyNote": "لا يزال بإمكانك تصفح هذه الصفحة في وضع القراءة فقط أثناء قطع الاتصال."
+    }
+  },
+  "integrations": {
+    "githubPermission": {
+      "title": "الاتصال بـ GitHub",
+      "subtitle": "اختر مستوى الوصول إلى المستودعات",
+      "intro": "اختر المستودعات التي يمكن لـ Openship الوصول إليها. يمكنك تغيير ذلك لاحقًا في إعدادات GitHub الخاصة بك.",
+      "publicTitle": "المستودعات العامة فقط",
+      "publicDesc": "الوصول إلى مستودعاتك العامة. مثالي لمشاريع المصدر المفتوح.",
+      "publicItem1": "قراءة بيانات المستودعات العامة",
+      "publicItem2": "نشر المستودعات العامة",
+      "publicItem3": "إنشاء ويب هوك للمستودعات العامة",
+      "allTitle": "المستودعات العامة والخاصة",
+      "allDesc": "وصول كامل إلى جميع مستودعاتك. مطلوب للمشاريع الخاصة.",
+      "allItem1": "قراءة بيانات المستودعات العامة والخاصة",
+      "allItem2": "نشر أي مستودع",
+      "allItem3": "إنشاء ويب هوك لجميع المستودعات",
+      "allItem4": "الوصول إلى مستودعات المؤسسة",
+      "noteLabel": "ملاحظة:",
+      "noteText": "يمكنك إلغاء الوصول في أي وقت من إعدادات GitHub ضمن Applications → Authorized OAuth Apps.",
+      "cancel": "إلغاء",
+      "connecting": "جارٍ الاتصال...",
+      "connect": "الاتصال بـ GitHub"
+    }
+  },
+  "permissions": {
+    "resourcePicker": {
+      "failedLoadResources": "فشل تحميل الموارد",
+      "searchPlaceholder": "البحث في {type}...",
+      "allResources": "كل {type}",
+      "noMatch": "لا توجد موارد مطابقة لبحثك.",
+      "noResourcesYet": "لا يوجد {type} في هذه المؤسسة بعد.",
+      "selectedSummaryOne": "{count} مورد محدد عبر جميع الأنواع.",
+      "selectedSummaryOther": "{count} موارد محددة عبر جميع الأنواع.",
+      "wildcard": "حرف بدل",
+      "coveredByAll": "مغطى بالكل",
+      "failedLoadOrgs": "فشل تحميل مؤسسات GitHub",
+      "failedLoadRepos": "فشل تحميل مستودعات {login}",
+      "noOrgs": "لا توجد مؤسسات GitHub متصلة.",
+      "collapse": "طي",
+      "expand": "توسيع",
+      "entireOrg": "المؤسسة بأكملها",
+      "repoCountOne": "{count} مستودع",
+      "repoCountOther": "{count} مستودعات",
+      "coveredByOrg": "مغطى بمنح المؤسسة الكامل أعلاه.",
+      "noRepos": "لا توجد مستودعات.",
+      "searchRepos": "البحث في المستودعات…"
+    }
+  },
+  "routing": {
+    "domainSwitcher": {
+      "notConfigured": "غير مُهيأ",
+      "selectDomain": "اختر نطاقًا"
+    },
+    "publicEndpoints": {
+      "mappedToPort": "معيّن إلى المنفذ {port}.",
+      "noPortYet": "لم يتم اختيار منفذ بعد.",
+      "mappedTo": "معيّن إلى {path}.",
+      "exposedPort": "المنفذ المكشوف",
+      "staticPath": "المسار الثابت",
+      "auto": "تلقائي",
+      "domain": "النطاق",
+      "domainsRouted": "{count} نطاقات موجّهة إلى هذا التطبيق.",
+      "accessibleWhere": "المكان الذي سيكون موقعك متاحًا فيه",
+      "addDomain": "إضافة نطاق",
+      "primaryDomain": "النطاق الأساسي",
+      "domainN": "النطاق {n}",
+      "remove": "إزالة"
+    },
+    "configEditor": {
+      "remove": "إزالة",
+      "removeHeader": "إزالة الترويسة",
+      "add": "إضافة",
+      "addHeader": "إضافة ترويسة",
+      "rewrites": "إعادة الكتابة",
+      "rewritesHint": "قدّم مسارًا/خلفية أخرى دون تغيير الرابط (مثل ‎/api/(.*) → backend).",
+      "redirects": "إعادة التوجيه",
+      "redirectsHint": "إعادة توجيه HTTP (301/308 دائم، وإلا 307).",
+      "headers": "الترويسات",
+      "headersHint": "ترويسات الاستجابة المضافة للمسارات المطابقة.",
+      "permanent": "دائم",
+      "cleanUrls": "روابط نظيفة",
+      "cleanUrlsHint": "(إزالة ‎.html)",
+      "trailingSlash": "شرطة مائلة لاحقة"
+    },
+    "settingsCard": {
+      "recordLabels": {
+        "CNAME": "يوجّه حركة المرور عبر شبكة الحافة",
+        "A": "يشير إلى عنوان IP الخاص بخادمك",
+        "TXT": "يتحقق من ملكية النطاق"
+      },
+      "publiclyExposed": "مكشوف للعامة",
+      "internalOnly": "داخلي فقط",
+      "freeSubdomain": "نطاق فرعي مجاني",
+      "free": "مجاني",
+      "customDomain": "نطاق مخصص",
+      "custom": "مخصص",
+      "save": "حفظ",
+      "checkingDns": "جارٍ فحص DNS…",
+      "addRecordHint": "أضف سجل {primary} و{txt}",
+      "viewRecords": "عرض السجلات",
+      "exposedPort": "المنفذ المكشوف",
+      "staticPath": "المسار الثابت",
+      "staticPathHint": "قدّم الملفات من هذا المجلد الفرعي داخل مخرجات البناء. استخدم {path} للمخرجات الجذرية.",
+      "dnsConfiguration": "تهيئة DNS",
+      "addRecordsFor": "أضف هذه السجلات لـ {hostname}",
+      "nameHost": "الاسم / المضيف",
+      "valueTarget": "القيمة / الهدف",
+      "dnsHintSelfhosted": "أضف سجل A يشير إلى عنوان IP لخادمك، ثم سجل TXT للتحقق.",
+      "dnsHintCloud": "أضف سجل CNAME للتوجيه، ثم سجل TXT للتحقق.",
+      "dnsPropagation": "قد تستغرق تغييرات DNS ما يصل إلى 48 ساعة."
+    }
+  },
+  "updates": {
+    "severity": {
+      "critical": "حرج",
+      "recommended": "موصى به",
+      "info": "إرشادي"
+    },
+    "viewChangelog": "عرض سجل التغييرات",
+    "available": "متاح",
+    "youreOn": "· أنت على {version}",
+    "rerunInstall": "أعد تشغيل التثبيت لتحديث خادمك المستضاف ذاتيًا.",
+    "updateNow": "التحديث الآن",
+    "changelog": "سجل التغييرات",
+    "updatedTo": "تم التحديث إلى Openship {version}",
+    "seeChanges": "اطّلع على ما تغيّر في هذا الإصدار.",
+    "onLatest": "أنت على أحدث إصدار.",
+    "whatsNew": "ما الجديد",
+    "whatsNewIn": "ما الجديد في {version}",
+    "close": "إغلاق",
+    "noNotes": "لا توجد ملاحظات إصدار لهذه النسخة.",
+    "viewOnGithub": "العرض على GitHub",
+    "dismiss": "تجاهل"
+  }
+}

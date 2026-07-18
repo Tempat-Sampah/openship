@@ -12,6 +12,16 @@ export function streamSSE(
   c: Context,
   cb: (stream: SSEStreamingApi) => Promise<void>,
 ) {
+  // Disable reverse-proxy response buffering. nginx/OpenResty buffer proxied
+  // responses by default, which holds SSE events back until the buffer fills —
+  // the stream lags or appears stuck once deployed behind OpenResty, even
+  // though localhost (no proxy) streams fine. nginx turns off proxy_buffering
+  // for any response carrying this header. Must be set before streamSSE()
+  // commits the headers; it never sets X-Accel-Buffering itself, so this
+  // survives. The dashboard's /api/proxy relays it (not a hop-by-hop header),
+  // so it reaches the edge through both the direct and proxied request paths.
+  c.header("X-Accel-Buffering", "no");
+
   return _streamSSE(c, async (sseStream) => {
     const heartbeat = setInterval(() => {
       void sseStream

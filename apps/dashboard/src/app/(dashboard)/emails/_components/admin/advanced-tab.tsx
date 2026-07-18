@@ -41,6 +41,7 @@ import {
 } from "@/lib/api";
 import { useModal } from "@/context/ModalContext";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { FormModalContent } from "./_shared/form-modal-content";
 
 interface AdvancedTabProps {
@@ -53,6 +54,7 @@ interface AdvancedTabProps {
 
 export function AdvancedTab({ status, serverId, onChanged, onForgotten }: AdvancedTabProps) {
   const { showModal, hideModal } = useModal();
+  const { t } = useI18n();
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [forgetting, setForgetting] = useState(false);
@@ -64,10 +66,10 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
       showCloseButton: false,
       customContent: (
         <FormModalContent
-          title="Reset on-server state?"
-          description="Wipes openship's tracking of this install: the on-server state file (/root/.openship/mail-state.json) AND the mail-server registry row. The running mail stack is not touched - every mailbox, message, and queue stays intact - but you'll need to re-run the setup wizard to manage it again (Remove keeps the state file so you can just re-adopt)."
-          submitLabel="Reset state"
-          submittingLabel="Resetting…"
+          title={t.emailsAdmin.advanced.resetTitle}
+          description={t.emailsAdmin.advanced.resetDesc}
+          submitLabel={t.emailsAdmin.advanced.resetSubmit}
+          submittingLabel={t.emailsAdmin.advanced.resetSubmitting}
           submitVariant="danger"
           onSubmit={async () => {
             setResetError(null);
@@ -77,7 +79,7 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
               hideModal(id);
               onChanged();
             } catch (err) {
-              setResetError(getApiErrorMessage(err, "Reset failed"));
+              setResetError(getApiErrorMessage(err, t.emailsAdmin.advanced.resetFailed));
               throw err;
             } finally {
               setResetting(false);
@@ -86,9 +88,7 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
           onCancel={() => hideModal(id)}
         >
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
-            After this, the /emails page will show the install wizard again
-            for this server. You can then either re-run from step 1 or pick
-            up from a specific step.
+            {t.emailsAdmin.advanced.resetBox}
           </div>
         </FormModalContent>
       ),
@@ -101,10 +101,10 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
       showCloseButton: false,
       customContent: (
         <FormModalContent
-          title="Remove this mail server?"
-          description="Removes this server from openship's mail list only. The mail stack keeps running and nothing is uninstalled - no mailboxes, messages, or DNS are touched. Re-add it anytime with Scan for an existing install."
-          submitLabel="Remove from list"
-          submittingLabel="Removing…"
+          title={t.emailsAdmin.advanced.forgetTitle}
+          description={t.emailsAdmin.advanced.forgetDesc}
+          submitLabel={t.emailsAdmin.advanced.forgetSubmit}
+          submittingLabel={t.emailsAdmin.advanced.forgetSubmitting}
           submitVariant="danger"
           onSubmit={async () => {
             setForgetError(null);
@@ -114,7 +114,7 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
               hideModal(id);
               onForgotten();
             } catch (err) {
-              setForgetError(getApiErrorMessage(err, "Remove failed"));
+              setForgetError(getApiErrorMessage(err, t.emailsAdmin.advanced.forgetFailed));
               throw err;
             } finally {
               setForgetting(false);
@@ -123,9 +123,7 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
           onCancel={() => hideModal(id)}
         >
           <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground leading-relaxed">
-            Use this to clear a stale or mismarked entry. Because the on-server
-            install is left intact, re-adopting it later restores full
-            management with no reinstall.
+            {t.emailsAdmin.advanced.forgetBox}
           </div>
         </FormModalContent>
       ),
@@ -144,14 +142,11 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
                 strokeWidth={2.25}
               />
               <h2 className="text-lg font-semibold text-foreground">
-                Protocol settings
+                {t.emailsAdmin.advanced.protocolTitle}
               </h2>
             </div>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-              Host, port, and encryption for inbound (IMAP) and outbound
-              (SMTP). Use these when configuring a mail client by hand -
-              most clients can also discover them from the email address
-              alone.
+              {t.emailsAdmin.advanced.protocolDesc}
             </p>
           </div>
           <ProtocolCard credentials={status.credentials} />
@@ -169,27 +164,25 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
               className="size-4 text-amber-600 dark:text-amber-400"
               strokeWidth={2.25}
             />
-            <h2 className="text-lg font-semibold text-foreground">Danger zone</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t.emailsAdmin.advanced.dangerTitle}</h2>
           </div>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            These actions can disrupt a working mail server or clear
-            important tracking state. Read the description on each card
-            before clicking.
+            {t.emailsAdmin.advanced.dangerDesc}
           </p>
         </div>
 
         {/* Re-run setup */}
         <DangerCard
           icon={RotateCw}
-          title="Re-run setup wizard"
-          description="Opens the install wizard pointed at this server. Useful after a DNS change, a domain rename, or to retry a failed step. The wizard detects an existing install and offers per-step retry rather than wiping state."
+          title={t.emailsAdmin.advanced.rerunTitle}
+          description={t.emailsAdmin.advanced.rerunDesc}
           action={
             <Link
               href={`/emails?serverId=${encodeURIComponent(serverId)}&force=wizard`}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl bg-muted text-foreground hover:bg-muted/80 border border-border transition-colors"
             >
               <RotateCw className="size-3.5" />
-              Open wizard
+              {t.emailsAdmin.advanced.openWizard}
             </Link>
           }
         />
@@ -197,8 +190,8 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
         {/* Reset on-server state */}
         <DangerCard
           icon={Trash2}
-          title="Reset on-server state"
-          description="Removes openship's tracking of this install - the on-server state file (/root/.openship/mail-state.json) and the registry row. Does NOT uninstall the mail stack or touch any mailboxes; the server keeps running, but you'll re-run the setup wizard to manage it again. Use after a manual purge or re-image when tracking has drifted from reality."
+          title={t.emailsAdmin.advanced.resetCardTitle}
+          description={t.emailsAdmin.advanced.resetCardDesc}
           action={
             <button
               onClick={openReset}
@@ -210,7 +203,7 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
               ) : (
                 <Trash2 className="size-3.5" />
               )}
-              Reset state
+              {t.emailsAdmin.advanced.resetStateBtn}
             </button>
           }
           error={resetError}
@@ -219,8 +212,8 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
         {/* Remove from mail list (DB-only) */}
         <DangerCard
           icon={Unplug}
-          title="Remove mail server"
-          description="Stops managing this server - drops it from the /emails list only. The mail stack keeps running and the on-server state file is left intact, so you can re-adopt it later via Scan for an existing install. Use to clear a stale or mismarked entry."
+          title={t.emailsAdmin.advanced.removeTitle}
+          description={t.emailsAdmin.advanced.removeDesc}
           action={
             <button
               onClick={openForget}
@@ -232,7 +225,7 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
               ) : (
                 <Unplug className="size-3.5" />
               )}
-              Remove
+              {t.emailsAdmin.advanced.remove}
             </button>
           }
           error={forgetError}
@@ -244,21 +237,21 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
         <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
           <div className="px-5 py-4 border-b border-border/50">
             <h3 className="text-[14px] font-semibold text-foreground">
-              Install metadata
+              {t.emailsAdmin.advanced.metaTitle}
             </h3>
           </div>
           <dl className="divide-y divide-border/40">
-            <MetaRow label="Server ID" value={serverId} mono />
-            <MetaRow label="Primary domain" value={status.domain ?? "-"} />
+            <MetaRow label={t.emailsAdmin.advanced.metaServerId} value={serverId} mono />
+            <MetaRow label={t.emailsAdmin.advanced.metaPrimaryDomain} value={status.domain ?? "-"} />
             {status.startedAt && (
               <MetaRow
-                label="Started at"
+                label={t.emailsAdmin.advanced.metaStartedAt}
                 value={new Date(status.startedAt).toLocaleString()}
               />
             )}
             {status.finishedAt && (
               <MetaRow
-                label="Finished at"
+                label={t.emailsAdmin.advanced.metaFinishedAt}
                 value={new Date(status.finishedAt).toLocaleString()}
               />
             )}
@@ -272,19 +265,21 @@ export function AdvancedTab({ status, serverId, onChanged, onForgotten }: Advanc
 // ─── Protocol settings card ──────────────────────────────────────────────────
 
 function ProtocolCard({ credentials }: { credentials: MailCredentials }) {
+  const { t } = useI18n();
+  const note = t.emailsAdmin.advanced.protocolNote;
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ProtocolBlock
           icon={Inbox}
-          label="Incoming · IMAP"
+          label={t.emailsAdmin.advanced.incoming}
           host={credentials.imapHost}
           port={credentials.imapPort}
           encryption="SSL/TLS"
         />
         <ProtocolBlock
           icon={Send}
-          label="Outgoing · SMTP"
+          label={t.emailsAdmin.advanced.outgoing}
           host={credentials.smtpHost}
           port={credentials.smtpPort}
           encryption="STARTTLS"
@@ -292,15 +287,13 @@ function ProtocolCard({ credentials }: { credentials: MailCredentials }) {
       </div>
       <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 px-3.5 py-2.5">
         <p className="text-xs text-foreground/90 leading-relaxed">
-          <Lock className="inline-block size-3 mr-1 -mt-0.5 text-muted-foreground" />
-          Username on both servers is your <strong>full email address</strong>
-          {" "}- e.g.{" "}
+          <Lock className="inline-block size-3 me-1 -mt-0.5 text-muted-foreground" />
+          {note.p1}<strong>{note.emailAddress}</strong>
+          {note.p2}
           <code className="font-mono text-[11.5px] px-1 py-0.5 rounded bg-card border border-border/40">
             {credentials.username}
           </code>
-          . Set the password from <em>Overview → Postmaster credentials → Change
-          password</em>; openship never stores the cleartext, so use a manager
-          (1Password, Bitwarden, etc.) to save it.
+          {note.p3}<em>{note.credPath}</em>{note.p4}
         </p>
       </div>
     </div>
@@ -320,6 +313,7 @@ function ProtocolBlock({
   port: number;
   encryption: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
       <div className="flex items-center gap-2 mb-2.5">
@@ -330,15 +324,15 @@ function ProtocolBlock({
       </div>
       <dl className="space-y-1.5 text-[13px]">
         <div className="flex items-center gap-3">
-          <dt className="w-16 text-xs text-muted-foreground">Host</dt>
+          <dt className="w-16 text-xs text-muted-foreground">{t.emailsAdmin.advanced.host}</dt>
           <dd className="font-mono text-foreground truncate">{host}</dd>
         </div>
         <div className="flex items-center gap-3">
-          <dt className="w-16 text-xs text-muted-foreground">Port</dt>
+          <dt className="w-16 text-xs text-muted-foreground">{t.emailsAdmin.advanced.port}</dt>
           <dd className="font-mono text-foreground">{port}</dd>
         </div>
         <div className="flex items-center gap-3">
-          <dt className="w-16 text-xs text-muted-foreground">Security</dt>
+          <dt className="w-16 text-xs text-muted-foreground">{t.emailsAdmin.advanced.security}</dt>
           <dd className="font-mono text-foreground">{encryption}</dd>
         </div>
       </dl>
@@ -414,6 +408,8 @@ function MetaRow({
 function MailStackToolsSection({ serverId }: { serverId: string }) {
   const { showToast } = useToast();
   const { showModal, hideModal } = useModal();
+  const { t } = useI18n();
+  const a = t.emailsAdmin.advanced;
   const [restarting, setRestarting] = useState(false);
 
   const runRestart = async () => {
@@ -425,24 +421,26 @@ function MailStackToolsSection({ serverId }: { serverId: string }) {
       const failures = r.results.filter((x) => !x.ok);
       if (failures.length === 0) {
         showToast(
-          `Restarted ${r.results.length} mail daemons.`,
+          interpolate(a.restartedToast, { count: String(r.results.length) }),
           "success",
-          "Mail stack restarted",
+          a.restartedTitle,
         );
       } else {
         showToast(
-          `${failures.length} of ${r.results.length} failed: ${failures
-            .map((f) => f.unit)
-            .join(", ")}`,
+          interpolate(a.partialToast, {
+            failed: String(failures.length),
+            total: String(r.results.length),
+            units: failures.map((f) => f.unit).join(", "),
+          }),
           "error",
-          "Partial restart",
+          a.partialTitle,
         );
       }
     } catch (err) {
       showToast(
-        err instanceof Error ? err.message : "Restart failed",
+        err instanceof Error ? err.message : a.restartFailed,
         "error",
-        "Mail stack restart failed",
+        a.restartFailedTitle,
       );
     } finally {
       setRestarting(false);
@@ -455,10 +453,10 @@ function MailStackToolsSection({ serverId }: { serverId: string }) {
       showCloseButton: false,
       customContent: (
         <FormModalContent
-          title="Restart the mail stack?"
-          description="Cycles every running mail daemon (the queue receiver, the IMAP service, the spam pipeline, fail2ban, and PostgreSQL). Mail flow pauses for a few seconds while units come back up. Mailboxes, queues, and DNS are untouched."
-          submitLabel="Restart stack"
-          submittingLabel="Restarting…"
+          title={a.restartConfirmTitle}
+          description={a.restartConfirmDesc}
+          submitLabel={a.restartStack}
+          submittingLabel={a.restartSubmitting}
           submitVariant="primary"
           onSubmit={async () => {
             await runRestart();
@@ -467,8 +465,7 @@ function MailStackToolsSection({ serverId }: { serverId: string }) {
           onCancel={() => hideModal(id)}
         >
           <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground leading-relaxed">
-            Use this when something looks off right after a deploy or a
-            config change - most transient breakage clears with a cycle.
+            {a.restartBox}
           </div>
         </FormModalContent>
       ),
@@ -481,12 +478,11 @@ function MailStackToolsSection({ serverId }: { serverId: string }) {
         <div className="flex items-center gap-2">
           <Wrench className="size-4 text-muted-foreground" strokeWidth={2.25} />
           <h2 className="text-lg font-semibold text-foreground">
-            Mail-stack tools
+            {a.toolsTitle}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Recovery actions that touch the running stack without altering
-          state. Safe to run anytime; mail flow blips for a few seconds.
+          {a.toolsDesc}
         </p>
       </div>
 
@@ -500,12 +496,10 @@ function MailStackToolsSection({ serverId }: { serverId: string }) {
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-semibold text-foreground">
-              Restart mail stack
+              {a.restartCardTitle}
             </h4>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-              Cycles every mail daemon at once. The fastest fix when
-              something flaked after a deploy - login fails, queue
-              stalls, etc.
+              {a.restartCardDesc}
             </p>
           </div>
           <button
@@ -518,7 +512,7 @@ function MailStackToolsSection({ serverId }: { serverId: string }) {
             ) : (
               <RotateCw className="size-3.5" strokeWidth={2.25} />
             )}
-            Restart stack
+            {a.restartStack}
           </button>
         </div>
       </div>

@@ -12,11 +12,13 @@ import { cloudApi } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 import { usePlatform } from "@/context/PlatformContext";
 import { useCloud } from "@/context/CloudContext";
+import { useI18n } from "@/components/i18n-provider";
 
 /* ── Component ──────────────────────────────────────────────────── */
 
 export function CloudConnection() {
   const { authMode, deployMode } = usePlatform();
+  const { t } = useI18n();
   const {
     connected: cloudConnected,
     cloudUser,
@@ -30,19 +32,14 @@ export function CloudConnection() {
   const [disconnecting, setDisconnecting] = useState(false);
 
   async function handleDisconnect() {
-    if (
-      !confirm(
-        "Disconnect from Openship Cloud? Cloud deployments will stop working until you reconnect.",
-      )
-    )
-      return;
+    if (!confirm(t.settings.cloud.confirmDisconnect)) return;
     try {
       setDisconnecting(true);
       await cloudApi.disconnect();
       await refresh();
-      showToast("Disconnected from Openship Cloud", "success", "Cloud");
+      showToast(t.settings.cloud.toast.disconnected, "success", t.settings.common.toast.cloud);
     } catch {
-      showToast("Failed to disconnect", "error", "Cloud");
+      showToast(t.settings.cloud.toast.disconnectFailed, "error", t.settings.common.toast.cloud);
     } finally {
       setDisconnecting(false);
     }
@@ -53,7 +50,7 @@ export function CloudConnection() {
       {cloudLoading ? (
         <div className="py-4 flex items-center justify-center gap-2">
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">Checking…</p>
+          <p className="text-xs text-muted-foreground">{t.settings.cloud.checking}</p>
         </div>
       ) : cloudConnected ? (
         <div className="space-y-4">
@@ -74,10 +71,10 @@ export function CloudConnection() {
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                {cloudUser?.name || "Openship Cloud"}
+                {cloudUser?.name || t.settings.cloud.fallbackName}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {cloudUser?.email || "Connected cloud account"}
+                {cloudUser?.email || t.settings.cloud.connectedAccount}
               </p>
             </div>
           </div>
@@ -86,7 +83,7 @@ export function CloudConnection() {
           <div className="flex items-center justify-between">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold rounded-full ring-1 ring-emerald-500/20">
               <Check className="size-3" />
-              Connected
+              {t.settings.cloud.connected}
             </div>
             <button
               onClick={handleDisconnect}
@@ -98,7 +95,7 @@ export function CloudConnection() {
               ) : (
                 <LogOut className="size-3" />
               )}
-              Disconnect
+              {t.settings.common.disconnect}
             </button>
           </div>
 
@@ -106,7 +103,7 @@ export function CloudConnection() {
 
           {/* Cloud features summary */}
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Cloud deployments, managed SSL, and global CDN are active for your instance.
+            {t.settings.cloud.featuresActive}
           </p>
         </div>
       ) : (
@@ -116,11 +113,11 @@ export function CloudConnection() {
             <Globe className="size-6 text-primary" />
           </div>
 
-          <h4 className="text-sm font-medium text-foreground mb-1">Connect to Cloud</h4>
+          <h4 className="text-sm font-medium text-foreground mb-1">{t.settings.cloud.connectToCloud}</h4>
           <p className="text-xs text-muted-foreground leading-relaxed mb-4">
             {isDesktop
-              ? "Unlock cloud deployments, managed SSL, and global CDN."
-              : "Deploy to cloud directly from your local instance."}
+              ? t.settings.cloud.unlockDesktop
+              : t.settings.cloud.deployLocal}
           </p>
 
           <button
@@ -131,12 +128,12 @@ export function CloudConnection() {
             {connecting ? (
               <>
                 <Loader2 className="size-3.5 animate-spin" />
-                Waiting for sign in…
+                {t.settings.cloud.waitingSignIn}
               </>
             ) : (
               <>
                 <ExternalLink className="size-3.5" />
-                Connect to Openship Cloud
+                {t.settings.cloud.connectButton}
               </>
             )}
           </button>

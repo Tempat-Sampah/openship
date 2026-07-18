@@ -1,0 +1,291 @@
+{
+  "shared": {
+    "dnsRecords": {
+      "priority": "優先度 {n}",
+      "recommended": "推奨",
+      "name": "名前",
+      "value": "値",
+      "copy": "コピー"
+    },
+    "errorState": {
+      "commonCauses": "よくある原因",
+      "needHelp": "お困りですか？",
+      "needHelpDesc": "ドキュメントをご確認いただくか、問題が解決しない場合はお問い合わせください。",
+      "documentation": "ドキュメント",
+      "repoNotFound": {
+        "title": "リポジトリが見つかりません",
+        "subtitle": "お探しのリポジトリが見つかりませんでした。",
+        "hints": [
+          "リポジトリが非公開で、アクセス権が付与されていません",
+          "リポジトリ名または所有者名が間違っています",
+          "リポジトリが削除または移動されました",
+          "GitHub 連携の有効期限が切れています"
+        ],
+        "backToLibrary": "ライブラリに戻る",
+        "importRepository": "リポジトリをインポート"
+      },
+      "projectNotFound": {
+        "title": "プロジェクトが見つかりません",
+        "subtitle": "お探しのプロジェクトは存在しないか、削除されています。",
+        "hints": [
+          "プロジェクトが削除されました",
+          "このプロジェクトへのアクセス権がありません",
+          "プロジェクトの URL が正しくありません"
+        ],
+        "backToDashboard": "ダッシュボードに戻る",
+        "createNewProject": "新しいプロジェクトを作成"
+      },
+      "accessDenied": {
+        "title": "アクセスが拒否されました",
+        "subtitle": "このリソースにアクセスする権限がありません。",
+        "hints": [
+          "あなたはプロジェクトの所有者ではありません",
+          "お使いのアカウントに必要な権限がありません",
+          "チームのメンバーシップが変更されました"
+        ],
+        "backToDashboard": "ダッシュボードに戻る"
+      }
+    },
+    "machineSettings": {
+      "title": "マシン設定",
+      "configureFor": "コンピューティングリソースを設定する対象",
+      "docs": "ドキュメント",
+      "cpu": "CPU",
+      "memory": "メモリ",
+      "storage": "ストレージ",
+      "base": "ベース",
+      "current": "現在",
+      "creditsPerMonth": "クレジット/月",
+      "fromCurrent": "現在との差分",
+      "viewPricing": "料金を表示",
+      "cancel": "キャンセル",
+      "saving": "保存中...",
+      "saveChanges": "変更を保存",
+      "toastUpdated": "マシン設定を更新しました",
+      "toastFailed": "設定の更新に失敗しました"
+    },
+    "serverSelector": {
+      "serverLabel": "サーバー",
+      "loadingServers": "サーバーを読み込み中…",
+      "noServerConnected": "サーバーが接続されていません",
+      "connectServerFirst": "先にサーバーを接続してから、戻ってセットアップを続けてください。",
+      "addServer": "サーバーを追加",
+      "selectServer": "サーバーを選択…",
+      "addNewServer": "新しいサーバーを追加…"
+    }
+  },
+  "backup": {
+    "runCard": {
+      "streamError": "実行状況をストリーミングできませんでした: {message}",
+      "loading": "読み込み中…",
+      "live": "ライブ",
+      "started": "開始",
+      "finished": "完了",
+      "elapsed": "経過時間",
+      "bytes": "バイト数",
+      "runId": "実行 ID",
+      "status": {
+        "queued": "キュー待ち",
+        "preparing": "準備中",
+        "snapshotting": "スナップショット作成中",
+        "uploading": "アップロード中",
+        "verifying": "検証中",
+        "succeeded": "成功",
+        "failed": "失敗",
+        "cancelled": "キャンセル済み",
+        "serverError": "サーバーエラー"
+      },
+      "phase": {
+        "queued": "ワーカーを待機中…",
+        "preparing": "宛先とサービスを解決中…",
+        "snapshotting": "アーティファクトを生成中（プリフック実行中）…",
+        "uploading": "宛先へストリーミング中…",
+        "verifying": "マニフェストを書き込み中…"
+      }
+    },
+    "policyEditor": {
+      "presetHourly": "1時間ごと",
+      "presetDaily": "毎日（03:17）",
+      "presetWeekly": "毎週（日曜 03:17）",
+      "presetMonthly": "毎月（1日 03:17）",
+      "presetManual": "手動のみ",
+      "selectDestinationAlert": "宛先を選択してください",
+      "failedSave": "ポリシーの保存に失敗しました",
+      "rotateConfirm": "Webhook トークンをローテーションしますか？現在の URL は使用できなくなります。",
+      "failedRotate": "トークンのローテーションに失敗しました",
+      "editTitle": "バックアップポリシーを編集",
+      "createTitle": "バックアップポリシーを作成",
+      "serviceLabel": "サービス: {name}",
+      "projectLevel": "プロジェクトレベルのポリシー",
+      "destination": "宛先",
+      "selectOption": "— 選択 —",
+      "schedule": "スケジュール",
+      "cronPlaceholder": "カスタム cron（5フィールド）、手動のみの場合は空欄のまま",
+      "retainCount": "保持数",
+      "retainCountHint": "直近の成功した実行を N 件保持します",
+      "retainDays": "保持日数",
+      "retainDaysHint": "N 日より古い実行を削除します",
+      "preDeployTrigger": "デプロイ前トリガー",
+      "preDeployLabel": "新しいデプロイが反映される前に自動的にバックアップします",
+      "preDeployHint": "ビルドが成功するたびに、新しいコードが公開される直前に実行されます。",
+      "webhookTrigger": "Webhook トリガー",
+      "webhookLabel": "受信 Webhook URL を有効化",
+      "webhookHint": "ポリシーごとのトークンを生成します。任意の外部トリガー（GitHub Actions、監視、独自のスケジューラーなど）からこの URL に POST してください。",
+      "copyUrl": "URL をコピー",
+      "rotateToken": "トークンをローテーション",
+      "preHook": "プリフック（スナップショット前に実行）",
+      "preHookHint": "DB でよく使われます: pg_dump > /tmp/dump.sql。失敗すると実行は中止されます。",
+      "postHook": "ポストフック（アップロード後に実行）",
+      "postHookHint": "クリーンアップ用。失敗はログに記録されますが、実行は失敗になりません。",
+      "policyEnabled": "ポリシーを有効化",
+      "cancel": "キャンセル",
+      "saving": "保存中…",
+      "saveChanges": "変更を保存",
+      "createPolicy": "ポリシーを作成"
+    }
+  },
+  "cloud": {
+    "connectionGate": {
+      "reconnect": "Openship Cloud に再接続",
+      "deployedOn": "このプロジェクトは Openship Cloud にデプロイされています",
+      "sessionMissing": "Openship Cloud のセッションがありません。接続すると、{name} のデプロイの管理、ログの表示、ランタイムコントロールへのアクセスが可能になります。",
+      "thisProject": "このプロジェクト",
+      "connecting": "接続中…",
+      "connect": "Openship Cloud に接続",
+      "readOnlyNote": "切断中でも、このページを読み取り専用モードで閲覧できます。"
+    }
+  },
+  "integrations": {
+    "githubPermission": {
+      "title": "GitHub に接続",
+      "subtitle": "リポジトリのアクセスレベルを選択",
+      "intro": "Openship がアクセスできるリポジトリを選択してください。これは後から GitHub の設定で変更できます。",
+      "publicTitle": "公開リポジトリのみ",
+      "publicDesc": "公開リポジトリへのアクセス。オープンソースプロジェクトに最適です。",
+      "publicItem1": "公開リポジトリのデータを読み取る",
+      "publicItem2": "公開リポジトリをデプロイする",
+      "publicItem3": "公開リポジトリの Webhook を作成する",
+      "allTitle": "公開および非公開リポジトリ",
+      "allDesc": "すべてのリポジトリへのフルアクセス。非公開プロジェクトには必須です。",
+      "allItem1": "公開および非公開リポジトリのデータを読み取る",
+      "allItem2": "任意のリポジトリをデプロイする",
+      "allItem3": "すべてのリポジトリの Webhook を作成する",
+      "allItem4": "組織のリポジトリにアクセスする",
+      "noteLabel": "注意:",
+      "noteText": "アクセスはいつでも GitHub の設定の Applications → Authorized OAuth Apps から取り消せます。",
+      "cancel": "キャンセル",
+      "connecting": "接続中...",
+      "connect": "GitHub に接続"
+    }
+  },
+  "permissions": {
+    "resourcePicker": {
+      "failedLoadResources": "リソースの読み込みに失敗しました",
+      "searchPlaceholder": "{type} を検索...",
+      "allResources": "すべての {type}",
+      "noMatch": "検索条件に一致するリソースがありません。",
+      "noResourcesYet": "この組織にはまだ {type} がありません。",
+      "selectedSummaryOne": "すべてのタイプで {count} 件のリソースが選択されています。",
+      "selectedSummaryOther": "すべてのタイプで {count} 件のリソースが選択されています。",
+      "wildcard": "ワイルドカード",
+      "coveredByAll": "すべてに含まれる",
+      "failedLoadOrgs": "GitHub 組織の読み込みに失敗しました",
+      "failedLoadRepos": "{login} のリポジトリの読み込みに失敗しました",
+      "noOrgs": "接続されている GitHub 組織がありません。",
+      "collapse": "折りたたむ",
+      "expand": "展開",
+      "entireOrg": "組織全体",
+      "repoCountOne": "{count} 個のリポジトリ",
+      "repoCountOther": "{count} 個のリポジトリ",
+      "coveredByOrg": "上記の組織全体への付与に含まれます。",
+      "noRepos": "リポジトリがありません。",
+      "searchRepos": "リポジトリを検索…"
+    }
+  },
+  "routing": {
+    "domainSwitcher": {
+      "notConfigured": "未設定",
+      "selectDomain": "ドメインを選択"
+    },
+    "publicEndpoints": {
+      "mappedToPort": "ポート {port} にマッピングされています。",
+      "noPortYet": "ポートがまだ選択されていません。",
+      "mappedTo": "{path} にマッピングされています。",
+      "exposedPort": "公開ポート",
+      "staticPath": "静的パス",
+      "auto": "自動",
+      "domain": "ドメイン",
+      "domainsRouted": "{count} 個のドメインがこのアプリにルーティングされています。",
+      "accessibleWhere": "サイトにアクセスできる場所",
+      "addDomain": "ドメインを追加",
+      "primaryDomain": "プライマリドメイン",
+      "domainN": "ドメイン {n}",
+      "remove": "削除"
+    },
+    "configEditor": {
+      "remove": "削除",
+      "removeHeader": "ヘッダーを削除",
+      "add": "追加",
+      "addHeader": "ヘッダーを追加",
+      "rewrites": "リライト",
+      "rewritesHint": "URL を変更せずに別のパス/バックエンドを配信します（例: /api/(.*) → backend）。",
+      "redirects": "リダイレクト",
+      "redirectsHint": "HTTP リダイレクト（301/308 は恒久的、それ以外は 307）。",
+      "headers": "ヘッダー",
+      "headersHint": "一致するパスに追加されるレスポンスヘッダー。",
+      "permanent": "恒久的",
+      "cleanUrls": "クリーン URL",
+      "cleanUrlsHint": "（.html を除去）",
+      "trailingSlash": "末尾のスラッシュ"
+    },
+    "settingsCard": {
+      "recordLabels": {
+        "CNAME": "エッジネットワーク経由でトラフィックをルーティングします",
+        "A": "サーバーの IP を指します",
+        "TXT": "ドメインの所有権を確認します"
+      },
+      "publiclyExposed": "公開されています",
+      "internalOnly": "内部のみ",
+      "freeSubdomain": "無料サブドメイン",
+      "free": "無料",
+      "customDomain": "カスタムドメイン",
+      "custom": "カスタム",
+      "save": "保存",
+      "checkingDns": "DNS を確認中…",
+      "addRecordHint": "{primary} レコードと {txt} レコードを追加してください",
+      "viewRecords": "レコードを表示",
+      "exposedPort": "公開ポート",
+      "staticPath": "静的パス",
+      "staticPathHint": "ビルド出力内のこのサブディレクトリからファイルを配信します。ルート出力には {path} を使用してください。",
+      "dnsConfiguration": "DNS 設定",
+      "addRecordsFor": "{hostname} 用にこれらのレコードを追加してください",
+      "nameHost": "名前 / ホスト",
+      "valueTarget": "値 / ターゲット",
+      "dnsHintSelfhosted": "サーバーの IP を指す A レコードを追加し、次に検証用の TXT レコードを追加してください。",
+      "dnsHintCloud": "ルーティング用の CNAME レコードを追加し、次に検証用の TXT レコードを追加してください。",
+      "dnsPropagation": "DNS の変更が反映されるまで最大 48 時間かかることがあります。"
+    }
+  },
+  "updates": {
+    "severity": {
+      "critical": "重大",
+      "recommended": "推奨",
+      "info": "お知らせ"
+    },
+    "viewChangelog": "変更履歴を表示",
+    "available": "が利用可能です",
+    "youreOn": "· 現在のバージョンは {version} です",
+    "rerunInstall": "セルフホストサーバーを更新するには、インストールを再実行してください。",
+    "updateNow": "今すぐ更新",
+    "changelog": "変更履歴",
+    "updatedTo": "Openship {version} に更新しました",
+    "seeChanges": "このリリースでの変更点をご覧ください。",
+    "onLatest": "最新バージョンを使用しています。",
+    "whatsNew": "新着情報",
+    "whatsNewIn": "{version} の新着情報",
+    "close": "閉じる",
+    "noNotes": "このバージョンのリリースノートはありません。",
+    "viewOnGithub": "GitHub で表示",
+    "dismiss": "閉じる"
+  }
+}

@@ -26,10 +26,7 @@ import {
   releaseDir,
 } from "../lib/cache";
 import { err, info, isJsonMode, ok, printJson } from "../lib/output";
-
-const REPO = "oblien/openship";
-const RELEASES = `https://github.com/${REPO}/releases`;
-const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
+import { RELEASES, resolveLatestTag, fetchSidecar } from "../lib/github-releases";
 
 type AssetKind = "dmg" | "appimage" | "zip";
 
@@ -41,28 +38,6 @@ function assetForPlatform(): { name: string; kind: AssetKind } {
   if (platform === "win32") return { name: "Openship-win32-x64.zip", kind: "zip" };
   if (platform === "linux") return { name: "Openship.AppImage", kind: "appimage" };
   throw new Error(`Unsupported platform: ${platform} (${arch})`);
-}
-
-async function resolveLatestTag(): Promise<string> {
-  const res = await fetch(LATEST_API, {
-    headers: { Accept: "application/vnd.github+json", "User-Agent": "openship-cli" },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!res.ok) throw new Error(`GitHub latest-release lookup failed: HTTP ${res.status}`);
-  const data = (await res.json()) as { tag_name?: string };
-  if (!data.tag_name) throw new Error("Latest release has no tag_name");
-  return data.tag_name;
-}
-
-/** Fetch the sidecar body, or null on 404 (asset published without a hash). */
-async function fetchSidecar(url: string): Promise<string | null> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": "openship-cli" },
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Sidecar fetch failed: HTTP ${res.status}`);
-  return res.text();
 }
 
 /* ── per-OS install ─────────────────────────────────────────────────────── */

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -14,7 +16,11 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { PLANS, type PlanTierId } from "@repo/core";
 import type { BillingState } from "@/lib/api/billing";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 import { OpenStripePortalButton } from "./OpenStripePortalButton";
+
+type BillingStrings = Dictionary["billing"];
 
 export type { BillingState };
 
@@ -75,16 +81,19 @@ function BillingCtaLink({
   );
 }
 
-function formatPlanPrice(tier: PlanTierId): string {
+function formatPlanPrice(tier: PlanTierId, bt: BillingStrings): string {
   const plan = PLANS[tier];
   const monthly = plan.price.monthly;
-  if (monthly === null) return "Contact sales";
-  if (monthly === 0) return "Free forever";
-  return `$${(monthly / 100).toFixed(0)}/mo`;
+  if (monthly === null) return bt.sidebar.contactSales;
+  if (monthly === 0) return bt.sidebar.freeForever;
+  return interpolate(bt.sidebar.perMonth, { price: (monthly / 100).toFixed(0) });
 }
 
-function formatStatusLabel(status: string): string {
-  if (!status) return "Inactive";
+function formatStatusLabel(status: string, bt: BillingStrings): string {
+  if (!status) return bt.sidebar.statusInactive;
+  const known = (bt.sidebar.statuses as Record<string, string>)[status];
+  if (known) return known;
+  // Unknown/new Stripe status — fall back to a readable Title Case of the raw value.
   return status
     .split("_")
     .map((part) => (part.length > 0 ? part[0]!.toUpperCase() + part.slice(1) : part))
@@ -97,6 +106,8 @@ const NEXT_PLAN: Partial<Record<PlanTierId, PlanTierId>> = {
 };
 
 export function BillingSidebar({ state }: { state: BillingState }) {
+  const { t } = useI18n();
+  const bt = t.billing;
   const plan = PLANS[state.tier];
   const nextPlan = NEXT_PLAN[state.tier];
   const PlanIcon = PLAN_ICON[state.tier];
@@ -109,19 +120,21 @@ export function BillingSidebar({ state }: { state: BillingState }) {
             <PlanIcon className="size-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">{plan.name} Plan</p>
-            <p className="text-xs text-muted-foreground">{formatPlanPrice(state.tier)}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {interpolate(bt.sidebar.planSuffix, { name: plan.name })}
+            </p>
+            <p className="text-xs text-muted-foreground">{formatPlanPrice(state.tier, bt)}</p>
           </div>
         </div>
 
         <div className="mb-4 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
-          <span className="text-xs text-muted-foreground">Status</span>
-          <span className="text-xs font-medium text-foreground">{formatStatusLabel(state.status)}</span>
+          <span className="text-xs text-muted-foreground">{bt.sidebar.status}</span>
+          <span className="text-xs font-medium text-foreground">{formatStatusLabel(state.status, bt)}</span>
         </div>
 
         {nextPlan && (
           <BillingCtaLink href="/billing/plans" className="w-full justify-center">
-            Upgrade to {PLANS[nextPlan].name}
+            {interpolate(bt.sidebar.upgradeTo, { name: PLANS[nextPlan].name })}
             <ArrowUpRight className="size-3.5" />
           </BillingCtaLink>
         )}
@@ -131,15 +144,12 @@ export function BillingSidebar({ state }: { state: BillingState }) {
 }
 
 export function PaymentMethodPanel() {
+  const { t } = useI18n();
   return (
     <div className="rounded-2xl border border-border/50 bg-card">
       <div className="border-b border-border/50 p-5">
-        <h2 className="text-base font-semibold text-foreground">Payment method</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cards, bank accounts, and billing details are managed in the Stripe
-          Customer Portal. Open the portal to add, remove, or update your
-          payment methods.
-        </p>
+        <h2 className="text-base font-semibold text-foreground">{t.billing.paymentPanel.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t.billing.paymentPanel.description}</p>
       </div>
       <div className="p-5">
         <OpenStripePortalButton />
@@ -149,14 +159,12 @@ export function PaymentMethodPanel() {
 }
 
 export function InvoicesPanel() {
+  const { t } = useI18n();
   return (
     <div className="rounded-2xl border border-border/50 bg-card">
       <div className="border-b border-border/50 p-5">
-        <h2 className="text-base font-semibold text-foreground">Invoices</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Invoices and receipts live in the Stripe Customer Portal. Open the
-          portal to view your billing history and download PDF invoices.
-        </p>
+        <h2 className="text-base font-semibold text-foreground">{t.billing.invoicesPanel.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t.billing.invoicesPanel.description}</p>
       </div>
       <div className="p-5">
         <OpenStripePortalButton />

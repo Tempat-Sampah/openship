@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import type { MailSetupStatus } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 import { OverviewTab } from "./overview-tab";
 import { DomainsTab } from "./domains-tab";
 import { MailboxesTab } from "./mailboxes-tab";
@@ -67,19 +68,18 @@ type TabKey =
 
 interface TabDef {
   key: TabKey;
-  label: string;
   icon: LucideIcon;
 }
 
 const TABS: TabDef[] = [
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "domains", label: "Domains", icon: Globe },
-  { key: "mailboxes", label: "Mailboxes", icon: UserRound },
-  { key: "dns", label: "DNS", icon: FileText },
-  { key: "health", label: "Health", icon: HeartPulse },
-  { key: "test", label: "Test", icon: Send },
-  { key: "backup", label: "Backup", icon: DatabaseBackup },
-  { key: "advanced", label: "Advanced", icon: Settings },
+  { key: "overview", icon: LayoutDashboard },
+  { key: "domains", icon: Globe },
+  { key: "mailboxes", icon: UserRound },
+  { key: "dns", icon: FileText },
+  { key: "health", icon: HeartPulse },
+  { key: "test", icon: Send },
+  { key: "backup", icon: DatabaseBackup },
+  { key: "advanced", icon: Settings },
 ];
 
 const VALID_TABS: TabKey[] = TABS.map((t) => t.key);
@@ -216,18 +216,19 @@ function TabBar({
   active: TabKey;
   onChange: (key: TabKey) => void;
 }) {
+  const { t } = useI18n();
   return (
     <nav
       className="flex items-center gap-1 border-b border-border/50 overflow-x-auto"
-      aria-label="Mail admin sections"
+      aria-label={t.emailsAdmin.panel.ariaLabel}
     >
-      {tabs.map((t) => {
-        const Icon = t.icon;
-        const isActive = active === t.key;
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = active === tab.key;
         return (
           <button
-            key={t.key}
-            onClick={() => onChange(t.key)}
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap",
@@ -237,9 +238,9 @@ function TabBar({
             )}
           >
             <Icon className="size-4" strokeWidth={2} />
-            {t.label}
+            {t.emailsAdmin.panel.tabs[tab.key]}
             {isActive && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              <span className="absolute bottom-0 start-0 end-0 h-0.5 bg-primary rounded-full" />
             )}
           </button>
         );

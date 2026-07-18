@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 // Re-export for existing importers (TeamTab et al.) — canonical defs live in @/lib/api.
 export type { Permission, PickerGrant, ResourceType } from "@/lib/api";
@@ -112,6 +113,8 @@ export function ResourcePicker({
   disabled,
 }: ResourcePickerProps) {
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const w = t.widgets.permissions.resourcePicker;
 
   const tabs = useMemo<TabId[]>(() => {
     if (fixedType) return toTabs([fixedType]);
@@ -138,7 +141,7 @@ export function ResourcePicker({
         const res = await permissionsApi.listResources(type);
         setCatalog(res.data ?? []);
       } catch (err) {
-        showToast(getApiErrorMessage(err, "Failed to load resources"), "error", "Picker");
+        showToast(getApiErrorMessage(err, w.failedLoadResources), "error", "Picker");
         setCatalog([]);
       } finally {
         setLoading(false);
@@ -200,23 +203,23 @@ export function ResourcePicker({
       {/* Resource type tabs */}
       {tabs.length > 1 && (
         <div className="flex flex-wrap gap-1.5">
-          {tabs.map((t) => {
-            const count = countForTab(t);
+          {tabs.map((tab) => {
+            const count = countForTab(tab);
             return (
               <button
-                key={t}
+                key={tab}
                 type="button"
-                onClick={() => setActiveTab(t)}
+                onClick={() => setActiveTab(tab)}
                 disabled={disabled}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                  activeTab === t
+                  activeTab === tab
                     ? "bg-primary/15 text-foreground border border-primary/40"
                     : "bg-muted/40 text-muted-foreground hover:text-foreground border border-transparent"
                 }`}
               >
-                {tabLabel(t)}
+                {tabLabel(tab)}
                 {count > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+                  <span className="ms-1.5 inline-flex items-center justify-center px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
                     {count}
                   </span>
                 )}
@@ -238,14 +241,14 @@ export function ResourcePicker({
           {/* Search */}
           {!isSingleton && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search ${tabLabel(activeTab).toLowerCase()}...`}
+                placeholder={interpolate(w.searchPlaceholder, { type: tabLabel(activeTab).toLowerCase() })}
                 disabled={disabled || loading}
-                className="w-full pl-9 pr-3 py-2 bg-card border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full ps-9 pe-3 py-2 bg-card border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           )}
@@ -262,7 +265,7 @@ export function ResourcePicker({
                   <ResourceRow
                     resourceType={activeTab as ResourceType}
                     resourceId="*"
-                    label={`All ${tabLabel(activeTab).toLowerCase()}`}
+                    label={interpolate(w.allResources, { type: tabLabel(activeTab).toLowerCase() })}
                     meta={{ wildcard: true }}
                     grant={findGrantIn(value, activeTab as ResourceType, "*")}
                     onToggleResource={toggleResource}
@@ -274,8 +277,8 @@ export function ResourcePicker({
                   <div className="px-4 py-8 text-center">
                     <p className="text-sm text-muted-foreground">
                       {search.trim()
-                        ? "No resources match your search."
-                        : `No ${tabLabel(activeTab).toLowerCase()} in this organization yet.`}
+                        ? w.noMatch
+                        : interpolate(w.noResourcesYet, { type: tabLabel(activeTab).toLowerCase() })}
                     </p>
                   </div>
                 ) : (
@@ -302,7 +305,9 @@ export function ResourcePicker({
 
       {value.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {value.length} resource{value.length === 1 ? "" : "s"} selected across all types.
+          {interpolate(value.length === 1 ? w.selectedSummaryOne : w.selectedSummaryOther, {
+            count: String(value.length),
+          })}
         </p>
       )}
     </div>
@@ -314,7 +319,7 @@ function PermissionChips({
   perms,
   onToggle,
   disabled,
-  indent = "ml-8",
+  indent = "ms-8",
 }: {
   perms: Permission[];
   onToggle: (p: Permission) => void;
@@ -369,6 +374,8 @@ function ResourceRow({
    *  and shown dimmed + non-interactive. */
   covered?: boolean;
 }) {
+  const { t } = useI18n();
+  const w = t.widgets.permissions.resourcePicker;
   const checked = !!grant;
   const isWildcard = resourceId === "*";
 
@@ -384,13 +391,13 @@ function ResourceRow({
           <p className={`text-sm font-medium truncate ${isWildcard ? "text-foreground/90" : "text-foreground"}`}>
             {label}
             {isWildcard && (
-              <span className="ml-2 text-[10px] font-medium uppercase tracking-wider text-primary">
-                wildcard
+              <span className="ms-2 text-[10px] font-medium uppercase tracking-wider text-primary">
+                {w.wildcard}
               </span>
             )}
             {covered && !isWildcard && (
-              <span className="ml-2 text-[10px] font-medium normal-case tracking-normal text-muted-foreground">
-                covered by all
+              <span className="ms-2 text-[10px] font-medium normal-case tracking-normal text-muted-foreground">
+                {w.coveredByAll}
               </span>
             )}
           </p>
@@ -455,6 +462,8 @@ function GitHubTree({
   disabled?: boolean;
 }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const w = t.widgets.permissions.resourcePicker;
   const [orgs, setOrgs] = useState<CatalogEntry[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -471,7 +480,7 @@ function GitHubTree({
         if (!cancelled) setOrgs(res.data ?? []);
       })
       .catch((err) => {
-        if (!cancelled) showToast(getApiErrorMessage(err, "Failed to load GitHub orgs"), "error", "Picker");
+        if (!cancelled) showToast(getApiErrorMessage(err, w.failedLoadOrgs), "error", "Picker");
       })
       .finally(() => {
         if (!cancelled) setLoadingOrgs(false);
@@ -509,7 +518,7 @@ function GitHubTree({
         const res = await permissionsApi.listResources("github_repository", login);
         setReposByOwner((prev) => ({ ...prev, [login]: res.data ?? [] }));
       } catch (err) {
-        showToast(getApiErrorMessage(err, `Failed to load repos for ${login}`), "error", "Picker");
+        showToast(getApiErrorMessage(err, interpolate(w.failedLoadRepos, { login })), "error", "Picker");
         setReposByOwner((prev) => ({ ...prev, [login]: [] }));
       } finally {
         setLoadingRepos((prev) => {
@@ -545,7 +554,7 @@ function GitHubTree({
   if (orgs.length === 0) {
     return (
       <div className="rounded-xl border border-border/50 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">No GitHub organizations connected.</p>
+        <p className="text-sm text-muted-foreground">{w.noOrgs}</p>
       </div>
     );
   }
@@ -576,16 +585,20 @@ function GitHubTree({
                   onClick={() => toggleExpand(login)}
                   disabled={disabled}
                   className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-40"
-                  aria-label={isOpen ? "Collapse" : "Expand"}
+                  aria-label={isOpen ? w.collapse : w.expand}
                 >
-                  {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4 rtl:rotate-180" />}
                 </button>
                 <Checkbox checked={wholeOrg} disabled={disabled} onClick={() => toggleOrg(login)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
                     {org.label}
-                    <span className="ml-2 text-[11px] text-muted-foreground">
-                      {wholeOrg ? "entire org" : repoCount > 0 ? `${repoCount} repo${repoCount === 1 ? "" : "s"}` : ""}
+                    <span className="ms-2 text-[11px] text-muted-foreground">
+                      {wholeOrg
+                        ? w.entireOrg
+                        : repoCount > 0
+                          ? interpolate(repoCount === 1 ? w.repoCountOne : w.repoCountOther, { count: String(repoCount) })
+                          : ""}
                     </span>
                   </p>
                 </div>
@@ -605,7 +618,7 @@ function GitHubTree({
                     );
                   }}
                   disabled={disabled}
-                  indent="ml-14"
+                  indent="ms-14"
                 />
               )}
             </div>
@@ -615,14 +628,14 @@ function GitHubTree({
               <div className="bg-muted/[0.03] border-t border-border/20">
                 {wholeOrg ? (
                   <p className="px-12 py-3 text-xs text-muted-foreground italic">
-                    Covered by the org-wide grant above.
+                    {w.coveredByOrg}
                   </p>
                 ) : loadingRepos.has(login) ? (
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="size-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : repos.length === 0 ? (
-                  <p className="px-12 py-4 text-xs text-muted-foreground">No repositories.</p>
+                  <p className="px-12 py-4 text-xs text-muted-foreground">{w.noRepos}</p>
                 ) : (
                   <>
                     {repos.length > 8 && (
@@ -631,7 +644,7 @@ function GitHubTree({
                           type="text"
                           value={repoSearch[login] ?? ""}
                           onChange={(e) => setRepoSearch((prev) => ({ ...prev, [login]: e.target.value }))}
-                          placeholder="Search repos…"
+                          placeholder={w.searchRepos}
                           disabled={disabled}
                           className="w-full px-3 py-1.5 bg-card border border-border/50 rounded-lg text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
@@ -643,7 +656,7 @@ function GitHubTree({
                       return (
                         <div
                           key={repo.id}
-                          className={`pl-12 pr-4 py-2.5 ${checked ? "bg-primary/5" : "hover:bg-muted/20"} transition-colors`}
+                          className={`ps-12 pe-4 py-2.5 ${checked ? "bg-primary/5" : "hover:bg-muted/20"} transition-colors`}
                         >
                           <div className="flex items-center gap-3">
                             <Checkbox
@@ -681,7 +694,7 @@ function GitHubTree({
                                 );
                               }}
                               disabled={disabled}
-                              indent="ml-8"
+                              indent="ms-8"
                             />
                           )}
                         </div>

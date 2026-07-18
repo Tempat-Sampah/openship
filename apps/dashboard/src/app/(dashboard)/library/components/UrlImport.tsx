@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, ArrowRight } from "lucide-react";
 import { encodeRepoSlug } from "@/utils/repoSlug";
+import { useI18n } from "@/components/i18n-provider";
 
 export function UrlImport() {
+  const { t } = useI18n();
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +20,7 @@ export function UrlImport() {
       /(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/.]+)/
     );
     if (!match) {
-      setError("Enter a valid GitHub repository URL");
+      setError(t.library.urlImport.invalidUrl);
       return;
     }
 
@@ -35,10 +37,10 @@ export function UrlImport() {
             <Link2 className="size-7 text-muted-foreground" />
           </div>
           <h3 className="text-base font-semibold text-foreground text-center mb-1.5">
-            Import from Git URL
+            {t.library.urlImport.title}
           </h3>
           <p className="text-sm text-muted-foreground text-center mb-6 leading-relaxed">
-            Paste a public repository URL to import. No GitHub connection required.
+            {t.library.urlImport.description}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,8 +65,8 @@ export function UrlImport() {
               disabled={!url.trim()}
               className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-background text-sm font-medium rounded-xl hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Import Repository
-              <ArrowRight className="size-4" />
+              {t.library.urlImport.importButton}
+              <ArrowRight className="size-4 rtl:rotate-180" />
             </button>
           </form>
         </div>

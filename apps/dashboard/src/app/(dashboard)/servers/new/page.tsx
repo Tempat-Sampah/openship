@@ -14,6 +14,7 @@ import { getApiErrorMessage, systemApi } from "@/lib/api";
 import type { ComponentStatus, ServerInfo } from "@/lib/api/system";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 import { useSetupStream } from "@/hooks/useSetupStream";
 import { ServerForm } from "../_components/server-form";
 import { AutoSetupFlow } from "./_components/auto-setup-flow";
@@ -70,6 +71,7 @@ function getMissingComponentNames(components: ComponentState[]): string[] {
 export default function AddServerPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useI18n();
 
   const [loaded, setLoaded] = useState(false);
 
@@ -103,9 +105,9 @@ export default function AddServerPage() {
           // Keep whatever we have from the stream
         }
         if (event.status === "completed") {
-          showToast("Server setup completed", "success", "Server Setup");
+          showToast(t.servers.setup.toastSetupCompleted, "success", t.servers.toastTitles.serverSetup);
         } else {
-          showToast("Some components failed to install", "error", "Server Setup");
+          showToast(t.servers.setup.toastSomeComponentsFailed, "error", t.servers.toastTitles.serverSetup);
         }
       })();
     },
@@ -114,7 +116,7 @@ export default function AddServerPage() {
   const activeServerId = existingServerId ?? initialServer?.id ?? null;
 
   const serverHostLabel =
-    initialServer?.sshHost || initialServer?.name || "your server";
+    initialServer?.sshHost || initialServer?.name || t.servers.setup.yourServer;
 
   useEffect(() => {
     (async () => {
@@ -187,7 +189,7 @@ export default function AddServerPage() {
 
   async function runSetupChecks(selectedMode: SetupMode) {
     if (!activeServerId) {
-      showToast("Save the server before running setup", "error", "Server Setup");
+      showToast(t.servers.setup.toastSaveBeforeSetup, "error", t.servers.toastTitles.serverSetup);
       return;
     }
 
@@ -215,17 +217,17 @@ export default function AddServerPage() {
 
       setStep("results");
     } catch (err) {
-      const message = getApiErrorMessage(err, "Health check failed");
+      const message = getApiErrorMessage(err, t.servers.setup.toastHealthCheckFailed);
       setOverallReady(false);
       setSetupError(message);
       setStep("choose");
-      showToast(message, "error", "Server Setup");
+      showToast(message, "error", t.servers.toastTitles.serverSetup);
     }
   }
 
   async function installComponents(targetNames?: string[]) {
     if (!activeServerId) {
-      showToast("Save the server before installing components", "error", "Server Setup");
+      showToast(t.servers.setup.toastSaveBeforeInstall, "error", t.servers.toastTitles.serverSetup);
       return;
     }
 
@@ -234,7 +236,7 @@ export default function AddServerPage() {
 
     if (names.length === 0) {
       setOverallReady(true);
-      showToast("Server is already ready", "success", "Server Setup");
+      showToast(t.servers.setup.toastAlreadyReady, "success", t.servers.toastTitles.serverSetup);
       return;
     }
 
@@ -244,9 +246,9 @@ export default function AddServerPage() {
     try {
       await setupStream.startInstall(activeServerId, names);
     } catch (err) {
-      const message = getApiErrorMessage(err, "Failed to start installation");
+      const message = getApiErrorMessage(err, t.servers.setup.toastFailedStartInstall);
       setSetupError(message);
-      showToast(message, "error", "Server Setup");
+      showToast(message, "error", t.servers.toastTitles.serverSetup);
     }
   }
 
@@ -366,17 +368,17 @@ export default function AddServerPage() {
             onClick={() => router.push("/servers")}
             className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
           >
-            <ArrowLeft className="size-4 text-muted-foreground" />
+            <ArrowLeft className="size-4 text-muted-foreground rtl:rotate-180" />
           </button>
           <div>
             <h1
               className="text-2xl font-medium text-foreground/80"
               style={{ letterSpacing: "-0.2px" }}
             >
-              {hasExistingServer ? "Edit Server" : "Add Server"}
+              {hasExistingServer ? t.servers.setup.editServer : t.servers.setup.addServer}
             </h1>
             <p className="text-sm text-muted-foreground/70 mt-0.5">
-              Enter your server details and choose an auth method
+              {t.servers.setup.enterDetails}
             </p>
           </div>
         </div>
@@ -398,9 +400,9 @@ export default function AddServerPage() {
                 </div>
                 <div>
                   <h2 className="font-semibold text-foreground text-[15px]">
-                    Getting Started
+                    {t.servers.setup.gettingStarted}
                   </h2>
-                  <p className="text-xs text-muted-foreground">What you need</p>
+                  <p className="text-xs text-muted-foreground">{t.servers.setup.whatYouNeed}</p>
                 </div>
               </div>
               <div className="p-5">
@@ -408,18 +410,17 @@ export default function AddServerPage() {
                   <li className="flex items-start gap-2">
                     <Network className="size-4 shrink-0 mt-0.5 text-blue-500" />
                     <span>
-                      A server with SSH access (Ubuntu, Debian, or similar)
+                      {t.servers.setup.needServer}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <KeyRound className="size-4 shrink-0 mt-0.5 text-blue-500" />
-                    <span>SSH key or password for authentication</span>
+                    <span>{t.servers.setup.needAuth}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Server className="size-4 shrink-0 mt-0.5 text-blue-500" />
                     <span>
-                      After saving, Openship will run checks and install the
-                      missing backend-defined prerequisites for you.
+                      {t.servers.setup.needChecks}
                     </span>
                   </li>
                 </ul>

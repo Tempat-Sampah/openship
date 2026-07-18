@@ -1,7 +1,7 @@
 import type { Terminal } from "@xterm/xterm";
 import type { FrameworkId, EnvironmentVariable } from "@/components/import-project/types";
 import type { PrepareComposeService, PrepareSingleAppCandidate } from "@/lib/api/deploy";
-import { getBuildImage, STACKS, type ProjectType, type BuildStrategy, type DeployTarget, type RuntimeMode, type StackId } from "@repo/core";
+import { getBuildImage, STACKS, type ProjectType, type BuildStrategy, type DeployTarget, type RuntimeMode, type StackId, type RoutingConfig } from "@repo/core";
 import type { BuildLog } from "@/utils/deploymentPhaseDetector";
 
 // ─── Monorepo sub-app ────────────────────────────────────────────────────────
@@ -261,6 +261,9 @@ export interface DeploymentConfig {
   monorepoApps?: MonorepoAppConfig[];
   /** Shared workspace metadata (package manager + root install) for monorepo deploys. */
   monorepoWorkspace?: MonorepoWorkspaceConfig;
+  /** Routing config parsed from the repo's vercel.json; carried from prepare to
+   *  project create so the backend persists + compiles it. Opaque passthrough. */
+  routingConfig?: RoutingConfig | null;
   /**
    * Resource tier picked for Openship Cloud deploys. Self-hosted servers
    * inherit the host's capacity, so this field is meaningless for them

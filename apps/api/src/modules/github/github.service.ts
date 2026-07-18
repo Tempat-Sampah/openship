@@ -1018,13 +1018,14 @@ export async function rotateProjectWebhookSecret(
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
- * Extract owner and repo from a GitHub URL.
+ * Extract owner/repo from a GitHub URL. Handles both the https
+ * (`https://github.com/owner/repo(.git)`) and SSH
+ * (`git@github.com:owner/repo(.git)`) forms; returns null for non-GitHub hosts.
+ * Single source of truth for GitHub URL parsing on the API side.
  */
-export function parseRepoUrl(repoUrl: string): { owner: string; repo: string } | null {
-  if (!repoUrl) return null;
-  const parts = repoUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "").split("/");
-  const owner = parts[0];
-  const repo = parts[1]?.replace(/\.git$/, "");
-  if (!owner || !repo) return null;
-  return { owner, repo };
+export function parseRepoUrl(repoUrl?: string): { owner: string; repo: string } | null {
+  if (!repoUrl || !/github\.com/i.test(repoUrl)) return null;
+  const m = repoUrl.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/i);
+  if (!m) return null;
+  return { owner: m[1]!, repo: m[2]! };
 }

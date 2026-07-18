@@ -124,6 +124,76 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  build-dashboard:
+    name: Build dashboard bundle (lazy-downloaded by `openship up`)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Read bun version
+        id: bun-version
+        run: echo "version=$(cat .bun-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ steps.bun-version.outputs.version }}
+
+      - name: Restore bun cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Standalone Next build. Force a production, self-hosted (local) build
+      # regardless of ambient env — same flags build-release.ts uses.
+      - name: Build dashboard (Next standalone)
+        run: bun run --cwd apps/dashboard build
+        env:
+          NODE_ENV: production
+          CLOUD_MODE: "false"
+          OPENSHIP_TARGET: local
+
+      - name: Package dashboard bundle
+        id: package
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          STAGING="dashboard-dist"
+          rm -rf "$STAGING"; mkdir -p "$STAGING"
+          # The monorepo-rooted standalone has apps/dashboard/server.js as entry
+          # plus a trimmed node_modules. static/ + public/ are excluded by Next,
+          # so copy them back next to .next/ where the standalone server expects.
+          cp -a apps/dashboard/.next/standalone/. "$STAGING"/
+          mkdir -p "$STAGING/apps/dashboard/.next"
+          cp -a apps/dashboard/.next/static "$STAGING/apps/dashboard/.next/static"
+          if [ -d apps/dashboard/public ]; then
+            cp -a apps/dashboard/public "$STAGING/apps/dashboard/public"
+          fi
+          ARTIFACT="openship-dashboard-${TAG}.tar.gz"
+          tar -czf "$ARTIFACT" -C "$STAGING" .
+          sha256sum "$ARTIFACT" > "$ARTIFACT.sha256"
+          echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: openship-dashboard-release
+          path: |
+            ${{ steps.package.outputs.artifact }}
+            ${{ steps.package.outputs.artifact }}.sha256
+          if-no-files-found: error
+          retention-days: 7
+
   build-desktop:
     name: Build desktop installer (${{ matrix.label }})
     if: github.event_name == 'push'
@@ -295,18 +365,21 @@ jobs:
           bunx electron-forge make --arch=arm64
           bunx electron-forge make --arch=x64
 
-      # Notarize + staple each .dmg. notarytool scans the DMG contents, so the
-      # signed app inside is notarized too; stapling attaches the ticket so
-      # Gatekeeper clears the download without a "damaged"/"unidentified" prompt,
-      # even offline. Gated on APPLE_ID (the notary credential), separate from
-      # signing: set APPLE_IDENTITY only → signed-but-not-notarized (downloads
-      # still warn); add APPLE_ID/PASSWORD/TEAM_ID → clean notarized download.
-      - name: Notarize + staple DMGs
+      # Sign the disk image itself, then notarize + staple. notarytool scans the
+      # DMG contents so the signed app inside is notarized too; signing the DMG
+      # (not just the app) makes Gatekeeper's open-assessment on the downloaded
+      # image pass cleanly, and stapling attaches the ticket for offline checks.
+      # Gated on APPLE_ID (the notary credential), separate from signing: set
+      # APPLE_IDENTITY only → signed-but-not-notarized (downloads still warn);
+      # add APPLE_ID/PASSWORD/TEAM_ID → clean notarized download.
+      - name: Sign, notarize + staple DMGs
         if: env.APPLE_ID != ''
         run: |
           set -euo pipefail
           for arch in arm64 x64; do
             dmg="apps/desktop/out/make/Openship-${arch}.dmg"
+            echo "▸ signing ${dmg}"
+            codesign --force --timestamp --sign "$APPLE_IDENTITY" "${dmg}"
             echo "▸ notarizing ${dmg}"
             xcrun notarytool submit "${dmg}" \
               --apple-id "$APPLE_ID" \
@@ -408,7 +481,7 @@ jobs:
   publish:
     name: Publish GitHub release
     if: github.event_name == 'push'
-    needs: [build-openship, build-email, build-desktop, build-desktop-macos]
+    needs: [build-openship, build-email, build-dashboard, build-desktop, build-desktop-macos]
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -426,6 +499,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: openship-email-release
+          path: dist
+
+      - name: Download dashboard artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: openship-dashboard-release
           path: dist
 
       - name: Download desktop installers
@@ -452,7 +531,9 @@ jobs:
             dist/openship-${TAG}-linux-amd64.tar.gz \
             dist/openship-${TAG}-linux-amd64.tar.gz.sha256 \
             dist/openship-email-${TAG}-linux-amd64.tar.gz \
-            dist/openship-email-${TAG}-linux-amd64.tar.gz.sha256
+            dist/openship-email-${TAG}-linux-amd64.tar.gz.sha256 \
+            dist/openship-dashboard-${TAG}.tar.gz \
+            dist/openship-dashboard-${TAG}.tar.gz.sha256
 
       - name: Attach desktop installers
         env:

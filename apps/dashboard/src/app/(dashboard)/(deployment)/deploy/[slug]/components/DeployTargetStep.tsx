@@ -16,6 +16,7 @@ import type { DeployTarget, BuildStrategy, CloneStrategy } from "@/context/deplo
 import { createPersistedValue, createPersistedFlag } from "@/lib/persisted-value";
 import { AddServerModal } from "./AddServerModal";
 import ServerRuntimePicker from "./ServerRuntimePicker";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 // ─── Option card ─────────────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ export const OptionCard: React.FC<OptionCardProps> = ({
       type="button"
       onClick={onSelect}
       className={`
-        relative w-full h-full text-left p-4 rounded-xl border transition-all
+        relative w-full h-full text-start p-4 rounded-xl border transition-all
         ${selected
           ? "border-primary bg-primary/5 ring-1 ring-primary/20"
           : "border-border/50 bg-card hover:border-primary/30 hover:bg-primary/[0.02]"
@@ -93,9 +94,11 @@ const ServerSubSelector: React.FC<ServerSubSelectorProps> = ({
   servers,
   selectedId,
   onSelect,
-}) => (
+}) => {
+  const { t } = useI18n();
+  return (
   <div className="space-y-1.5">
-    <p className="text-xs font-medium text-muted-foreground mb-2">Choose a server</p>
+    <p className="text-xs font-medium text-muted-foreground mb-2">{t.deploy.targetStep.chooseServer}</p>
     {servers.map((s) => {
       const isSelected = selectedId === s.id;
       return (
@@ -103,7 +106,7 @@ const ServerSubSelector: React.FC<ServerSubSelectorProps> = ({
           key={s.id}
           type="button"
           onClick={() => onSelect(s)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-start transition-all ${
             isSelected
               ? "bg-primary/10 border border-primary/30"
               : "bg-card/60 border border-border/30 hover:border-primary/20 hover:bg-muted/30"
@@ -129,7 +132,8 @@ const ServerSubSelector: React.FC<ServerSubSelectorProps> = ({
       );
     })}
   </div>
-);
+  );
+};
 
 // ─── Compact summary (shown when editing from step 2) ────────────────────────
 
@@ -150,17 +154,6 @@ interface CompactSummaryProps {
   onEdit: () => void;
 }
 
-const targetLabels: Record<DeployTarget, { label: string; icon: React.ReactNode }> = {
-  local: { label: "This Machine", icon: <Cpu className="size-3.5" /> },
-  server: { label: "My Server", icon: <Server className="size-3.5" /> },
-  cloud: { label: "OpenShip Cloud", icon: <Cloud className="size-3.5" /> },
-};
-
-const buildLabels: Record<BuildStrategy, { label: string; icon: React.ReactNode }> = {
-  local: { label: "This Machine", icon: <Cpu className="size-3.5" /> },
-  server: { label: "Remote", icon: <Cloud className="size-3.5" /> },
-};
-
 export const DeployTargetSummary: React.FC<CompactSummaryProps> = ({
   deployTarget,
   buildStrategy,
@@ -170,6 +163,23 @@ export const DeployTargetSummary: React.FC<CompactSummaryProps> = ({
   hasServer = true,
   onEdit,
 }) => {
+  const { t } = useI18n();
+  const targetLabels: Record<DeployTarget, { label: string; icon: React.ReactNode }> = {
+    local: { label: t.deploy.summary.targetLocal, icon: <Cpu className="size-3.5" /> },
+    server: { label: t.deploy.summary.targetServer, icon: <Server className="size-3.5" /> },
+    cloud: { label: t.deploy.summary.targetCloud, icon: <Cloud className="size-3.5" /> },
+  };
+  const buildLabels: Record<BuildStrategy, { label: string; icon: React.ReactNode }> = {
+    local: { label: t.deploy.summary.buildLocal, icon: <Cpu className="size-3.5" /> },
+    server: { label: t.deploy.summary.buildRemote, icon: <Cloud className="size-3.5" /> },
+  };
+  const tierLabels: Record<string, string> = {
+    micro: t.deploy.power.tierMicroLabel,
+    low: t.deploy.power.tierLowLabel,
+    medium: t.deploy.power.tierMediumLabel,
+    high: t.deploy.power.tierHighLabel,
+    custom: t.deploy.power.custom,
+  };
   const target = targetLabels[deployTarget];
   // Build label is driven by buildStrategy FIRST — a "local" build always runs
   // on this machine, even when the deploy target is Openship Cloud
@@ -180,7 +190,7 @@ export const DeployTargetSummary: React.FC<CompactSummaryProps> = ({
     buildStrategy === "local"
       ? buildLabels.local
       : deployTarget === "cloud"
-        ? { label: "Openship Cloud", icon: <Cloud className="size-3.5" /> }
+        ? { label: t.deploy.summary.targetCloud, icon: <Cloud className="size-3.5" /> }
         : buildLabels.server;
   const deployLabel = deployTarget === "server" && serverName
     ? serverName
@@ -208,14 +218,14 @@ export const DeployTargetSummary: React.FC<CompactSummaryProps> = ({
         ? (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-500/10 text-[11px] font-medium text-sky-500 shrink-0">
             <Globe className="size-3" />
-            Static
+            {t.deploy.summary.static}
           </span>
         )
         : cloudResourceTier
           ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-[11px] font-medium text-amber-500 shrink-0">
               <Zap className="size-3" />
-              <span className="capitalize">{cloudResourceTier}</span>
+              <span>{tierLabels[cloudResourceTier] ?? cloudResourceTier}</span>
             </span>
           )
           : null
@@ -238,7 +248,7 @@ export const DeployTargetSummary: React.FC<CompactSummaryProps> = ({
               <Plus className="size-2.5" strokeWidth={2.5} />
               {target.icon}
             </div>
-            <span className="text-muted-foreground">Build &amp; deploy:</span>
+            <span className="text-muted-foreground">{t.deploy.summary.buildAndDeploy}</span>
             <span className="font-medium text-foreground truncate">{deployLabel}</span>
           </div>
         ) : (
@@ -247,15 +257,15 @@ export const DeployTargetSummary: React.FC<CompactSummaryProps> = ({
               <>
                 <div className="flex items-center gap-1.5 text-sm shrink-0">
                   {build.icon}
-                  <span className="text-muted-foreground">Build:</span>
+                  <span className="text-muted-foreground">{t.deploy.summary.build}</span>
                   <span className="font-medium text-foreground">{build.label}</span>
                 </div>
-                <ArrowRight className="size-3 text-muted-foreground/50 shrink-0" />
+                <ArrowRight className="size-3 text-muted-foreground/50 shrink-0 rtl:rotate-180" />
               </>
             )}
             <div className="flex items-center gap-1.5 text-sm min-w-0">
               {target.icon}
-              <span className="text-muted-foreground">Deploy:</span>
+              <span className="text-muted-foreground">{t.deploy.summary.deploy}</span>
               <span className="font-medium text-foreground truncate">{deployLabel}</span>
             </div>
           </>
@@ -381,46 +391,18 @@ interface DeployTargetStepProps {
 // provision time. Billing is credits-based (no $/mo shown here).
 type CloudResourceTier = NonNullable<DeploymentConfig["cloudResourceTier"]>;
 
+// Specs are technical values (kept verbatim); label + bestFor are looked up
+// from the dictionary by `id` inside CloudPowerPicker.
 const CLOUD_RESOURCE_TIERS: Array<{
     id: Exclude<CloudResourceTier, "custom">;
-    label: string;
     cpu: string;
     ram: string;
     disk: string;
-    bestFor: string;
 }> = [
-    {
-        id: "micro",
-        label: "Micro",
-        cpu: "0.25 vCPU",
-        ram: "256 MB",
-        disk: "4 GB",
-        bestFor: "Side projects, low traffic",
-    },
-    {
-        id: "low",
-        label: "Low",
-        cpu: "0.5 vCPU",
-        ram: "512 MB",
-        disk: "8 GB",
-        bestFor: "Small apps, light APIs",
-    },
-    {
-        id: "medium",
-        label: "Medium",
-        cpu: "1 vCPU",
-        ram: "1 GB",
-        disk: "16 GB",
-        bestFor: "Most production apps",
-    },
-    {
-        id: "high",
-        label: "High",
-        cpu: "2 vCPU",
-        ram: "2 GB",
-        disk: "32 GB",
-        bestFor: "Heavy workloads, fast builds",
-    },
+    { id: "micro", cpu: "0.25 vCPU", ram: "256 MB", disk: "4 GB" },
+    { id: "low", cpu: "0.5 vCPU", ram: "512 MB", disk: "8 GB" },
+    { id: "medium", cpu: "1 vCPU", ram: "1 GB", disk: "16 GB" },
+    { id: "high", cpu: "2 vCPU", ram: "2 GB", disk: "32 GB" },
 ];
 
 const CUSTOM_DEFAULTS = { cpuCores: 1, memoryMb: 1024, diskMb: 16384 };
@@ -441,20 +423,21 @@ const CustomPowerModalContent: React.FC<CustomPowerModalContentProps> = ({
     onSave,
     onCancel,
 }) => {
+    const { t } = useI18n();
     const [values, setValues] = useState(initial);
     const set = (patch: Partial<typeof values>) =>
         setValues((prev) => ({ ...prev, ...patch }));
     return (
         <div className="p-6 space-y-5">
             <div className="space-y-1.5">
-                <h3 className="text-base font-semibold text-foreground">Custom runtime</h3>
+                <h3 className="text-base font-semibold text-foreground">{t.deploy.power.modalTitle}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                    Pick the CPU, RAM, and disk this deployment should run with.
+                    {t.deploy.power.modalSubtitle}
                 </p>
             </div>
             <div className="grid grid-cols-3 gap-3">
                 <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">vCPU</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t.deploy.power.vcpuField}</span>
                     <input
                         type="number"
                         inputMode="decimal"
@@ -466,7 +449,7 @@ const CustomPowerModalContent: React.FC<CustomPowerModalContentProps> = ({
                     />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">RAM (MB)</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t.deploy.power.ramField}</span>
                     <input
                         type="number"
                         inputMode="numeric"
@@ -478,7 +461,7 @@ const CustomPowerModalContent: React.FC<CustomPowerModalContentProps> = ({
                     />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">Disk (GB)</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t.deploy.power.diskField}</span>
                     <input
                         type="number"
                         inputMode="numeric"
@@ -500,14 +483,14 @@ const CustomPowerModalContent: React.FC<CustomPowerModalContentProps> = ({
                     onClick={onCancel}
                     className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
                 >
-                    Cancel
+                    {t.deploy.power.cancel}
                 </button>
                 <button
                     type="button"
                     onClick={() => onSave(values)}
                     className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                    Save
+                    {t.deploy.power.save}
                 </button>
             </div>
         </div>
@@ -516,9 +499,16 @@ const CustomPowerModalContent: React.FC<CustomPowerModalContentProps> = ({
 
 const CloudPowerPicker: React.FC = () => {
     const { config, updateConfig } = useDeployment();
+    const { t } = useI18n();
     const { showModal, hideModal } = useModal();
     const selected = config.cloudResourceTier ?? "low";
     const custom = config.cloudResourceCustom ?? CUSTOM_DEFAULTS;
+    const tierText: Record<string, { label: string; bestFor: string }> = {
+        micro: { label: t.deploy.power.tierMicroLabel, bestFor: t.deploy.power.tierMicroBestFor },
+        low: { label: t.deploy.power.tierLowLabel, bestFor: t.deploy.power.tierLowBestFor },
+        medium: { label: t.deploy.power.tierMediumLabel, bestFor: t.deploy.power.tierMediumBestFor },
+        high: { label: t.deploy.power.tierHighLabel, bestFor: t.deploy.power.tierHighBestFor },
+    };
 
     // Click on Custom card → open modal. Pre-selects the tier so the choice
     // sticks even if the user cancels (matches the rest of the picker:
@@ -556,10 +546,10 @@ const CloudPowerPicker: React.FC = () => {
             <div>
                 <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Zap className="size-4 text-amber-500" />
-                    Power
+                    {t.deploy.power.heading}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                    Pick a runtime size for Openship Cloud
+                    {t.deploy.power.subtitle}
                 </p>
             </div>
             <div className="space-y-2">
@@ -570,7 +560,7 @@ const CloudPowerPicker: React.FC = () => {
                             key={tier.id}
                             type="button"
                             onClick={() => updateConfig({ cloudResourceTier: tier.id })}
-                            className={`w-full rounded-xl border p-4 text-left transition-all ${
+                            className={`w-full rounded-xl border p-4 text-start transition-all ${
                                 isSelected
                                     ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                                     : "border-border/50 bg-card hover:border-primary/30 hover:bg-primary/[0.02]"
@@ -580,11 +570,11 @@ const CloudPowerPicker: React.FC = () => {
                             <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0 flex items-baseline gap-2">
                                     <span className={`text-sm font-semibold shrink-0 ${isSelected ? "text-foreground" : "text-foreground/80"}`}>
-                                        {tier.label}
+                                        {tierText[tier.id].label}
                                     </span>
                                     <span className="text-muted-foreground/70 shrink-0">·</span>
                                     <span className="text-xs text-muted-foreground truncate">
-                                        {tier.bestFor}
+                                        {tierText[tier.id].bestFor}
                                     </span>
                                 </div>
                                 {isSelected && (
@@ -598,9 +588,9 @@ const CloudPowerPicker: React.FC = () => {
                             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground tabular-nums">
                                 <span>{tier.cpu}</span>
                                 <span className="text-muted-foreground/70">·</span>
-                                <span>RAM {tier.ram}</span>
+                                <span>{t.deploy.power.ram} {tier.ram}</span>
                                 <span className="text-muted-foreground/70">·</span>
-                                <span>Disk {tier.disk}</span>
+                                <span>{t.deploy.power.disk} {tier.disk}</span>
                             </div>
                         </button>
                     );
@@ -618,7 +608,7 @@ const CloudPowerPicker: React.FC = () => {
                 <button
                     type="button"
                     onClick={openCustomModal}
-                    className={`w-full rounded-xl border p-4 text-left transition-all ${
+                    className={`w-full rounded-xl border p-4 text-start transition-all ${
                         selected === "custom"
                             ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                             : "border-border/50 bg-card hover:border-primary/30 hover:bg-primary/[0.02]"
@@ -627,11 +617,11 @@ const CloudPowerPicker: React.FC = () => {
                     <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex items-baseline gap-2">
                             <span className={`text-sm font-semibold shrink-0 ${selected === "custom" ? "text-foreground" : "text-foreground/80"}`}>
-                                Custom
+                                {t.deploy.power.custom}
                             </span>
                             <span className="text-muted-foreground/70 shrink-0">·</span>
                             <span className="text-xs text-muted-foreground truncate">
-                                Dial in CPU, RAM, and storage yourself
+                                {t.deploy.power.customDesc}
                             </span>
                         </div>
                         {selected === "custom" && (
@@ -641,11 +631,11 @@ const CloudPowerPicker: React.FC = () => {
                         )}
                     </div>
                     <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground tabular-nums">
-                        <span>{custom.cpuCores} vCPU</span>
+                        <span>{custom.cpuCores} {t.deploy.power.vcpu}</span>
                         <span className="text-muted-foreground/70">·</span>
-                        <span>RAM {custom.memoryMb} MB</span>
+                        <span>{t.deploy.power.ram} {custom.memoryMb} MB</span>
                         <span className="text-muted-foreground/70">·</span>
-                        <span>Disk {Math.round(custom.diskMb / 1024)} GB</span>
+                        <span>{t.deploy.power.disk} {Math.round(custom.diskMb / 1024)} GB</span>
                     </div>
                 </button>
             </div>
@@ -662,6 +652,8 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
   const isDesktop = deployMode === "desktop";
   const { showToast } = useToast();
   const { showModal, hideModal } = useModal();
+  const { t } = useI18n();
+  const ts = t.deploy.targetStep;
   const { ready, servers, hasCloudConnected, hasCloudOption, hasChoice, refreshServers } = targets;
   const hasServers = servers.length > 0;
   const isSingleServer = servers.length === 1;
@@ -913,15 +905,15 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         value: "server",
         icon: <Server className="size-5" />,
         label: servers[0].name || servers[0].sshHost,
-        description: "Deploy to your remote server via SSH.",
+        description: ts.options.serverViaSsh,
       });
     } else {
       // Multiple servers → show "Servers" category
       deployTargetOptions.push({
         value: "server",
         icon: <Server className="size-5" />,
-        label: "Servers",
-        description: `Choose from ${servers.length} configured servers.`,
+        label: ts.options.servers,
+        description: interpolate(ts.options.serversCount, { count: String(servers.length) }),
       });
     }
   }
@@ -930,10 +922,10 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
     deployTargetOptions.push({
       value: "cloud",
       icon: <Cloud className="size-5" />,
-      label: "Openship Cloud",
+      label: ts.options.cloud,
       description: hasCloudConnected
-        ? "Deploy to managed cloud infrastructure. No server setup needed."
-        : "Connect your Openship Cloud account and deploy to managed infrastructure.",
+        ? ts.options.cloudConnectedDesc
+        : ts.options.cloudDisconnectedDesc,
     });
   }
 
@@ -946,14 +938,14 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
     {
       value: "local",
       icon: <Cpu className="size-5" />,
-      label: "This Machine",
-      description: "Build locally, then transfer the output. Faster if you have a powerful machine.",
+      label: ts.build.localLabel,
+      description: ts.build.localDesc,
     },
     {
       value: "server",
       icon: <Cloud className="size-5" />,
-      label: "Remote",
-      description: "Build on the deploy target. Best when your machine has limited resources.",
+      label: ts.build.remoteLabel,
+      description: ts.build.remoteDesc,
     },
   ];
   // For cloud deploys, building locally is a valid cost-saving path when the
@@ -972,17 +964,16 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         {
           value: "server" as const,
           icon: <Cloud className="size-5" />,
-          label: "Openship Cloud",
-          description: "Build in managed cloud infrastructure. Recommended.",
+          label: ts.build.cloudLabel,
+          description: ts.build.cloudDesc,
         },
         ...(cloudSupportsLocalBuild
           ? [
               {
                 value: "local" as const,
                 icon: <Cpu className="size-5" />,
-                label: "This Machine",
-                description:
-                  "Build locally and ship only the output. Saves cloud build minutes when you have a capable machine.",
+                label: ts.build.cloudLocalLabel,
+                description: ts.build.cloudLocalDesc,
               },
             ]
           : []),
@@ -1012,24 +1003,27 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
       // desktop mode, the Openship orchestrator when self-hosted. Not the cloud —
       // so no cloud icon, and a label that says which machine it actually is.
       icon: <Cpu className="size-5" />,
-      label: isDesktop ? "On your device" : "On Openship",
+      label: isDesktop ? ts.clone.apiHostDesktopLabel : ts.clone.apiHostServerLabel,
       description: isDesktop
-        ? "Clone on your machine, then upload the build context. Works everywhere."
-        : "Clone on the Openship host, then upload the build context. Works everywhere.",
+        ? ts.clone.apiHostDesktopDesc
+        : ts.clone.apiHostServerDesc,
     },
     {
       value: "server",
       icon: <GitBranch className="size-5" />,
-      label: "On the server",
-      description: "Clone straight on the server — no upload, best for big repos.",
+      label: ts.clone.serverLabel,
+      description: ts.clone.serverDesc,
     },
   ];
 
   // Advanced-panel summary line (build location). Clone location has its own
   // right-panel picker, so it isn't summarized here.
   const advancedSummary = showBuildStrategy
-    ? `${config.options.hasBuild ? "Build" : "Prepare"} on ${visibleBuildOptions.find((o) => o.value === config.buildStrategy)?.label ?? "—"}`
-    : "Options";
+    ? interpolate(ts.build.advancedSummary, {
+        action: config.options.hasBuild ? ts.build.actionBuild : ts.build.actionPrepare,
+        location: visibleBuildOptions.find((o) => o.value === config.buildStrategy)?.label ?? "—",
+      })
+    : ts.build.options;
 
   const hasAnyDeployTarget = deployTargetOptions.length > 0;
   const canContinue = ready && (
@@ -1085,9 +1079,9 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         defaultDeployTarget: config.deployTarget,
         defaultServerId: config.deployTarget === "server" ? (config.serverId ?? null) : null,
       });
-      showToast("Saved as your default deploy target", "success", "Defaults");
+      showToast(ts.savedToast, "success", ts.savedToastTitle);
     } catch {
-      showToast("Couldn't save default - your deploy will still continue", "error", "Defaults");
+      showToast(ts.saveFailedToast, "error", ts.savedToastTitle);
     } finally {
       setSavingDefault(false);
     }
@@ -1102,7 +1096,7 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
     // is paternalistic and breaks the "I picked my own server, leave me
     // alone" signal the user just gave us.
     if (config.deployTarget === "cloud" && !hasCloudConnected) {
-      if (!requireCloud("Deploying to Openship Cloud")) {
+      if (!requireCloud(ts.requireCloudFeature)) {
         return;
       }
     }
@@ -1152,20 +1146,20 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
           : "mx-auto w-full max-w-lg"
       }
     >
-    <div className={`space-y-8 ${showRightPanel ? "lg:pr-6" : ""}`}>
+    <div className={`space-y-8 ${showRightPanel ? "lg:pe-6" : ""}`}>
       {showLoading && (
         <div className="space-y-3">
           <div>
             <h3 className="text-base font-semibold text-foreground">
-              Where do you want to deploy?
+              {ts.heading}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Loading your available deploy targets
+              {ts.loadingSubtitle}
             </p>
           </div>
           <div className="flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-8 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Checking servers and cloud connection...
+            {ts.loadingCheck}
           </div>
         </div>
       )}
@@ -1176,7 +1170,7 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
       {useCompact && (
         <div className="space-y-3">
           <h3 className="text-base font-semibold text-foreground">
-            Deploy &amp; build
+            {ts.deployAndBuildHeading}
           </h3>
           <DeployTargetSummary
             deployTarget={config.deployTarget}
@@ -1193,12 +1187,10 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         <div className="space-y-3">
           <div>
             <h3 className="text-base font-semibold text-foreground">
-              Where do you want to deploy?
+              {ts.heading}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {hasChoice
-                ? "Choose where your application will run"
-                : "Only one deploy target is currently available"}
+              {hasChoice ? ts.chooseSubtitle : ts.onlyOneSubtitle}
             </p>
           </div>
           <div className="space-y-2">
@@ -1230,7 +1222,7 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
               className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/60 bg-card/40 px-4 py-2.5 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-muted/30 transition-all"
             >
               <Plus className="size-3.5" />
-              Add your own server
+              {ts.addServer}
             </button>
           )}
 
@@ -1250,12 +1242,12 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
               <span className="min-w-0">
                 <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                   <GitBranch className="size-3.5 text-muted-foreground" />
-                  Forward my git credentials
+                  {ts.gitForwardLabel}
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground leading-snug">
-                  Clone on the server using your local{" "}
-                  <span className="font-mono text-foreground/80">gh</span> identity — no
-                  build-and-upload. Nothing is stored on the server.
+                  {ts.gitForwardDescPre}
+                  <span className="font-mono text-foreground/80">gh</span>
+                  {ts.gitForwardDescPost}
                 </span>
               </span>
             </label>
@@ -1267,14 +1259,14 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         <div className="space-y-3">
           <div>
             <h3 className="text-base font-semibold text-foreground">
-              Where do you want to deploy?
+              {ts.heading}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              No deploy target is available yet
+              {ts.noTargetSubtitle}
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card px-4 py-4 text-sm text-muted-foreground leading-relaxed">
-            Connect Openship Cloud or add a server to continue with this deployment.
+            {ts.noTargetBody}
           </div>
           {selfHosted && (
             <button
@@ -1283,7 +1275,7 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
               className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/60 bg-card/40 px-4 py-2.5 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-muted/30 transition-all"
             >
               <Plus className="size-3.5" />
-              Add your own server
+              {ts.addServer}
             </button>
           )}
         </div>
@@ -1302,14 +1294,16 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">
-                We&apos;ll {config.options.hasBuild ? "build" : "prepare"} where you deploy
+                {config.options.hasBuild ? ts.hint.buildTitle : ts.hint.prepareTitle}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed mt-1">
                 {config.deployTarget === "cloud"
-                  ? "Builds run in managed cloud infrastructure - nothing to set up."
+                  ? ts.hint.cloud
                   : config.deployTarget === "server"
-                    ? `Builds run on your ${summaryServerName ? `server "${summaryServerName}"` : "server"}. If it's a small VPS, building on this machine can be much faster. You can change this on the next screen or save a preference in Settings.`
-                    : "Builds run on this machine. You can change this on the next screen or save a preference in Settings."}
+                    ? (summaryServerName
+                        ? interpolate(ts.hint.serverNamed, { name: summaryServerName })
+                        : ts.hint.server)
+                    : ts.hint.local}
               </p>
               {config.deployTarget !== "cloud" && (
                 <button
@@ -1317,8 +1311,8 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
                   onClick={() => setRevealBuildPicker(true)}
                   className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Choose build location
-                  <ArrowRight className="size-3" />
+                  {ts.hint.chooseBuildLocation}
+                  <ArrowRight className="size-3 rtl:rotate-180" />
                 </button>
               )}
             </div>
@@ -1331,14 +1325,14 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-start"
           >
             <div className="flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-xl bg-muted/40">
                 <Settings2 className="size-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Advanced</p>
+                <p className="text-sm font-semibold text-foreground">{ts.build.advanced}</p>
                 <p className="text-xs text-muted-foreground">{advancedSummary}</p>
               </div>
             </div>
@@ -1354,12 +1348,10 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
               <div className="space-y-3">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">
-                    {config.options.hasBuild ? "Where do you want to build?" : "Where do you want to prepare it?"}
+                    {config.options.hasBuild ? ts.build.heading : ts.build.prepareHeading}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {config.options.hasBuild
-                      ? "Choose where the build process runs"
-                      : "Choose where the repository is cloned and staged before deploy"}
+                    {config.options.hasBuild ? ts.build.subtitle : ts.build.prepareSubtitle}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1396,9 +1388,9 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
             className="mt-0.5 size-4 shrink-0 rounded border-border/60 bg-card text-primary focus:ring-2 focus:ring-primary/30 focus:ring-offset-0 cursor-pointer disabled:opacity-50"
           />
           <span className="text-sm text-muted-foreground leading-snug">
-            Save as my default for every deployment.{" "}
+            {ts.saveDefault}{" "}
             <span className="text-muted-foreground/70">
-              Change it later in Settings, or per-deploy from the picker on this page.
+              {ts.saveDefaultHint}
             </span>
           </span>
         </label>
@@ -1411,8 +1403,8 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
         disabled={!canContinue}
         className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
       >
-        Continue
-        <ArrowRight className="size-4" />
+        {ts.continue}
+        <ArrowRight className="size-4 rtl:rotate-180" />
       </button>
     </div>
     {showRightPanel && (
@@ -1426,21 +1418,18 @@ const DeployTargetStep: React.FC<DeployTargetStepProps> = ({ targets, onContinue
             each time the user flips targets (not only on first selection).
             Stacks whichever "how it runs" pickers apply to this target:
             cloud power, runtime isolation, and/or clone location. */}
-        <div key={config.deployTarget} className="lg:pl-6 animate-slide-in-right space-y-6">
+        <div key={config.deployTarget} className="lg:ps-6 animate-slide-in-right space-y-6">
           {showCloudPicker && <CloudPowerPicker />}
           {showServerRuntime && <ServerRuntimePicker />}
           {showClonePanel && (
             <div className="space-y-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
-                  Where do you want to clone?
+                  {ts.clone.heading}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  The build always runs on the server — this only changes where the
-                  repo is cloned.{" "}
-                  {isDesktop
-                    ? "Cloning on the server forwards your git credentials temporarily; nothing is stored."
-                    : "Cloning on the server ships a short-lived token to the build host."}
+                  {ts.clone.descLead}
+                  {isDesktop ? ts.clone.descDesktop : ts.clone.descServer}
                 </p>
               </div>
               <div className="space-y-2">

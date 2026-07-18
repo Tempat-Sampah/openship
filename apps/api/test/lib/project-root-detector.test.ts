@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyWorkspaceContext,
+  discoverMonorepoApps,
   discoverProjectRootHints,
   parseVercelRootDirectories,
   selectPreferredProjectRoot,
@@ -845,5 +846,169 @@ describe("applyWorkspaceContext - install command rewriting", () => {
     const selectedRoot = selectPreferredProjectRoot(root, []);
     const adjusted = applyWorkspaceContext(root, selectedRoot);
     expect(adjusted.stack.installCommand).not.toContain("cd");
+  });
+});
+
+// ─── Implicit (manifest-less) monorepo detection ─────────────────────────────
+
+describe("discoverMonorepoApps - implicit monorepo (no workspace manifest)", () => {
+  const ROOT_VERCEL = JSON.stringify({
+    installCommand: "npm install && cd frontend && npm install",
+    buildCommand: "cd frontend && npm run build",
+    outputDirectory: "frontend/dist",
+    rewrites: [{ source: "/(.*)", destination: "/index.html" }],
+  });
+  const FRONTEND_VERCEL = JSON.stringify({
+    rewrites: [{ source: "/(.*)", destination: "/index.html" }],
+  });
+
+  const rootBackend = () => ({
+    rootDirectory: "",
+    files: [
+      { name: "package.json", type: "file" as const },
+      { name: "package-lock.json", type: "file" as const },
+      { name: "server.js", type: "file" as const },
+      { name: "vercel.json", type: "file" as const },
+      { name: "render.yaml", type: "file" as const },
+      { name: "frontend", type: "dir" as const },
+    ],
+    packageJson: {
+      name: "api",
+      dependencies: { express: "^5.0.0" },
+      scripts: { start: "node server.js" },
+    },
+    fileContents: { "vercel.json": ROOT_VERCEL, "render.yaml": "services:\n  - type: web\n    startCommand: npm start\n" },
+  });
+
+  const frontendVite = (source: "vercel" | "discovered" = "vercel") => ({
+    rootDirectory: "frontend",
+    source,
+    files: [
+      { name: "package.json", type: "file" as const },
+      { name: "package-lock.json", type: "file" as const },
+      { name: "vite.config.js", type: "file" as const },
+      { name: "index.html", type: "file" as const },
+      { name: "src", type: "dir" as const },
+      { name: "vercel.json", type: "file" as const },
+    ],
+    packageJson: {
+      name: "frontend",
+      dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", vite: "^8.0.0" },
+      scripts: { build: "vite build" },
+    },
+    fileContents: { "vercel.json": FRONTEND_VERCEL },
+  });
+
+  it("treats a root backend + independent nested frontend as a 2-app monorepo", () => {
+    const result = discoverMonorepoApps(rootBackend(), [frontendVite()]);
+    expect(result).not.toBeNull();
+    expect(result!.apps).toHaveLength(2);
+
+    const root = result!.apps[0];
+    expect(root.rootDirectory).toBe(".");
+    expect(root.stack).toBe("express");
+    expect(root.category).toBe("backend");
+    expect(root.startCommand).toContain("start"); // node server.js via npm start
+    expect(root.name).toBe("api");
+
+    const frontend = result!.apps[1];
+    expect(frontend.rootDirectory).toBe("frontend");
+    expect(frontend.stack).toBe("vite");
+    expect(frontend.category).toBe("frontend");
+    expect(frontend.buildCommand).toBe("npm run build");
+    // Static sub-app has no start command - the monorepo pipeline serves its
+    // build output as files via the generated nginx image (isStaticService).
+    expect(frontend.startCommand).toBe("");
+    expect(frontend.outputDirectory).toBe("dist");
+
+    // Implicit monorepo has no shared root install.
+    expect(result!.workspace.prepareCommand).toBe("");
+  });
+
+  it("counts a nested app as independent when it has its own lockfile (not just a bare package.json)", () => {
+    // Same frontend but discovered (not vercel-sourced) - still independent via its own package-lock.json.
+    const result = discoverMonorepoApps(rootBackend(), [frontendVite("discovered")]);
+    expect(result).not.toBeNull();
+    expect(result!.apps.map((a) => a.rootDirectory).sort()).toEqual([".", "frontend"]);
+  });
+
+  it("does NOT treat a plain app with a bare-package.json examples/ folder as a monorepo", () => {
+    const root = {
+      rootDirectory: "",
+      files: [
+        { name: "package.json", type: "file" as const },
+        { name: "next.config.js", type: "file" as const },
+        { name: "examples", type: "dir" as const },
+      ],
+      packageJson: {
+        dependencies: { next: "^15.0.0", react: "^19.0.0" },
+        scripts: { build: "next build", start: "next start" },
+      },
+      fileContents: {},
+    };
+    const examples = {
+      rootDirectory: "examples",
+      source: "discovered" as const,
+      files: [{ name: "package.json", type: "file" as const }], // no lockfile, not vercel-sourced
+      packageJson: { dependencies: { lodash: "^4.0.0" } },
+      fileContents: {},
+    };
+    expect(discoverMonorepoApps(root, [examples])).toBeNull();
+  });
+
+  it("does NOT fire when the root is a services (compose) project", () => {
+    const root = {
+      rootDirectory: "",
+      files: [
+        { name: "docker-compose.yml", type: "file" as const },
+        { name: "frontend", type: "dir" as const },
+      ],
+      fileContents: {},
+    };
+    expect(discoverMonorepoApps(root, [frontendVite()])).toBeNull();
+  });
+});
+
+describe("discoverMonorepoApps - .NET class-library exclusion", () => {
+  const WEB_CSPROJ =
+    '<Project Sdk="Microsoft.NET.Sdk.Web">\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n';
+  const LIB_CSPROJ =
+    '<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n';
+
+  // A deployable web app at the repo root (ASP.NET Core Web SDK).
+  const rootWebApp = () => ({
+    rootDirectory: "",
+    files: [
+      { name: "Crud.Demo.csproj", type: "file" as const },
+      { name: "Program.cs", type: "file" as const },
+    ],
+    fileContents: { "crud.demo.csproj": WEB_CSPROJ },
+  });
+
+  const project = (dir: string, csproj: string) => ({
+    rootDirectory: dir,
+    source: "discovered" as const,
+    files: [{ name: `${dir}.csproj`, type: "file" as const }],
+    fileContents: { [`${dir.toLowerCase()}.csproj`]: csproj },
+  });
+
+  it("does not turn class libraries into apps - a web app + libraries is one app", () => {
+    // The CRUD-Demo shape: one web project plus DataAccess/BusinessLogic class
+    // libraries. Libraries are .dlls the web app links, not deployable apps, so
+    // this must NOT become a 3-app monorepo (3 domains on port 5000).
+    const result = discoverMonorepoApps(rootWebApp(), [
+      project("DataAccess", LIB_CSPROJ),
+      project("BusinessLogic", LIB_CSPROJ),
+    ]);
+    expect(result).toBeNull();
+  });
+
+  it("keeps deployable .NET projects while dropping libraries", () => {
+    const result = discoverMonorepoApps(rootWebApp(), [
+      project("ApiB", WEB_CSPROJ),
+      project("SharedLib", LIB_CSPROJ),
+    ]);
+    expect(result).not.toBeNull();
+    expect(result!.apps.map((app) => app.rootDirectory).sort()).toEqual([".", "ApiB"]);
   });
 });

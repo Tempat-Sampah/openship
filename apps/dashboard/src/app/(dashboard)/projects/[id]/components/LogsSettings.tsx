@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { Terminal, Server } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
+import { useI18n } from "@/components/i18n-provider";
 import { TerminalLogs } from "./logs/TerminalLogs";
 import { ServerLogs } from "./logs/ServerLogs";
 import { LogsActions } from "./logs/LogsActions";
@@ -23,6 +24,7 @@ export const LogsSettings = () => {
     clearServerLogs,
     servicesData,
   } = useProjectSettings();
+  const { t } = useI18n();
   const hasProjectId = Boolean(id && id !== "undefined");
   const hasResolvedServerMode =
     typeof projectData?.options?.hasServer === "boolean" ||
@@ -240,10 +242,9 @@ export const LogsSettings = () => {
         <div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Terminal className="size-5" />
         </div>
-        <h3 className="text-sm font-semibold text-foreground">No runtime logs</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t.projectSettings.logs.noRuntime}</h3>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          This project is deployed as a static app, so there is no running server process to stream
-          logs from.
+          {t.projectSettings.logs.noRuntimeDesc}
         </p>
       </div>
     );
@@ -264,9 +265,9 @@ export const LogsSettings = () => {
               }`}
             >
               <Terminal className="size-4" />
-              Terminal
+              {t.projectSettings.logs.terminal}
               {activeTab === "terminal" && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                <span className="absolute bottom-0 start-0 end-0 h-0.5 bg-primary rounded-full" />
               )}
             </button>
           )}
@@ -282,7 +283,7 @@ export const LogsSettings = () => {
             {/* Rename to "Requests" when there's no runtime — the
                 same endpoint backs both, but for static apps it's
                 purely edge access logs, not server logs. */}
-            {isRequestLogsOnly ? "Requests" : "Server"}
+            {isRequestLogsOnly ? t.projectSettings.logs.requests : t.projectSettings.logs.server}
             {activeTab === "server" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
             )}
@@ -306,11 +307,11 @@ export const LogsSettings = () => {
               <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Runtime log target</p>
+                    <p className="text-sm font-medium text-foreground">{t.projectSettings.logs.target}</p>
                     <p className="text-sm text-muted-foreground">
                       {effectiveHasServer
-                        ? "Switch between the project runtime and service runtimes."
-                        : "Switch between service runtimes."}
+                        ? t.projectSettings.logs.targetDescProject
+                        : t.projectSettings.logs.targetDescService}
                     </p>
                   </div>
                   <div className="min-w-[220px]">
@@ -320,7 +321,7 @@ export const LogsSettings = () => {
                       disabled={servicesLoading}
                       className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none"
                     >
-                      {effectiveHasServer && <option value="">Project runtime</option>}
+                      {effectiveHasServer && <option value="">{t.projectSettings.logs.projectRuntime}</option>}
                       {services.map((service) => (
                         <option key={service.id} value={service.id}>
                           {service.name}
@@ -334,12 +335,12 @@ export const LogsSettings = () => {
 
             {hasMultipleLogTargets && !effectiveHasServer && !selectedService ? (
               <div className="flex min-h-[420px] items-center justify-center rounded-3xl border border-border/50 bg-card text-sm text-muted-foreground">
-                Select a service to view its runtime logs.
+                {t.projectSettings.logs.selectService}
               </div>
             ) : (
               <TerminalLogs
                 projectId={id}
-                projectName={terminalService?.name || projectData?.name || "Project"}
+                projectName={terminalService?.name || projectData?.name || t.projectSettings.logs.projectFallback}
                 streamTarget={terminalStreamTarget}
                 historyTarget={terminalHistoryTarget}
                 onLogsChange={handleLogsChange}
@@ -350,7 +351,7 @@ export const LogsSettings = () => {
         {activeTab === "server" && canShowLogs && hasProjectId && (
           <ServerLogs
             projectId={id}
-            projectName={projectData?.name || "Project"}
+            projectName={projectData?.name || t.projectSettings.logs.projectFallback}
             onLogsChange={handleLogsChange}
           />
         )}

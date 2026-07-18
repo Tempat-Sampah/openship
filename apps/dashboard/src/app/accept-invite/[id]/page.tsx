@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2, Check, X } from "lucide-react";
 import { authClient, useSession } from "@/lib/auth-client";
 import { api } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type InviteState =
   | { kind: "loading" }
@@ -30,6 +31,8 @@ export default function AcceptInvitePage() {
   const params = useParams();
   const router = useRouter();
   const { data: session, isPending: sessionLoading } = useSession();
+  const { t } = useI18n();
+  const m = t.misc.acceptInvite;
   const [state, setState] = useState<InviteState>({ kind: "loading" });
 
   const inviteId = String(params.id);
@@ -41,14 +44,14 @@ export default function AcceptInvitePage() {
       try {
         const res = await orgClient.getInvitation({ id: inviteId });
         if (res.error) {
-          setState({ kind: "error", message: res.error.message ?? "Invalid invitation" });
+          setState({ kind: "error", message: res.error.message ?? m.invalidInvitation });
           return;
         }
         const { invitation, organization } = res.data!;
         if (invitation.status !== "pending") {
           setState({
             kind: "error",
-            message: `This invitation is ${invitation.status}.`,
+            message: interpolate(m.invitationStatus, { status: invitation.status }),
           });
           return;
         }
@@ -63,7 +66,10 @@ export default function AcceptInvitePage() {
         if (session.user.email !== invitation.email) {
           setState({
             kind: "error",
-            message: `This invite is for ${invitation.email}. You're logged in as ${session.user.email}.`,
+            message: interpolate(m.wrongAccount, {
+              email: invitation.email,
+              currentEmail: session.user.email,
+            }),
           });
           return;
         }
@@ -76,11 +82,11 @@ export default function AcceptInvitePage() {
       } catch (err) {
         setState({
           kind: "error",
-          message: err instanceof Error ? err.message : "Failed to load invitation",
+          message: err instanceof Error ? err.message : m.loadFailed,
         });
       }
     })();
-  }, [inviteId, session, sessionLoading]);
+  }, [inviteId, session, sessionLoading, m]);
 
   const handleAccept = async () => {
     setState({ kind: "accepting" });
@@ -88,7 +94,7 @@ export default function AcceptInvitePage() {
     if (res.error || !res.data) {
       setState({
         kind: "error",
-        message: res.error?.message ?? "Failed to accept invitation",
+        message: res.error?.message ?? m.acceptFailed,
       });
       return;
     }
@@ -111,7 +117,7 @@ export default function AcceptInvitePage() {
     setState({
       kind: "accepted",
       organizationId: res.data.invitation.organizationId,
-      organizationName: "the organization",
+      organizationName: m.theOrganization,
     });
     setTimeout(() => router.push("/"), 1500);
   };
@@ -131,10 +137,13 @@ export default function AcceptInvitePage() {
         ) : state.kind === "needs-login" ? (
           <>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">You're invited</h1>
+              <h1 className="text-xl font-semibold text-foreground">{m.invitedTitle}</h1>
               <p className="text-sm text-muted-foreground mt-2">
-                Join <strong>{state.organizationName}</strong> on Openship. Sign in or create an
-                account with <strong>{state.email}</strong> to accept.
+                {m.needsLoginPre}
+                <strong>{state.organizationName}</strong>
+                {m.needsLoginMid}
+                <strong>{state.email}</strong>
+                {m.needsLoginPost}
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -142,13 +151,13 @@ export default function AcceptInvitePage() {
                 href={`/auth/signin?redirect=${encodeURIComponent(`/accept-invite/${inviteId}`)}`}
                 className="block w-full text-center py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                Sign in
+                {m.signIn}
               </Link>
               <Link
                 href={`/auth/signup?email=${encodeURIComponent(state.email || "")}&redirect=${encodeURIComponent(`/accept-invite/${inviteId}`)}`}
                 className="block w-full text-center py-2.5 border border-border/50 rounded-xl text-sm font-medium hover:bg-muted/40 transition-colors"
               >
-                Create account
+                {m.createAccount}
               </Link>
             </div>
           </>
@@ -156,11 +165,14 @@ export default function AcceptInvitePage() {
           <>
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                Join {state.organizationName}
+                {interpolate(m.joinTitle, { org: state.organizationName })}
               </h1>
               <p className="text-sm text-muted-foreground mt-2">
-                You've been invited to join <strong>{state.organizationName}</strong> as a{" "}
-                <strong>{state.role}</strong>.
+                {m.readyPre}
+                <strong>{state.organizationName}</strong>
+                {m.readyMid}
+                <strong>{state.role}</strong>
+                {m.readyPost}
               </p>
             </div>
             <div className="flex gap-2">
@@ -169,42 +181,42 @@ export default function AcceptInvitePage() {
                 onClick={handleReject}
                 className="flex-1 py-2.5 border border-border/50 rounded-xl text-sm font-medium hover:bg-muted/40 transition-colors"
               >
-                Decline
+                {m.decline}
               </button>
               <button
                 type="button"
                 onClick={handleAccept}
                 className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                Accept
+                {m.accept}
               </button>
             </div>
           </>
         ) : state.kind === "accepting" ? (
           <div className="flex items-center justify-center py-8 gap-3 text-sm text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />
-            Joining organization...
+            {m.joining}
           </div>
         ) : state.kind === "accepted" ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
               <Check className="size-6 text-emerald-500" />
             </div>
-            <p className="text-base font-medium text-foreground">You're in</p>
-            <p className="text-sm text-muted-foreground">Redirecting to the dashboard...</p>
+            <p className="text-base font-medium text-foreground">{m.acceptedTitle}</p>
+            <p className="text-sm text-muted-foreground">{m.acceptedRedirect}</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
               <X className="size-6 text-destructive" />
             </div>
-            <p className="text-base font-medium text-foreground">Can't accept this invite</p>
+            <p className="text-base font-medium text-foreground">{m.errorTitle}</p>
             <p className="text-sm text-muted-foreground">{state.message}</p>
             <Link
               href="/"
               className="mt-2 text-sm font-medium text-primary hover:underline"
             >
-              Back to dashboard
+              {m.backToDashboard}
             </Link>
           </div>
         )}

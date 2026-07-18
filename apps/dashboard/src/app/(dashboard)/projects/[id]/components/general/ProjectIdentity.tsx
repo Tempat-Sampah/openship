@@ -4,9 +4,11 @@ import { generateIcon } from "@/utils/icons";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { projectsApi } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 
 export const ProjectIdentity: React.FC = () => {
   const { projectData, updateProjectData } = useProjectSettings();
+  const { t } = useI18n();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
 
@@ -30,7 +32,7 @@ export const ProjectIdentity: React.FC = () => {
       updateProjectData({ name: tempData.name });
       setIsEditingName(false);
     } else {
-      showToast(response.message, 'error', 'Failed to update project name');
+      showToast(response.message, 'error', t.projectDetail.general.identity.updateNameFailed);
     }
     setLoading({ ...loading, name: false });
   };
@@ -41,7 +43,7 @@ export const ProjectIdentity: React.FC = () => {
       updateProjectData({ description: tempData.description });
       setIsEditingDescription(false);
     } else {
-      showToast(response.message, 'error', 'Failed to update project description');
+      showToast(response.message, 'error', t.projectDetail.general.identity.updateDescriptionFailed);
     }
     setLoading({ ...loading, description: false });
   };
@@ -64,45 +66,45 @@ export const ProjectIdentity: React.FC = () => {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         {generateIcon('layers-363-1658238246.png', 28, 'hsl(var(--primary))')}
-        <h3 className="text-lg font-semibold text-foreground">Project Identity</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t.projectDetail.general.identity.title}</h3>
       </div>
-      
+
       <div className="flex flex-col lg:flex-row gap-5 lg:gap-6">
         {/* Project Name */}
         <div className="flex-1">
-          <label className="text-sm font-medium text-muted-foreground mb-2 block">Project Name</label>
-          
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">{t.projectDetail.general.identity.nameLabel}</label>
+
           {isEditingName ? (
             <div className="space-y-3">
               <input
                 type="text"
                 value={tempData.name}
                 onChange={(e) => setTempData((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="my-awesome-project"
+                placeholder={t.projectDetail.general.identity.namePlaceholder}
                 className="w-full px-4 py-2.5 bg-muted/60 border border-transparent rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/20 focus:bg-card outline-none text-sm transition-all"
                 autoFocus
               />
               <div className="flex gap-2">
-                <button 
-                  onClick={handleSaveName} 
+                <button
+                  onClick={handleSaveName}
                   className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save
+                  {t.projectDetail.general.identity.save}
                 </button>
-                <button 
-                  onClick={handleCancelName} 
+                <button
+                  onClick={handleCancelName}
                   className="px-4 py-2 bg-muted/60 hover:bg-muted text-foreground rounded-full transition-all text-sm font-medium"
                 >
-                  Cancel
+                  {t.projectDetail.general.identity.cancel}
                 </button>
               </div>
             </div>
           ) : (
             <div className="relative p-4 bg-muted/60 rounded-xl group hover:bg-muted transition-all">
-              <p className="text-sm font-medium text-foreground pr-8">{projectData.name || 'Unnamed Project'}</p>
+              <p className="text-sm font-medium text-foreground pe-8">{projectData.name || t.projectDetail.general.identity.unnamed}</p>
               <button
                 onClick={() => setIsEditingName(true)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-primary transition-colors"
+                className="absolute end-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-primary transition-colors"
               >
                 {generateIcon("pen-411-1658238246.png", 18, "currentColor")}
               </button>
@@ -112,41 +114,41 @@ export const ProjectIdentity: React.FC = () => {
 
         {/* Description */}
         <div className="flex-1">
-          <label className="text-sm font-medium text-muted-foreground mb-2 block">Description</label>
-          
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">{t.projectDetail.general.identity.descriptionLabel}</label>
+
           {isEditingDescription ? (
             <div className="space-y-3">
               <textarea
                 value={tempData.description}
                 onChange={(e) => setTempData((prev) => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                placeholder="A modern web application built with..."
+                placeholder={t.projectDetail.general.identity.descriptionPlaceholder}
                 className="w-full px-4 py-2.5 bg-muted/60 border border-transparent rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/20 focus:bg-card outline-none resize-none text-sm transition-all"
                 autoFocus
               />
               <div className="flex gap-2">
-                <button 
-                  onClick={handleSaveDescription} 
+                <button
+                  onClick={handleSaveDescription}
                   className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save
+                  {t.projectDetail.general.identity.save}
                 </button>
-                <button 
-                  onClick={handleCancelDescription} 
+                <button
+                  onClick={handleCancelDescription}
                   className="px-4 py-2 bg-muted/60 hover:bg-muted text-foreground rounded-full transition-all text-sm font-medium"
                 >
-                  Cancel
+                  {t.projectDetail.general.identity.cancel}
                 </button>
               </div>
             </div>
           ) : (
             <div className="relative p-4 bg-muted/60 rounded-xl group hover:bg-muted transition-all">
-              <p className="text-sm text-muted-foreground pr-8">
-                {projectData.description || 'No description provided'}
+              <p className="text-sm text-muted-foreground pe-8">
+                {projectData.description || t.projectDetail.general.identity.noDescription}
               </p>
               <button
                 onClick={() => setIsEditingDescription(true)}
-                className="absolute right-3 top-3 p-1.5 text-muted-foreground hover:text-primary transition-colors"
+                className="absolute end-3 top-3 p-1.5 text-muted-foreground hover:text-primary transition-colors"
               >
                 {generateIcon("pen-411-1658238246.png", 18, "currentColor")}
               </button>

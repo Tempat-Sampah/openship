@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useCallback, useRef } from "react";
 import { GitBranch, Rocket, Github, Loader2, Globe, Container, Server, Layers, Check, AlertCircle, Key, Plus, Copy } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import DomainSettings from "./DomainSettings";
@@ -25,6 +28,7 @@ import { useToast } from "@/context/ToastContext";
 
 const ComposeChecklist: React.FC = () => {
   const { config } = useDeployment();
+  const { t } = useI18n();
   const { baseDomain } = usePlatform();
   const services = config.services || [];
   if (services.length === 0) return null;
@@ -42,33 +46,33 @@ const ComposeChecklist: React.FC = () => {
 
   const checks = [
     {
-      label: "Services detected",
-      value: `${services.length} services`,
+      label: t.deploy.checklist.servicesDetected,
+      value: interpolate(t.deploy.checklist.servicesCount, { count: String(services.length) }),
       ok: services.length > 0,
       icon: Layers,
     },
     {
-      label: "Public domains",
+      label: t.deploy.checklist.publicDomains,
       value: exposedServices.length > 0
-        ? `${exposedServices.length} of ${exposableServices.length} exposed`
-        : `${exposableServices.length} can be exposed`,
+        ? interpolate(t.deploy.checklist.exposedOf, { exposed: String(exposedServices.length), exposable: String(exposableServices.length) })
+        : interpolate(t.deploy.checklist.canBeExposed, { count: String(exposableServices.length) }),
       ok: exposedServices.length > 0,
       warn: exposedServices.length === 0 && exposableServices.length > 0,
       icon: Globe,
     },
     ...(buildServices.length > 0
       ? [{
-          label: "Build services",
-          value: `${buildServices.length} to build`,
+          label: t.deploy.checklist.buildServices,
+          value: interpolate(t.deploy.checklist.toBuild, { count: String(buildServices.length) }),
           ok: true,
           icon: Container,
         }]
       : []),
     {
-      label: "Environment",
+      label: t.deploy.checklist.environment,
       value: totalEnvVars > 0
-        ? `${totalEnvVars} vars across ${envConfigured} services`
-        : "No env vars set",
+        ? interpolate(t.deploy.checklist.varsAcross, { vars: String(totalEnvVars), services: String(envConfigured) })
+        : t.deploy.checklist.noEnvVars,
       ok: totalEnvVars > 0,
       icon: Key,
     },
@@ -77,7 +81,7 @@ const ComposeChecklist: React.FC = () => {
   return (
     <div className="bg-card rounded-xl border border-border/50 p-4 space-y-3">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Deploy Checklist
+        {t.deploy.checklist.title}
       </p>
       <div className="space-y-2">
         {checks.map((check) => {
@@ -116,7 +120,7 @@ const ComposeChecklist: React.FC = () => {
       {exposedServices.length > 0 && (
         <div className="pt-2 border-t border-border/30 space-y-1.5">
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Domains
+            {t.deploy.checklist.domains}
           </p>
           {exposedServices.map((svc) => {
             const domain =
@@ -127,7 +131,7 @@ const ComposeChecklist: React.FC = () => {
               <div key={svc.name} className="flex items-center gap-2">
                 <Globe className="size-3 text-primary" />
                 <span className="text-sm text-primary font-medium truncate">{domain}</span>
-                <span className="text-xs text-muted-foreground ml-auto">{svc.name}</span>
+                <span className="text-xs text-muted-foreground ms-auto">{svc.name}</span>
               </div>
             );
           })}
@@ -141,6 +145,7 @@ const ComposeChecklist: React.FC = () => {
 
 const Sidebar: React.FC = () => {
   const { config, state, updateConfig, startDeployment } = useDeployment();
+  const { t } = useI18n();
   const { requireCloud } = useCloud();
   const { baseDomain, selfHosted, deployMode } = usePlatform();
   const { installUrl, state: githubState } = useGitHub();
@@ -154,21 +159,21 @@ const Sidebar: React.FC = () => {
   // message otherwise (the backend 409s in gh-CLI / PAT mode).
   const handleCopyCloneToken = useCallback(async () => {
     if (!config.owner || !config.repo || config.owner === "local") {
-      showToast("No GitHub repository for this deployment.", "error", "Clone token");
+      showToast(t.deploy.sidebar.cloneTokenNoRepo, "error", t.deploy.sidebar.cloneTokenTitle);
       return;
     }
     try {
       const { command } = await githubApi.getCloneToken(config.owner, config.repo);
       await navigator.clipboard.writeText(command);
       showToast(
-        "git clone command copied. The embedded token expires within the hour.",
+        t.deploy.sidebar.cloneTokenCopied,
         "success",
-        "Clone token copied",
+        t.deploy.sidebar.cloneTokenCopiedTitle,
       );
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Could not mint a clone token"), "error", "Clone token");
+      showToast(getApiErrorMessage(err, t.deploy.sidebar.cloneTokenFailed), "error", t.deploy.sidebar.cloneTokenTitle);
     }
-  }, [config.owner, config.repo, showToast]);
+  }, [config.owner, config.repo, showToast, t]);
   const canConnectCloud = canUseCloudConnection({ selfHosted, deployMode });
   // Clone-strategy gate - only meaningful for self-hosted server deploys
   // where we need to pick how the repo gets cloned on the remote (local
@@ -225,7 +230,7 @@ const Sidebar: React.FC = () => {
 
   const handleDeploy = useCallback(async () => {
     if (config.deployTarget === "cloud") {
-      if (!requireCloud("Deploying to Openship Cloud")) return;
+      if (!requireCloud(t.deploy.targetStep.requireCloudFeature)) return;
     }
 
     // Self-hosted server only: ask how the repo should be cloned on the
@@ -278,18 +283,18 @@ const Sidebar: React.FC = () => {
       publicEndpointsNeedCloud(config.publicEndpoints)
     ) {
       if (!requireCloud({
-        feature: `Using free .${baseDomain} domains on your own server`,
-        description: `Free .${baseDomain} domains are routed through Openship Cloud. To deploy this project to your own server, either connect Openship Cloud or switch this project to a custom domain.`,
-        secondaryHint: "If you do not want to connect Openship Cloud, change the project domain from free to custom before deploying.",
+        feature: interpolate(t.deploy.sidebar.freeDomainFeature, { domain: baseDomain }),
+        description: interpolate(t.deploy.sidebar.freeDomainDesc, { domain: baseDomain }),
+        secondaryHint: t.deploy.sidebar.freeDomainHint,
       })) return;
     }
 
     // Compose services with free managed domains require cloud
     if (isServices && servicesNeedCloud(config.services)) {
       if (!requireCloud({
-        feature: `Using free .${baseDomain} domains for your services`,
-        description: `One or more exposed services use free .${baseDomain} domains. To deploy them to your own server, either connect Openship Cloud or switch those services to custom domains.`,
-        secondaryHint: "Custom domains work without Openship Cloud. Free managed domains do not.",
+        feature: interpolate(t.deploy.sidebar.servicesFreeDomainFeature, { domain: baseDomain }),
+        description: interpolate(t.deploy.sidebar.servicesFreeDomainDesc, { domain: baseDomain }),
+        secondaryHint: t.deploy.sidebar.servicesFreeDomainHint,
       })) return;
     }
 
@@ -299,19 +304,18 @@ const Sidebar: React.FC = () => {
         customContent: (
           <div className="p-6 space-y-5">
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">No public service is reachable</h3>
+              <h3 className="text-xl font-bold text-foreground">{t.deploy.sidebar.unreachableTitle}</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                This stack has app services with ports, but none of them are configured with a public domain.
-                If you deploy now, the services can run internally, but users will not be able to access them from a URL.
+                {t.deploy.sidebar.unreachableBody}
               </p>
             </div>
 
             <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Before deploying</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.deploy.sidebar.beforeDeploying}</p>
               <ul className="space-y-1.5 text-sm text-muted-foreground">
-                <li>Pick the service that should be public.</li>
-                <li>Enable exposure for that service.</li>
-                <li>Set a subdomain or custom domain and choose the public port.</li>
+                <li>{t.deploy.sidebar.unreachableStep1}</li>
+                <li>{t.deploy.sidebar.unreachableStep2}</li>
+                <li>{t.deploy.sidebar.unreachableStep3}</li>
               </ul>
             </div>
 
@@ -321,7 +325,7 @@ const Sidebar: React.FC = () => {
                 className="rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
                 onClick={() => hideModal(modalId)}
               >
-                Review Services
+                {t.deploy.sidebar.reviewServices}
               </button>
               <button
                 type="button"
@@ -331,7 +335,7 @@ const Sidebar: React.FC = () => {
                   await continueDeploy();
                 }}
               >
-                Deploy Anyway
+                {t.deploy.sidebar.deployAnyway}
               </button>
             </div>
           </div>
@@ -342,7 +346,7 @@ const Sidebar: React.FC = () => {
     }
 
     await continueDeploy();
-  }, [baseDomain, canConnectCloud, cloneGate.hasGlobalToken, cloneGate.needsPrompt, config.buildStrategy, config.deployTarget, config.owner, config.projectId, config.publicEndpoints, config.services, continueDeploy, githubState, hideModal, installUrl, isServices, requireCloud, selfHosted, showModal, updateConfig]);
+  }, [baseDomain, canConnectCloud, cloneGate.hasGlobalToken, cloneGate.needsPrompt, config.buildStrategy, config.deployTarget, config.owner, config.projectId, config.publicEndpoints, config.services, continueDeploy, githubState, hideModal, installUrl, isServices, requireCloud, selfHosted, showModal, updateConfig, t]);
 
   // Edit mode (opened from the project Runtime page with ?mode=config): the
   // finish button SAVES the config to the project and returns — no deploy, no
@@ -387,11 +391,11 @@ const Sidebar: React.FC = () => {
             {config.owner && config.owner !== "local" && config.repo && (
               <DropdownMenu
                 align="right"
-                triggerClassName="p-1.5 -mr-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                triggerClassName="p-1.5 -me-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
                 actions={[
                   {
                     id: "clone-token",
-                    label: "Copy clone token",
+                    label: t.deploy.sidebar.copyCloneToken,
                     icon: <Copy className="size-4" />,
                     onClick: handleCopyCloneToken,
                   },
@@ -412,12 +416,12 @@ const Sidebar: React.FC = () => {
                 }))}
                 footerAction={config.projectId
                   ? {
-                      label: "New environment",
+                      label: t.deploy.sidebar.newEnvironment,
                       icon: <Plus className="w-3.5 h-3.5 text-muted-foreground" />,
                       onClick: handleOpenEnvironmentCreator,
                     }
                   : undefined}
-                placeholder="Select branch"
+                placeholder={t.deploy.sidebar.selectBranch}
                 className="w-full"
               />
             </div>
@@ -473,12 +477,12 @@ const Sidebar: React.FC = () => {
           {isSaving ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Saving…
+              {t.deploy.sidebar.saving}
             </>
           ) : (
             <>
               <Check className="size-4" />
-              Save changes
+              {t.deploy.sidebar.saveChanges}
             </>
           )}
         </button>
@@ -491,12 +495,12 @@ const Sidebar: React.FC = () => {
           {state.isDeploying ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Deploying…
+              {t.deploy.sidebar.deploying}
             </>
           ) : (
             <>
               <Rocket className="size-4" />
-              Deploy
+              {t.deploy.sidebar.deploy}
             </>
           )}
         </button>

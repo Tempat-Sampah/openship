@@ -3,7 +3,7 @@ import { Navbar, Footer } from "@/components/landing";
 
 const PAGE_TITLE = "Terms of Service";
 const PAGE_DESCRIPTION =
-  "Terms governing Openship Cloud and Openship Business. The self-hosted platform itself is governed by AGPL-3.0. Plain language, no surprises.";
+  "Terms governing Openship Cloud and Openship Business. The self-hosted platform itself is governed by the Apache 2.0 license. Plain language, no surprises.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -27,7 +27,7 @@ const SECTIONS = [
     id: "agreement",
     title: "Agreement",
     body: [
-      "These terms govern your use of Openship Cloud (the hosted service) and Openship Business (cloud + your servers + SLA). The self-hosted platform itself is governed by the AGPL-3.0 license that ships with the source.",
+      "These terms govern your use of Openship Cloud (the hosted service) and Openship Business (cloud + your servers + SLA). The self-hosted platform itself is governed by the Apache 2.0 license that ships with the source.",
       "By creating an account you agree to these terms. If you're using Openship on behalf of an organisation, you confirm you have authority to bind that organisation.",
     ],
   },
@@ -147,7 +147,7 @@ export default function TermsPage() {
             <p className="legal-meta">
               Last updated <time dateTime="2026-05-18">May&nbsp;18, 2026</time>
               <span className="legal-meta-sep">·</span>
-              <a href="https://github.com/openship/openship/commits/main/TERMS.md" className="legal-meta-link" target="_blank" rel="noreferrer">
+              <a href="https://github.com/oblien/openship/commits/main/TERMS.md" className="legal-meta-link" target="_blank" rel="noreferrer">
                 Version history on GitHub
               </a>
             </p>

@@ -2,6 +2,7 @@
 
 import { Terminal } from "lucide-react";
 import { ServerTerminalTabs } from "@/components/terminal/ServerTerminalTabs";
+import { useI18n } from "@/components/i18n-provider";
 
 interface TerminalTabProps {
   serverId: string;
@@ -12,6 +13,7 @@ interface TerminalTabProps {
 }
 
 export function TerminalTab({ serverId, serverName, enabled }: TerminalTabProps) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
@@ -22,10 +24,10 @@ export function TerminalTab({ serverId, serverName, enabled }: TerminalTabProps)
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-[15px] font-semibold text-foreground">
-              Terminal {serverName ? <span className="text-muted-foreground">· {serverName}</span> : null}
+              {t.servers.terminal.title} {serverName ? <span className="text-muted-foreground">· {serverName}</span> : null}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Live SSH shells over WebSocket. Up to 3 concurrent — copy on select.
+              {t.servers.terminal.description}
             </p>
           </div>
         </div>

@@ -21,9 +21,10 @@ import { resolveServiceHostnameLabel } from "@repo/core";
 import { cloudClient } from "../../lib/cloud/client";
 import { isCloudConnectedForOrg } from "../../lib/cloud/session";
 import { runCloudPreflight, type CloudPreflightData } from "../../lib/cloud-preflight";
-import type { DeployableService } from "../../lib/deployable-service";
+import { isStaticService, type DeployableService } from "../../lib/deployable-service";
 import { serviceKind } from "./compose/project-services";
 import { resolveClonePlan } from "./clone-plan";
+import { isPublicRepo } from "../github/github.http";
 import { getRoutingBaseDomain } from "../../lib/routing-domains";
 import { resolveServerHost } from "../../lib/server-target";
 import { normalizeTargetPath } from "../../lib/public-endpoints";
@@ -35,6 +36,7 @@ import {
   resolveGitHubAuthMode,
 } from "../github/github.auth";
 import { canResolveTokenFor } from "../github/github.token";
+import { parseRepoUrl } from "../github/github.service";
 import { resolveRecords, lookupAddresses } from "../../lib/dns-resolver";
 import { type RequestContext } from "../../lib/request-context";
 import { repos } from "@repo/db";
@@ -119,6 +121,10 @@ export interface PreflightOptions {
    *  AFTER provisioning resources. Catching it here surfaces a clear
    *  "install the App on <owner>" message and skips the wasted work. */
   gitOwner?: string | null;
+  /** Git repo name — with `gitOwner`, lets preflight probe whether the repo is
+   *  PUBLIC and, if so, skip the credential checks (a public repo clones with
+   *  no auth). Falls back to parsing the snapshot's repoUrl when omitted. */
+  gitRepo?: string | null;
   /** Project id — passed to `tokenFor` so per-project clone tokens are
    *  considered as a valid remote-clone source. Optional because the
    *  project row may not exist yet during a first-deploy preflight. */
@@ -127,6 +133,19 @@ export interface PreflightOptions {
    *  target (`server`). For non-App auth modes, only `local` keeps the
    *  user's broad-scope token from leaving the API process. */
   buildStrategy?: "local" | "server";
+}
+
+/** Resolve owner/repo for the public-ness probe: prefer the already-parsed
+ *  hints, else fall back to the shared GitHub URL parser. */
+function parseGithubOwnerRepo(
+  repoUrl?: string,
+  ownerHint?: string | null,
+  repoHint?: string | null,
+): { owner: string; repo: string } | null {
+  if (ownerHint && repoHint) return { owner: ownerHint, repo: repoHint };
+  const parsed = parseRepoUrl(repoUrl);
+  if (!parsed) return null;
+  return { owner: ownerHint || parsed.owner, repo: parsed.repo };
 }
 
 /**
@@ -732,6 +751,14 @@ function checkConfig(snapshot: DeploymentConfigSnapshot, opts?: PreflightOptions
       const installFallback = svc.installCommand ?? snapshot.installCommand;
       const buildFallback = svc.buildCommand ?? snapshot.buildCommand;
       const startFallback = svc.startCommand ?? snapshot.startCommand;
+      // A static sub-app is served as files by the generated nginx image, so it
+      // needs a build (to produce the output dir) but NO start command.
+      if (isStaticService(svc)) {
+        if (!buildFallback) {
+          subAppFailures.push(`sub-app "${svc.name}" missing build command`);
+        }
+        continue;
+      }
       // hasBuild/hasServer aren't per-service today - fall back to the
       // project-level booleans on the snapshot. Conservative: if either
       // the project says it has a build OR has a server, the sub-app must
@@ -1171,12 +1198,21 @@ export async function runPreflightChecks(
   const effectiveBuildStrategy =
     opts?.buildStrategy ?? (snapshot.buildStrategy as "local" | "server" | undefined);
 
+  // A PUBLIC github.com repo clones with NO credential, so none of the
+  // credential checks below should block it — this is how a public repo
+  // deploys on Vercel. Probe tokenlessly (cached, fails CLOSED): private /
+  // unknown / non-github ⇒ repoIsPublic=false ⇒ existing behavior, nothing
+  // regresses. When public, we skip the App-install AND remote-clone-token
+  // demands, and the deploy-time clone goes anonymous (clone-auth.ts).
+  const ghRepo = parseGithubOwnerRepo(snapshot.repoUrl, opts?.gitOwner, opts?.gitRepo);
+  const repoIsPublic = ghRepo ? await isPublicRepo(ghRepo.owner, ghRepo.repo) : false;
+
   // GitHub App installation check — only relevant when the repo is cloned on a
   // REMOTE build worker (server build). A LOCAL build ("Build on this machine")
   // clones on the API host using local credentials (gh CLI / OAuth), so the
   // cloud App installation is irrelevant — skip it. This mirrors the
   // remote-clone-token check below, which already passes for local builds.
-  if (getGitHubAuthMode() === "app" && effectiveBuildStrategy !== "local") {
+  if (!repoIsPublic && getGitHubAuthMode() === "app" && effectiveBuildStrategy !== "local") {
     checks.push(
       await checkGitHubAppInstallation(githubCtx, opts?.gitOwner),
     );
@@ -1191,6 +1227,7 @@ export async function runPreflightChecks(
   // local and these checks would wrongly demand a remote/App/cloud credential.
   const runtimeMode = snapshot.runtimeMode ?? "docker";
   const clonesOnRemote =
+    !repoIsPublic &&
     runtimeMode === "bare" &&
     effectiveTarget === "server" &&
     effectiveBuildStrategy !== "local";

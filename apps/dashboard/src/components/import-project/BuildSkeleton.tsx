@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
+import { useI18n } from "@/components/i18n-provider";
 
 /**
  * BuildSkeleton - Loading state for build page
  * Matches the layout of DeploymentProcessing
  */
 const BuildSkeleton: React.FC = () => {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen mx-auto md:px-12 bg-background">
       {/* Header Skeleton */}
@@ -37,7 +39,7 @@ const BuildSkeleton: React.FC = () => {
               {/* Steps */}
               <div className="relative">
                 {/* Progress Line */}
-                <div className="absolute top-6 left-0 right-0 z-0 h-0.5 bg-border/50">
+                <div className="absolute top-6 start-0 end-0 z-0 h-0.5 bg-border/50">
                   <div className="h-full w-1/4 bg-gradient-to-r from-muted-foreground/30 via-muted-foreground/20 to-muted/50 animate-pulse" />
                 </div>
 
@@ -143,13 +145,13 @@ const BuildSkeleton: React.FC = () => {
       </div>
 
       {/* Loading Indicator Overlay */}
-      <div className="fixed bottom-8 right-8 bg-popover rounded-2xl border border-border/50 px-6 py-4 shadow-2xl">
+      <div className="fixed bottom-8 end-8 bg-popover rounded-2xl border border-border/50 px-6 py-4 shadow-2xl">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-5 h-5 border-3 border-foreground/10 border-t-foreground rounded-full animate-spin"></div>
           </div>
           <div>
-          <span className="text-sm text-muted-foreground">Loading build session...</span>
+          <span className="text-sm text-muted-foreground">{t.importProject.buildSkeleton.loading}</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { AlertTriangle, KeyRound, RefreshCw, Settings2, Wifi, WifiOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 export type ConnectionErrorKind =
   | "unreachable"   // can't reach the host at all (ECONNREFUSED / ETIMEDOUT / no route)
@@ -42,35 +43,36 @@ export function ConnectionBanner(props: {
   onRetry: () => void;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { kind, host, port, message, retrying, onRetry, serverId } = props;
 
   const copy = (() => {
     switch (kind) {
       case "unreachable":
         return {
-          title: `Can't reach ${host}`,
-          body: `Openship couldn't open an SSH connection to ${host}:${port}. Make sure the server is running and that sshd is accepting connections on port ${port}. If it's behind a firewall or NAT, confirm the host is reachable from this machine.`,
+          title: interpolate(t.servers.banner.unreachableTitle, { host }),
+          body: interpolate(t.servers.banner.unreachableBody, { host, port: String(port) }),
           icon: WifiOff,
           tone: "amber",
         };
       case "auth":
         return {
-          title: "SSH credentials rejected",
-          body: `Reached ${host}:${port} but the server refused authentication. The key or password stored for this server doesn't match what's authorised in ~/.ssh/authorized_keys on the host.`,
+          title: t.servers.banner.authTitle,
+          body: interpolate(t.servers.banner.authBody, { host, port: String(port) }),
           icon: KeyRound,
           tone: "red",
         };
       case "no_server":
         return {
-          title: "Server config incomplete",
-          body: "This server entry is missing SSH settings. Open Edit to set the host, user and credentials, then run a health check.",
+          title: t.servers.banner.noServerTitle,
+          body: t.servers.banner.noServerBody,
           icon: AlertTriangle,
           tone: "amber",
         };
       default:
         return {
-          title: "Health check failed",
-          body: message || "Openship couldn't talk to this server.",
+          title: t.servers.banner.unknownTitle,
+          body: message || t.servers.banner.unknownBody,
           icon: AlertTriangle,
           tone: "amber",
         };
@@ -94,10 +96,10 @@ export function ConnectionBanner(props: {
           <p className="text-sm font-semibold text-foreground">{copy.title}</p>
           <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{copy.body}</p>
           {kind === "unreachable" && (
-            <ul className="text-[12px] text-muted-foreground/80 mt-2 list-disc pl-5 space-y-0.5">
-              <li>Is the VPS / VM powered on?</li>
-              <li><code className="font-mono">ping {host}</code> from this machine - does it answer?</li>
-              <li><code className="font-mono">nc -zv {host} {port}</code> - is port {port} open?</li>
+            <ul className="text-[12px] text-muted-foreground/80 mt-2 list-disc ps-5 space-y-0.5">
+              <li>{t.servers.banner.checkPowered}</li>
+              <li><code className="font-mono">ping {host}</code> {t.servers.banner.pingSuffix}</li>
+              <li><code className="font-mono">nc -zv {host} {port}</code> {interpolate(t.servers.banner.ncSuffix, { port: String(port) })}</li>
             </ul>
           )}
           <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -107,20 +109,20 @@ export function ConnectionBanner(props: {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-foreground/[0.06] hover:bg-foreground/[0.1] text-foreground rounded-lg transition-colors disabled:opacity-50"
             >
               {retrying ? <RefreshCw className="size-3 animate-spin" /> : <Wifi className="size-3" />}
-              {retrying ? "Checking…" : "Retry"}
+              {retrying ? t.servers.banner.checking : t.servers.banner.retry}
             </button>
             <button
               onClick={() => router.push(`/servers/${serverId}?edit=true`)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-foreground/[0.06] hover:bg-foreground/[0.1] text-foreground rounded-lg transition-colors"
             >
               <Settings2 className="size-3" />
-              {kind === "auth" ? "Edit credentials" : "Edit server"}
+              {kind === "auth" ? t.servers.banner.editCredentials : t.servers.banner.editServer}
             </button>
           </div>
           {message && kind !== "unknown" && (
             <details className="mt-2.5">
               <summary className="text-[11px] text-muted-foreground/70 cursor-pointer hover:text-muted-foreground">
-                Show raw error
+                {t.servers.banner.showRawError}
               </summary>
               <pre className="text-[11px] font-mono mt-1.5 p-2 rounded-lg bg-foreground/[0.04] text-muted-foreground/80 whitespace-pre-wrap break-all">
                 {message}

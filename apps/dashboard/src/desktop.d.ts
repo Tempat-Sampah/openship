@@ -12,6 +12,23 @@ declare global {
   interface DesktopBridge {
     isDesktop?: boolean;
     reset?: () => Promise<unknown>;
+    app?: {
+      version: () => Promise<string>;
+      platform?: string;
+    };
+    config?: {
+      get: <T = unknown>(key: string) => Promise<T>;
+      set: (key: string, value: unknown) => Promise<unknown>;
+      getAll: () => Promise<Record<string, unknown>>;
+    };
+    updates?: {
+      start: () => Promise<boolean>;
+      open: () => Promise<boolean>;
+      dismiss: () => Promise<boolean>;
+      onProgress: (cb: (fraction: number) => void) => () => void;
+      onDone: (cb: () => void) => () => void;
+      onError: (cb: (message: string) => void) => () => void;
+    };
     onboarding: {
       cloudAuth: () => Promise<DesktopCloudAuthResult>;
       cloudAuthPoll: (nonce: string) => Promise<DesktopCloudPollResult>;

@@ -4,6 +4,8 @@ import {
   WORKSPACE_MANIFEST_FILES,
   findMatchingDetectors,
   getBuildImage,
+  parseVercelConfig,
+  extractCdTargets,
   type WorkspaceDetector,
 } from "@repo/core";
 import {
@@ -353,38 +355,35 @@ export function parseVercelRootDirectories(vercelConfig?: string): string[] {
     return [];
   }
 
-  try {
-    const parsed = JSON.parse(vercelConfig) as {
-      buildCommand?: unknown;
-      outputDirectory?: unknown;
-    };
-    const directories = new Set<string>();
-    const buildCommand = typeof parsed.buildCommand === "string" ? parsed.buildCommand : "";
-
-    for (const match of buildCommand.matchAll(/(?:^|&&)\s*cd\s+['"]?([^'"&\s]+)['"]?/g)) {
-      const candidate = normalizeProjectRootDirectory(match[1]);
-      if (!candidate || isOutsideRepoCandidate(candidate) || isIgnoredRepoPath(candidate)) {
-        continue;
-      }
-      directories.add(candidate);
-    }
-
-    const outputDirectory = typeof parsed.outputDirectory === "string" ? parsed.outputDirectory : "";
-    if (outputDirectory) {
-      const outputDir = pathPosix.dirname(outputDirectory);
-      // dirname("dist") === "." - that's the repo root, not a useful hint.
-      if (outputDir && outputDir !== ".") {
-        const outputRoot = normalizeProjectRootDirectory(outputDir);
-        if (outputRoot && !isOutsideRepoCandidate(outputRoot) && !isIgnoredRepoPath(outputRoot)) {
-          directories.add(outputRoot);
-        }
-      }
-    }
-
-    return [...directories];
-  } catch {
+  // Reuse the single vercel.json parser + `cd`-target extractor from @repo/core
+  // (same source the stack detector reads) so we never parse the file twice or
+  // drift on how a build command's directory is detected.
+  const parsed = parseVercelConfig(vercelConfig);
+  if (!parsed) {
     return [];
   }
+
+  const directories = new Set<string>();
+  const addCandidate = (value: string) => {
+    const candidate = normalizeProjectRootDirectory(value);
+    if (candidate && !isOutsideRepoCandidate(candidate) && !isIgnoredRepoPath(candidate)) {
+      directories.add(candidate);
+    }
+  };
+
+  for (const target of extractCdTargets(parsed.buildCommand)) {
+    addCandidate(target);
+  }
+
+  if (parsed.outputDirectory) {
+    const outputDir = pathPosix.dirname(parsed.outputDirectory);
+    // dirname("dist") === "." - that's the repo root, not a useful hint.
+    if (outputDir && outputDir !== ".") {
+      addCandidate(outputDir);
+    }
+  }
+
+  return [...directories];
 }
 
 export function discoverProjectRootHints(
@@ -724,9 +723,150 @@ export interface MonorepoApp {
   port: number;
 }
 
+/** Categories that make the repo ROOT itself an independently deployable app. */
+const ROOT_APP_CATEGORIES = new Set(["backend", "frontend", "fullstack", "static", "generic"]);
+
+/** JS lockfiles that mark a nested dir as self-contained (its own dep tree). */
+const NESTED_LOCKFILES = new Set([
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+  "bun.lockb",
+  "bun.lock",
+]);
+
 /**
- * A repo is treated as a monorepo when its root declares a workspace manifest
- * AND we discover two or more deployable sub-app candidates.
+ * Non-JS manifests that, on their own, make a nested dir a self-contained
+ * deployable project (independent of the root's package manager / workspace).
+ */
+const NESTED_STANDALONE_MANIFESTS = new Set([
+  "go.mod",
+  "cargo.toml",
+  "requirements.txt",
+  "pyproject.toml",
+  "pipfile",
+  "gemfile",
+  "composer.json",
+  "pom.xml",
+  "build.gradle",
+  "build.gradle.kts",
+  "mix.exs",
+]);
+
+/**
+ * The repo root is a deployable app in its own right (not just a workspace
+ * container): a recognized app stack with a build or start command. Repos with
+ * a root like this + an independent nested app are implicit monorepos even
+ * without a workspace manifest (e.g. a root Express API + a `frontend/` SPA).
+ */
+const DOTNET_PROJECT_FILE = /\.(cs|fs)proj$/i;
+
+/**
+ * A .NET project is only deployable when it's a web app, worker service, or
+ * executable — detected via the standard project markers (not repo-specific
+ * names): the Web/Worker/Blazor SDK, `<OutputType>Exe</OutputType>`, or an
+ * ASP.NET Core reference. A plain `Microsoft.NET.Sdk` class library builds a
+ * .dll that a deployable project references; it is never a standalone app.
+ */
+function isDeployableDotnetProject(content: string): boolean {
+  return (
+    /\bSdk\s*=\s*["']Microsoft\.NET\.Sdk\.(Web|Worker|BlazorWebAssembly)["']/i.test(content) ||
+    /<OutputType>\s*Exe\s*<\/OutputType>/i.test(content) ||
+    /Microsoft\.AspNetCore/i.test(content)
+  );
+}
+
+/**
+ * True when a directory's .NET project files are ALL class libraries — nothing
+ * independently deployable. Without this, every `.csproj` in a multi-project
+ * solution (e.g. Web + DataAccess + BusinessLogic) becomes its own "app" and
+ * gets its own domain. Conservative on missing data: returns false when there
+ * are no project files or their bodies weren't loaded, so a real app is never
+ * hidden.
+ */
+function isDotnetLibraryOnly(snapshot: ProjectRootSnapshot): boolean {
+  if (!snapshot.files.some((file) => DOTNET_PROJECT_FILE.test(file.name))) return false;
+  const bodies = Object.entries(snapshot.fileContents)
+    .filter(([name]) => DOTNET_PROJECT_FILE.test(name))
+    .map(([, content]) => content)
+    .filter((content): content is string => typeof content === "string" && content.length > 0);
+  if (bodies.length === 0) return false;
+  return !bodies.some(isDeployableDotnetProject);
+}
+
+function isDeployableRootApp(root: ProjectRootSnapshot): boolean {
+  if (root.stack.stack === "unknown") return false;
+  if (root.stack.projectType !== "app") return false;
+  if (isDotnetLibraryOnly(root)) return false;
+  if (!ROOT_APP_CATEGORIES.has(root.stack.category)) return false;
+  return isSetCmd(root.stack.buildCommand) || isSetCmd(root.stack.startCommand);
+}
+
+function isSetCmd(value: string | undefined): boolean {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+/**
+ * Stricter than `isMonorepoAppCandidate`: for the manifest-less (implicit)
+ * monorepo path, a nested candidate counts only when it is self-contained -
+ * its own JS lockfile, a `vercel.json`-sourced hint, or a non-JS manifest. This
+ * keeps ordinary single apps (e.g. one with an `examples/` folder that merely
+ * has a bare package.json) from being mistaken for monorepos.
+ */
+function isIndependentlyDeployable(candidate: ProjectRootSnapshot): boolean {
+  if (candidate.source === "vercel") return true;
+  const fileNames = new Set(candidate.files.map((file) => file.name.toLowerCase()));
+  for (const lock of NESTED_LOCKFILES) if (fileNames.has(lock)) return true;
+  for (const manifest of NESTED_STANDALONE_MANIFESTS) if (fileNames.has(manifest)) return true;
+  // .NET project/solution files have per-repo names - match by suffix. But a
+  // class-library project isn't independently deployable (it's a .dll a web
+  // project links), so a library-only directory doesn't count as an app.
+  if (isDotnetLibraryOnly(candidate)) return false;
+  for (const name of fileNames) {
+    if (name.endsWith(".csproj") || name.endsWith(".fsproj") || name.endsWith(".sln")) return true;
+  }
+  return false;
+}
+
+function toMonorepoApp(snapshot: ProjectRootSnapshot, overrides?: { id?: string; rootDirectory?: string }): MonorepoApp {
+  const rootDirectory = overrides?.rootDirectory ?? snapshot.rootDirectory;
+  const segments = snapshot.rootDirectory.split("/");
+  const stack = snapshot.stack;
+  const name =
+    (snapshot.packageJson?.name as string | undefined)?.trim() ||
+    segments.at(-1) ||
+    rootDirectory ||
+    "app";
+
+  // Static sub-apps keep an empty start command: the monorepo build pipeline
+  // serves them as files via the generated nginx image (see isStaticService /
+  // the static Dockerfile branch). Server sub-apps carry their real start command.
+  return {
+    id: overrides?.id ?? snapshot.rootDirectory,
+    name,
+    rootDirectory,
+    stack: stack.stack,
+    category: stack.category,
+    packageManager: stack.packageManager,
+    buildCommand: stack.buildCommand,
+    installCommand: stack.installCommand,
+    startCommand: stack.startCommand,
+    buildImage: stack.buildImage,
+    outputDirectory: stack.outputDirectory,
+    productionPaths: stack.productionPaths,
+    port: stack.port,
+  };
+}
+
+/**
+ * A repo is treated as a monorepo when EITHER:
+ *   - its root declares a workspace manifest AND we discover ≥2 deployable
+ *     sub-app candidates (the root is the workspace container, not an app), OR
+ *   - (implicit / manifest-less) the root is itself a deployable app AND we
+ *     discover ≥1 independently-deployable nested app - e.g. a root Express API
+ *     plus a `frontend/` SPA, each with its own vercel.json. The root is emitted
+ *     as the first app with `rootDirectory: "."` (the only value that survives
+ *     the schema/service/preflight/change-routing layers as "the repo root").
  *
  * Returns null when the repo doesn't qualify (single-app, services, plain backend, etc.).
  */
@@ -734,13 +874,9 @@ export function discoverMonorepoApps(
   rootInput: ProjectRootSnapshotInput,
   candidateInputs: ProjectRootSnapshotInput[],
 ): { apps: MonorepoApp[]; workspace: MonorepoWorkspace } | null {
-  if (!hasAnyWorkspaceContext(rootInput)) return null;
-
   const candidates = candidateInputs
     .map(buildSnapshot)
     .filter(isMonorepoAppCandidate);
-
-  if (candidates.length < 2) return null;
 
   const workspacePackageManager = detectPackageManager(
     rootInput.files,
@@ -751,37 +887,36 @@ export function discoverMonorepoApps(
     },
   );
   const resolvedPackageManager = workspacePackageManager === "unknown" ? "npm" : workspacePackageManager;
-  const installCommand = getInstallCommand(resolvedPackageManager) || "";
 
-  const apps = candidates.map((candidate): MonorepoApp => {
-    const segments = candidate.rootDirectory.split("/");
-    const name =
-      (candidate.packageJson?.name as string | undefined)?.trim() ||
-      segments.at(-1) ||
-      candidate.rootDirectory;
+  let apps: MonorepoApp[];
+  let prepareCommand: string;
 
-    return {
-      id: candidate.rootDirectory,
-      name,
-      rootDirectory: candidate.rootDirectory,
-      stack: candidate.stack.stack,
-      category: candidate.stack.category,
-      packageManager: candidate.stack.packageManager,
-      buildCommand: candidate.stack.buildCommand,
-      installCommand: candidate.stack.installCommand,
-      startCommand: candidate.stack.startCommand,
-      buildImage: candidate.stack.buildImage,
-      outputDirectory: candidate.stack.outputDirectory,
-      productionPaths: candidate.stack.productionPaths,
-      port: candidate.stack.port,
-    };
-  });
+  if (hasAnyWorkspaceContext(rootInput)) {
+    // Formal workspace monorepo: nested apps only; root is the container. A
+    // shared install runs once at the repo root before each app builds.
+    if (candidates.length < 2) return null;
+    apps = candidates.map((candidate) => toMonorepoApp(candidate));
+    prepareCommand = getInstallCommand(resolvedPackageManager) || "";
+  } else {
+    // Implicit monorepo: deployable root app + ≥1 self-contained nested app.
+    const rootSnapshot = buildSnapshot(rootInput);
+    const independent = candidates.filter(isIndependentlyDeployable);
+    if (!isDeployableRootApp(rootSnapshot) || independent.length < 1) return null;
+    apps = [
+      toMonorepoApp(rootSnapshot, { id: ".", rootDirectory: "." }),
+      ...independent.map((candidate) => toMonorepoApp(candidate)),
+    ];
+    // No workspace install to run - each app installs itself from its own root.
+    prepareCommand = "";
+  }
+
+  if (apps.length < 2) return null;
 
   return {
     apps,
     workspace: {
       packageManager: resolvedPackageManager,
-      prepareCommand: installCommand,
+      prepareCommand,
     },
   };
 }
@@ -797,6 +932,8 @@ function isMonorepoAppCandidate(candidate: ProjectRootSnapshot): boolean {
   if (!candidate.rootDirectory) return false;
   if (candidate.stack.stack === "unknown") return false;
   if (candidate.stack.projectType !== "app") return false;
+  // A .NET class library is not a deployable app — only web/service/exe projects are.
+  if (isDotnetLibraryOnly(candidate)) return false;
   // Library segments first (packages/, libs/, shared/, …) are not deployable on their own.
   const firstSegment = candidate.rootDirectory.split("/")[0]?.toLowerCase();
   if (firstSegment && LIBRARY_ROOT_SEGMENTS.has(firstSegment)) return false;

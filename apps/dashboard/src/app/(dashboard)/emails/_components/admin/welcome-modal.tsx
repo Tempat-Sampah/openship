@@ -18,6 +18,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { mailAdminApi } from "@/lib/api";
+import { useI18n } from "@/components/i18n-provider";
 
 interface WelcomeModalProps {
   serverId: string;
@@ -37,6 +38,7 @@ type Stage = "intro" | "sent";
 const EMAIL_RE = /^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
 export function WelcomeModal({ serverId, domain, onClose }: WelcomeModalProps) {
+  const { t } = useI18n();
   const [stage, setStage] = useState<Stage>("intro");
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -61,7 +63,7 @@ export function WelcomeModal({ serverId, domain, onClose }: WelcomeModalProps) {
   const handleSend = async () => {
     const v = email.trim().toLowerCase();
     if (!EMAIL_RE.test(v)) {
-      setError("Enter a valid email address");
+      setError(t.emailsAdmin.welcome.invalidEmail);
       return;
     }
     setError(null);
@@ -70,7 +72,7 @@ export function WelcomeModal({ serverId, domain, onClose }: WelcomeModalProps) {
       await mailAdminApi.testEmail.send(serverId, v, domain);
       setStage("sent");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send");
+      setError(err instanceof Error ? err.message : t.emailsAdmin.welcome.sendFailed);
     } finally {
       setSending(false);
     }
@@ -91,8 +93,8 @@ export function WelcomeModal({ serverId, domain, onClose }: WelcomeModalProps) {
       <div className="relative w-full max-w-[460px] bg-card rounded-2xl border border-border shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
         <button
           onClick={onClose}
-          aria-label="Dismiss"
-          className="absolute top-4 right-4 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={t.emailsAdmin.welcome.dismiss}
+          className="absolute top-4 end-4 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="size-4" strokeWidth={1.75} />
         </button>
@@ -140,6 +142,7 @@ function IntroStage({
   onSubmit: (e: React.FormEvent) => void;
   onSkip: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <form onSubmit={onSubmit}>
       <div className="px-7 pt-8 pb-6">
@@ -147,11 +150,11 @@ function IntroStage({
           className="text-[24px] font-semibold text-foreground leading-[1.15]"
           style={{ letterSpacing: "-0.5px" }}
         >
-          Your mail server is live.
+          {t.emailsAdmin.welcome.liveTitle}
         </h2>
         <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">
-          <span className="font-mono text-[13.5px] text-foreground">{domain}</span>{" "}
-          is accepting mail. Send yourself a test to confirm it.
+          <span className="font-mono text-[13.5px] text-foreground">{domain}</span>
+          {t.emailsAdmin.welcome.liveDescAfter}
         </p>
       </div>
 
@@ -162,7 +165,7 @@ function IntroStage({
           htmlFor="welcome-test-email"
           className="block text-[13px] font-medium text-foreground mb-2"
         >
-          Send a test to
+          {t.emailsAdmin.welcome.sendToLabel}
         </label>
         <input
           ref={inputRef}
@@ -189,7 +192,7 @@ function IntroStage({
             disabled={sending}
             className="px-3 py-2 text-[13.5px] font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
-            Skip
+            {t.emailsAdmin.welcome.skip}
           </button>
           <button
             type="submit"
@@ -197,7 +200,7 @@ function IntroStage({
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[13.5px] font-semibold rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors disabled:opacity-50"
           >
             {sending && <Loader2 className="size-3.5 animate-spin" strokeWidth={2.25} />}
-            {sending ? "Sending" : "Send test"}
+            {sending ? t.emailsAdmin.welcome.sending : t.emailsAdmin.welcome.sendTest}
           </button>
         </div>
       </div>
@@ -216,6 +219,7 @@ function SentStage({
   domain: string;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div>
       <div className="px-7 pt-8 pb-6">
@@ -223,17 +227,16 @@ function SentStage({
           className="text-[24px] font-semibold text-foreground leading-[1.15]"
           style={{ letterSpacing: "-0.5px" }}
         >
-          On its way.
+          {t.emailsAdmin.welcome.sentTitle}
         </h2>
         <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">
-          A test from{" "}
+          {t.emailsAdmin.welcome.sentBefore}
           <span className="font-mono text-[13.5px] text-foreground">
             postmaster@{domain}
-          </span>{" "}
-          is headed to{" "}
+          </span>
+          {t.emailsAdmin.welcome.sentMiddle}
           <span className="font-mono text-[13.5px] text-foreground">{email}</span>
-          . Should arrive within a minute - check your inbox and your spam
-          folder.
+          {t.emailsAdmin.welcome.sentAfter}
         </p>
       </div>
 
@@ -245,7 +248,7 @@ function SentStage({
           onClick={onClose}
           className="px-4 py-2 text-[13.5px] font-semibold rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors"
         >
-          Got it
+          {t.emailsAdmin.welcome.gotIt}
         </button>
       </div>
     </div>

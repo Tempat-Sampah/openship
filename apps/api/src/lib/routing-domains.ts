@@ -38,7 +38,7 @@ function usesCertbotSsl(runtimeName: string): boolean {
   return runtimeName === "bare" || runtimeName === "docker";
 }
 
-function resolveManagedHostname(hostname: string): { isManaged: boolean; subdomain?: string } {
+export function resolveManagedHostname(hostname: string): { isManaged: boolean; subdomain?: string } {
   const baseDomain = getRoutingBaseDomain().toLowerCase();
   const normalized = hostname.trim().toLowerCase();
   const suffix = `.${baseDomain}`;

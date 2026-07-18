@@ -16,6 +16,7 @@ import { deployApi } from "@/lib/api";
 import type { DeploymentStatus, ServiceDeployStatus } from "@/context/deployment/types";
 import { encodeRepoSlug, encodeLocalSlug } from "@/utils/repoSlug";
 import type { BuildLog } from "@/utils/deploymentPhaseDetector";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 const ANSI_ESCAPE_PATTERN = /\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g;
 
@@ -37,6 +38,9 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
   const { showModal, hideModal } = useModal();
   const { showToast } = useToast();
   const { resolvedTheme } = useTheme();
+  const { t } = useI18n();
+  const cd = t.importProject.composeDeployment;
+  const cnt = t.importProject.counts;
   const router = useRouter();
   const promptModalRef = React.useRef<string | null>(null);
   // Holds the Redeploy button's spinner from click until navigation to the new
@@ -208,17 +212,17 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
     }
     setDecisionResolved(true);
     setDecisionModalOpen(false);
-    showToast("Deployment kept", "success", "Kept");
-  }, [state.deploymentId, showToast]);
+    showToast(cd.toast.keptMsg, "success", cd.toast.keptTitle);
+  }, [state.deploymentId, showToast, cd]);
 
   const handleRejectDeployment = React.useCallback(async () => {
     if (!state.deploymentId) return;
     await deployApi.reject(state.deploymentId);
     setDecisionResolved(true);
     setDecisionModalOpen(false);
-    showToast("Partial deployment rejected", "success", "Deployment Reverted");
+    showToast(cd.toast.rejectedMsg, "success", cd.toast.rejectedTitle);
     if (state.projectId) router.push(`/projects/${state.projectId}`);
-  }, [state.deploymentId, state.projectId, router, showToast]);
+  }, [state.deploymentId, state.projectId, router, showToast, cd]);
 
   const retryInFlightRef = React.useRef(false);
   const handleRetryFailed = React.useCallback(async () => {
@@ -251,12 +255,12 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
     } catch (err) {
       // Usually a deploy is already in progress (the previous retry) → 403. Do
       // NOT re-fire; send the user to the project where the running deploy shows.
-      showToast(err instanceof Error ? err.message : "Could not start the retry", "error", "Retry");
+      showToast(err instanceof Error ? err.message : cd.toast.retryFailMsg, "error", cd.toast.retryTitle);
       router.push(`/projects/${state.projectId}`);
     } finally {
       retryInFlightRef.current = false;
     }
-  }, [state.serviceStatuses, state.decisionFailedServiceIds, state.projectId, router, showToast]);
+  }, [state.serviceStatuses, state.decisionFailedServiceIds, state.projectId, router, showToast, cd]);
 
   // Auto-open the decision dialog once per deployment when a partial failure is
   // awaiting a decision. Closing it leaves the persistent banner in place, so the
@@ -290,16 +294,16 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
   // ── Title ──────────────────────────────────────────────────────────────
   const title =
     deploymentStatus === "cancelled"
-      ? "Deployment Cancelled"
+      ? cd.title.cancelled
       : deploymentStatus === "failed"
-        ? "Deployment Failed"
+        ? cd.title.failed
         : showDecision
-          ? "Action Required"
+          ? cd.title.actionRequired
           : hasWarning
-            ? "Deployed With Warnings"
+            ? cd.title.warnings
             : deploymentStatus === "ready"
-              ? "Deployment Successful"
-              : "Deploying Services…";
+              ? cd.title.successful
+              : cd.title.deploying;
 
   return (
     <div className="min-h-screen bg-background max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -321,8 +325,8 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
               <p className="text-sm text-muted-foreground mt-0.5">
                 {config.owner}/{config.repo}
                 {total > 0 && (
-                  <span className="ml-2 text-xs">
-                    · {total} service{total !== 1 ? "s" : ""}
+                  <span className="ms-2 text-xs">
+                    · {interpolate(total === 1 ? cnt.serviceOne : cnt.serviceOther, { count: String(total) })}
                   </span>
                 )}
               </p>
@@ -334,7 +338,7 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
               onClick={handleViewDashboard}
               className="flex items-center gap-2 text-primary-foreground font-medium bg-primary rounded-xl px-4 py-2 text-sm hover:bg-primary/90 shadow-md hover:shadow-lg transition-all"
             >
-              View Dashboard
+              {cd.viewDashboard}
             </button>
           )}
         </div>
@@ -351,11 +355,10 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                    Action required — some services failed
+                    {cd.decisionBannerTitle}
                   </p>
                   <p className="mt-1 text-sm text-amber-700/80 dark:text-amber-300/80">
-                    {state.warningMessage ||
-                      "This deployment finished with failed services. Keep it and fix them later, or reject it to restore the previous version."}
+                    {state.warningMessage || cd.decisionBannerDefaultMsg}
                   </p>
                 </div>
                 <button
@@ -363,14 +366,14 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
                   onClick={() => setDecisionModalOpen(true)}
                   className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700"
                 >
-                  Review
+                  {cd.review}
                 </button>
               </div>
             </div>
           ) : hasWarning ? (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/8 px-5 py-4">
               <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                Some services need attention
+                {cd.warningTitle}
               </p>
               <p className="mt-1 text-sm text-amber-700/80 dark:text-amber-300/80">
                 {state.warningMessage}
@@ -407,7 +410,7 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium text-sm bg-primary/60 text-primary-foreground cursor-not-allowed"
               >
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Redeploying…
+                {cd.redeploying}
               </button>
             ) : deploymentStatus === "deploying" || deploymentStatus === "building" ? (
               <button
@@ -422,10 +425,10 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
                 {state.isStopping ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Stopping…
+                    {cd.stopping}
                   </>
                 ) : (
-                  "Stop Deployment"
+                  cd.stopDeployment
                 )}
               </button>
             ) : (
@@ -445,7 +448,7 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
                     }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:bg-primary/90 transition-all"
                   >
-                    Redeploy
+                    {cd.redeploy}
                   </button>
                 )}
                 {deploymentStatus === "ready" && (
@@ -453,7 +456,7 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
                     onClick={handleViewDashboard}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:bg-primary/90 transition-all"
                   >
-                    Open Dashboard
+                    {cd.openDashboard}
                   </button>
                 )}
                 {state.projectId && (
@@ -462,7 +465,7 @@ const ComposeDeploymentProcessing: React.FC<Props> = ({ onRedeploy }) => {
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm border border-border/60 bg-muted/40 text-foreground hover:bg-muted/70 transition-all"
                   >
                     <SlidersHorizontal className="h-4 w-4" />
-                    Edit Configuration
+                    {cd.editConfiguration}
                   </button>
                 )}
               </>
@@ -642,6 +645,8 @@ function ComposeServiceLogsPanel({
   isFinished: boolean;
   terminalTheme: "light" | "dark";
 }) {
+  const { t } = useI18n();
+  const cd = t.importProject.composeDeployment;
   const serviceIdToName = useMemo(() => {
     const map = new Map<string, string>();
     services.forEach((service) => {
@@ -686,22 +691,22 @@ function ComposeServiceLogsPanel({
       label: serviceName,
       logs: byService.get(serviceName) ?? [],
       emptyMessage: hasFinished
-        ? `No logs were recorded for ${serviceName}.`
-        : `Waiting for ${serviceName} logs...`,
+        ? interpolate(cd.noLogsFor, { service: serviceName })
+        : interpolate(cd.waitingFor, { service: serviceName }),
     }));
 
     return [
       {
         id: PREPARE_TAB,
-        label: "Prepare",
+        label: cd.prepareTab,
         logs: prepareLogs,
         emptyMessage: hasFinished
-          ? "No preparation logs were recorded."
-          : "Cloning source and preparing the build context...",
+          ? cd.noPrepareLogs
+          : cd.preparingContext,
       },
       ...serviceTabs,
     ];
-  }, [hasFinished, parsedLogs, serviceNames]);
+  }, [hasFinished, parsedLogs, serviceNames, cd]);
 
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-6 mb-20">
@@ -712,15 +717,15 @@ function ComposeServiceLogsPanel({
               {generateIcon("terminal-58-1658431404.png", 18, "currentColor")}
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">Deployment Logs</h2>
-              <p className="truncate text-xs text-muted-foreground">Live output, streamed per service</p>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">{cd.logsTitle}</h2>
+              <p className="truncate text-xs text-muted-foreground">{cd.logsSubtitle}</p>
             </div>
           </div>
           {total > 0 && (
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground tabular-nums">
-              <span className="font-semibold text-foreground">{running}/{total}</span> running
-              {building > 0 && <span>· {building} building</span>}
-              {failed > 0 && <span className="text-destructive">· {failed} failed</span>}
+              <span className="font-semibold text-foreground">{running}/{total}</span> {cd.running}
+              {building > 0 && <span>{interpolate(cd.buildingSuffix, { count: String(building) })}</span>}
+              {failed > 0 && <span className="text-destructive">{interpolate(cd.failedSuffix, { count: String(failed) })}</span>}
             </span>
           )}
         </div>
@@ -776,7 +781,7 @@ function ComposeServiceLogsPanel({
             ))
           ) : (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
-              <p className="text-sm text-muted-foreground">Preparing service logs...</p>
+              <p className="text-sm text-muted-foreground">{cd.preparingServiceLogs}</p>
             </div>
           )}
         </div>
@@ -902,6 +907,8 @@ function PartialSuccessModalContent({
   onRetry: () => Promise<void>;
   onReject: () => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const p = t.importProject.composeDeployment.partial;
   const [isRejecting, setIsRejecting] = React.useState(false);
   const [isRetrying, setIsRetrying] = React.useState(false);
   const busy = isRejecting || isRetrying;
@@ -910,27 +917,23 @@ function PartialSuccessModalContent({
     <div className="p-6 space-y-5">
       <div className="space-y-2">
         <h3 className="text-xl font-bold text-foreground">
-          Deployment finished with failed services
+          {p.title}
         </h3>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          {failed} of {total} services failed, but the rest of the stack was deployed successfully.
-          You can keep this deployment and fix the failed services later, or reject it and restore
-          the previous deployment.
+          {interpolate(p.body, { failed: String(failed), total: String(total) })}
         </p>
       </div>
 
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 p-4 space-y-2">
         <p className="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">
-          Warning
+          {p.warning}
         </p>
         <p className="text-sm text-amber-700/90 dark:text-amber-300/90">{warningMessage}</p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/40 p-4">
         <p className="text-sm text-muted-foreground">
-          Rejecting tears down this partial deployment&apos;s containers and, if a previous
-          deployment exists, restores it. The deployment record and its build logs are kept in your
-          history so you can review what failed.
+          {p.rejectNote}
         </p>
       </div>
 
@@ -941,7 +944,7 @@ function PartialSuccessModalContent({
           onClick={onKeep}
           disabled={busy}
         >
-          Keep And Fix Later
+          {p.keep}
         </button>
         <button
           type="button"
@@ -959,10 +962,10 @@ function PartialSuccessModalContent({
           {isRejecting ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Rejecting...
+              {p.rejecting}
             </span>
           ) : (
-            "Reject Deployment"
+            p.reject
           )}
         </button>
         <button
@@ -981,10 +984,10 @@ function PartialSuccessModalContent({
           {isRetrying ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Retrying...
+              {p.retrying}
             </span>
           ) : (
-            `Retry ${failed} Failed Service${failed === 1 ? "" : "s"}`
+            interpolate(failed === 1 ? p.retryOne : p.retryOther, { count: String(failed) })
           )}
         </button>
       </div>

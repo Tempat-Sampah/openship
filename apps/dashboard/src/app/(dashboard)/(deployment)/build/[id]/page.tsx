@@ -13,6 +13,7 @@ import { useGitHub } from "@/context/GitHubContext";
 import { useModal } from "@/context/ModalContext";
 import { DeployCredentialModal } from "@/components/deployments/DeployCredentialModal";
 import { usePlatform } from "@/context/PlatformContext";
+import { useI18n } from "@/components/i18n-provider";
 import { Rocket, ArrowLeft, Home } from "lucide-react";
 
 /**
@@ -42,6 +43,7 @@ const BuildPage: React.FC = () => {
   const { installUrl, state: githubState } = useGitHub();
   const { selfHosted } = usePlatform();
   const { showModal, hideModal } = useModal();
+  const { t } = useI18n();
   const initializedDeploymentRef = useRef<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   /** Ref tracking which (deploymentId × errorCode) tuple already opened
@@ -153,7 +155,7 @@ const BuildPage: React.FC = () => {
       customContent: (
         <DeployCredentialModal
           trigger="build-fail"
-          owner={config.owner || "this repo"}
+          owner={config.owner || t.misc.buildPage.thisRepo}
           installUrl={installUrl ?? null}
           projectId={config.projectId ?? null}
           deployTarget={config.deployTarget}
@@ -194,6 +196,7 @@ const BuildPage: React.FC = () => {
     hideModal,
     updateConfig,
     handleRedeploy,
+    t,
   ]);
 
   if (notFound) {
@@ -279,10 +282,9 @@ const BuildPage: React.FC = () => {
               </svg>
             </div>
 
-            <h2 className="text-xl font-semibold text-foreground/80 mb-2">Deployment not found</h2>
+            <h2 className="text-xl font-semibold text-foreground/80 mb-2">{t.misc.buildPage.notFoundTitle}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-xs mx-auto">
-              This deployment doesn't exist or you don't have access to it. It may have been removed
-              or the link is incorrect.
+              {t.misc.buildPage.notFoundDescription}
             </p>
 
             <div className="flex flex-col gap-3">
@@ -291,14 +293,14 @@ const BuildPage: React.FC = () => {
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 <Rocket className="w-4 h-4" />
-                View Deployments
+                {t.misc.buildPage.viewDeployments}
               </Link>
               <Link
                 href="/"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-muted/50 text-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
               >
                 <Home className="w-4 h-4" />
-                Go Home
+                {t.misc.buildPage.goHome}
               </Link>
             </div>
           </div>

@@ -32,6 +32,7 @@ import { GrantPickerModal } from "./GrantPickerModal";
 import { InviteMemberModal } from "./InviteMemberModal";
 import { usePlatform } from "@/context/PlatformContext";
 import { TeamWorkspaceCard } from "./TeamWorkspaceCard";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type MemberRole = "owner" | "admin" | "member" | "restricted";
 
@@ -82,6 +83,7 @@ const orgClient = (authClient as unknown as {
 export function TeamTab() {
   const { data: session } = useSession();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const { showModal, hideModal } = useModal();
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [invitations, setInvitations] = useState<InvitationRow[]>([]);
@@ -158,18 +160,18 @@ export function TeamTab() {
       // only surface real API errors here so we don't double-toast.
       console.error("Failed to load members", err);
       if (err instanceof ApiError || !isNetworkError(err)) {
-        showToast(getApiErrorMessage(err, "Failed to load team"), "error", "Team");
+        showToast(getApiErrorMessage(err, t.settings.team.toast.loadFailed), "error", t.settings.common.toast.team);
       }
     } finally {
       setLoading(false);
       refreshingRef.current = false;
     }
-  }, [showToast, selfHosted]);
+  }, [showToast, selfHosted, t]);
 
   const handleCreateTeam = async () => {
     const name = newTeamName.trim();
     if (!name) {
-      showToast("Team name is required", "error", "Team");
+      showToast(t.settings.team.toast.teamNameRequired, "error", t.settings.common.toast.team);
       return;
     }
     setCreatingTeam(true);
@@ -180,7 +182,7 @@ export function TeamTab() {
       );
       const newOrgId = res.data?.id;
       if (!newOrgId) throw new Error("No org id returned");
-      showToast(`Team "${name}" created — switching now…`, "success", "Team");
+      showToast(interpolate(t.settings.team.toast.teamCreated, { name }), "success", t.settings.common.toast.team);
       setCreateTeamOpen(false);
       setNewTeamName("");
       // Switch the active org to the new one via Better Auth, then reload.
@@ -202,7 +204,7 @@ export function TeamTab() {
         window.location.reload();
       }
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to create team"), "error", "Team");
+      showToast(getApiErrorMessage(err, t.settings.team.toast.createFailed), "error", t.settings.common.toast.team);
     } finally {
       setCreatingTeam(false);
     }
@@ -235,17 +237,17 @@ export function TeamTab() {
   const handleRoleChange = async (memberId: string, role: MemberRole) => {
     const res = await orgClient.updateMemberRole({ memberId, role });
     if (res.error) {
-      showToast(res.error.message ?? "Failed to update role", "error", "Members");
+      showToast(res.error.message ?? t.settings.team.toast.updateRoleFailed, "error", t.settings.common.toast.members);
       return;
     }
     await refresh();
   };
 
   const handleRemove = async (memberIdOrEmail: string) => {
-    if (!confirm("Remove this member from the organization?")) return;
+    if (!confirm(t.settings.team.confirmRemove)) return;
     const res = await orgClient.removeMember({ memberIdOrEmail });
     if (res.error) {
-      showToast(res.error.message ?? "Failed to remove", "error", "Members");
+      showToast(res.error.message ?? t.settings.team.toast.removeFailed, "error", t.settings.common.toast.members);
       return;
     }
     await refresh();
@@ -254,7 +256,7 @@ export function TeamTab() {
   const handleCancelInvite = async (invitationId: string) => {
     const res = await orgClient.cancelInvitation({ invitationId });
     if (res.error) {
-      showToast(res.error.message ?? "Failed to cancel", "error", "Invitations");
+      showToast(res.error.message ?? t.settings.team.toast.cancelFailed, "error", t.settings.common.toast.invitations);
       return;
     }
     await refresh();
@@ -275,7 +277,7 @@ export function TeamTab() {
           permissions: g.permissions,
         }));
       } catch (err) {
-        showToast(getApiErrorMessage(err, "Failed to load grants"), "error", "Permissions");
+        showToast(getApiErrorMessage(err, t.settings.team.toast.loadGrantsFailed), "error", t.settings.common.toast.permissions);
         return;
       }
       let id = "";
@@ -285,20 +287,20 @@ export function TeamTab() {
         customContent: (
           <GrantPickerModal
             title={m.user.name || m.user.email}
-            subtitle="Grants apply to restricted members. Owner/admin/member have org-wide access by default."
+            subtitle={t.settings.team.memberPanel.subtitle}
             initial={initial}
             availableTypes={availableTypes}
-            saveLabel="Save access"
+            saveLabel={t.settings.team.memberPanel.saveLabel}
             onSave={async (grants) => {
               await permissionsApi.replaceGrants(m.userId, grants);
-              showToast("Access updated", "success", "Permissions");
+              showToast(t.settings.team.toast.accessUpdated, "success", t.settings.common.toast.permissions);
             }}
             onClose={() => hideModal(id)}
           />
         ),
       });
     },
-    [availableTypes, showModal, hideModal, showToast],
+    [availableTypes, showModal, hideModal, showToast, t],
   );
 
   const myMembership = members.find((m) => m.userId === session?.user?.id);
@@ -327,12 +329,12 @@ export function TeamTab() {
             className="text-xl font-medium text-foreground/80"
             style={{ letterSpacing: "-0.2px" }}
           >
-            Team
+            {t.settings.team.heading}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {isPersonalOrg
-              ? "People with access to your personal workspace. Invite collaborators directly, or create a separate team organization."
-              : "People with access to this organization's projects, deployments, and servers."}
+              ? t.settings.team.descPersonal
+              : t.settings.team.descTeam}
           </p>
         </div>
         {isAdminOrOwner && (
@@ -342,7 +344,7 @@ export function TeamTab() {
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <UserPlus className="size-4" />
-            Invite member
+            {t.settings.team.inviteMember}
           </button>
         )}
       </div>
@@ -356,10 +358,9 @@ export function TeamTab() {
             <Building2 className="size-[18px] text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Create a team organization</p>
+            <p className="text-sm font-medium text-foreground">{t.settings.team.createTeamCard.title}</p>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              You can invite people here directly — or spin up a separate shared
-              space that stays isolated from your personal projects.
+              {t.settings.team.createTeamCard.body}
             </p>
           </div>
           <button
@@ -368,7 +369,7 @@ export function TeamTab() {
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors shrink-0"
           >
             <Plus className="size-3.5" />
-            Create team
+            {t.settings.team.createTeamCard.button}
           </button>
         </div>
       )}
@@ -383,7 +384,7 @@ export function TeamTab() {
           <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
             <div className="px-5 py-3 border-b border-border/50 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-foreground">
-                Active members ({members.length})
+                {interpolate(t.settings.team.activeMembers, { count: String(members.length) })}
               </h2>
             </div>
             <div className="divide-y divide-border/40">
@@ -416,7 +417,7 @@ export function TeamTab() {
                       <p className="text-sm font-medium text-foreground truncate">
                         {m.user.name || m.user.email}
                         {m.userId === session?.user?.id && (
-                          <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+                          <span className="ms-2 text-xs text-muted-foreground">{t.settings.team.you}</span>
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">{m.user.email}</p>
@@ -428,10 +429,10 @@ export function TeamTab() {
                         onClick={(e) => e.stopPropagation()}
                         className="text-xs rounded-lg border border-border/50 bg-card px-2 py-1.5 text-foreground"
                       >
-                        <option value="owner">Owner</option>
-                        <option value="admin">Admin</option>
-                        <option value="member">Member</option>
-                        <option value="restricted">Restricted</option>
+                        <option value="owner">{t.settings.team.roles.owner}</option>
+                        <option value="admin">{t.settings.team.roles.admin}</option>
+                        <option value="member">{t.settings.team.roles.member}</option>
+                        <option value="restricted">{t.settings.team.roles.restricted}</option>
                       </select>
                     ) : (
                       <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -446,7 +447,7 @@ export function TeamTab() {
                           void handleRemove(m.id);
                         }}
                         className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Remove member"
+                        title={t.settings.team.removeMember}
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -462,7 +463,7 @@ export function TeamTab() {
             <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
               <div className="px-5 py-3 border-b border-border/50">
                 <h2 className="text-sm font-semibold text-foreground">
-                  Pending invitations ({invitations.filter((i) => i.status === "pending").length})
+                  {interpolate(t.settings.team.pendingInvitations, { count: String(invitations.filter((i) => i.status === "pending").length) })}
                 </h2>
               </div>
               <div className="divide-y divide-border/40">
@@ -476,8 +477,7 @@ export function TeamTab() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{inv.email}</p>
                         <p className="text-xs text-muted-foreground">
-                          Invited as {inv.role} - expires{" "}
-                          {new Date(inv.expiresAt).toLocaleDateString()}
+                          {interpolate(t.settings.team.invitedAs, { role: inv.role, date: new Date(inv.expiresAt).toLocaleDateString() })}
                         </p>
                       </div>
                       {isAdminOrOwner && (
@@ -486,7 +486,7 @@ export function TeamTab() {
                           onClick={() => handleCancelInvite(inv.id)}
                           className="text-xs font-medium text-muted-foreground hover:text-destructive transition-colors"
                         >
-                          Cancel
+                          {t.settings.common.cancel}
                         </button>
                       )}
                     </div>
@@ -520,16 +520,15 @@ export function TeamTab() {
                 <Building2 className="size-4 text-primary" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-foreground">Create team organization</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t.settings.team.createTeamModal.title}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your personal workspace stays untouched. The team org has
-                  its own projects, servers, and invited members.
+                  {t.settings.team.createTeamModal.body}
                 </p>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Team name</label>
+              <label className="text-sm font-medium text-foreground block mb-1.5">{t.settings.team.createTeamModal.teamName}</label>
               <input
                 type="text"
                 value={newTeamName}
@@ -539,7 +538,7 @@ export function TeamTab() {
                     void handleCreateTeam();
                   }
                 }}
-                placeholder="Acme Inc"
+                placeholder={t.settings.team.createTeamModal.placeholder}
                 autoFocus
                 disabled={creatingTeam}
                 className="w-full px-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -553,7 +552,7 @@ export function TeamTab() {
                 disabled={creatingTeam}
                 className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t.settings.common.cancel}
               </button>
               <button
                 type="button"
@@ -562,7 +561,7 @@ export function TeamTab() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {creatingTeam && <Loader2 className="size-4 animate-spin" />}
-                Create team
+                {t.settings.team.createTeamModal.createTeam}
               </button>
             </div>
           </div>

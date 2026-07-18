@@ -16,7 +16,7 @@
     },
     "apps/api": {
       "name": "@repo/api",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@better-auth/drizzle-adapter": "^1.5.4",
         "@hono/node-server": "^1.19.11",
@@ -48,7 +48,7 @@
     },
     "apps/cli": {
       "name": "openship",
-      "version": "0.1.0",
+      "version": "0.1.9",
       "bin": {
         "openship": "./dist/index.js",
       },
@@ -106,7 +106,7 @@
     },
     "apps/desktop": {
       "name": "@repo/desktop",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@repo/core": "workspace:*",
         "@repo/onboarding": "workspace:*",
@@ -126,11 +126,11 @@
     },
     "apps/email": {
       "name": "@repo/email",
-      "version": "0.1.6",
+      "version": "0.1.9",
     },
     "apps/web": {
       "name": "@repo/web",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@repo/core": "workspace:*",
         "@repo/ui": "workspace:*",
@@ -169,7 +169,7 @@
         "@repo/core": "workspace:*",
         "dockerode": "^4.0.9",
         "ignore": "^7.0.5",
-        "oblien": "^2.2.37",
+        "oblien": "^2.2.45",
         "ssh2": "^1.17.0",
       },
       "devDependencies": {
@@ -191,6 +191,7 @@
         "@types/node": "^22.13.0",
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
       },
     },
     "packages/db": {
@@ -2228,7 +2229,7 @@
 
     "object-keys": ["object-keys@1.1.1", "", {}, "sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA=="],
 
-    "oblien": ["oblien@2.2.37", "", { "dependencies": { "@modelcontextprotocol/sdk": "^1.27.1", "ws": "^8.18.3" }, "bin": { "oblien": "dist/cli/index.js", "oblien-mcp": "dist/mcp/index.js" } }, "sha512-jxFL0TcpJX1WNGIOj9pqd3fyagQsRAWH9Tu+gv/EDTVgElJ0ZmRSpYDw4lsLFabtLW/eZnixpyzu9XCrn2EbTA=="],
+    "oblien": ["oblien@2.2.45", "", { "dependencies": { "@modelcontextprotocol/sdk": "^1.27.1", "ws": "^8.18.3" }, "bin": { "oblien": "dist/cli/index.js", "oblien-mcp": "dist/mcp/index.js" } }, "sha512-6HkIawBTuoqNnOdYiriZdRntkBL42z9cGry9BUt7sw8nUJ5xyLSzs6t4gNY5/i6V7zdM1h0skX6XA30IYKtgEg=="],
 
     "obug": ["obug@2.1.1", "", {}, "sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ=="],
 

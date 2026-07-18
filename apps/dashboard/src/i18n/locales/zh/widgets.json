@@ -1,0 +1,291 @@
+{
+  "shared": {
+    "dnsRecords": {
+      "priority": "优先级 {n}",
+      "recommended": "推荐",
+      "name": "名称",
+      "value": "值",
+      "copy": "复制"
+    },
+    "errorState": {
+      "commonCauses": "常见原因",
+      "needHelp": "需要帮助？",
+      "needHelpDesc": "请查阅文档，如果问题仍未解决，欢迎联系我们。",
+      "documentation": "文档",
+      "repoNotFound": {
+        "title": "未找到仓库",
+        "subtitle": "我们找不到你要查找的仓库。",
+        "hints": [
+          "仓库为私有，且你尚未获得访问权限",
+          "仓库名称或所有者拼写错误",
+          "仓库已被删除或移动",
+          "你的 GitHub 连接已过期"
+        ],
+        "backToLibrary": "返回资源库",
+        "importRepository": "导入仓库"
+      },
+      "projectNotFound": {
+        "title": "未找到项目",
+        "subtitle": "你要查找的项目不存在或已被删除。",
+        "hints": [
+          "项目已被删除",
+          "你没有访问该项目的权限",
+          "项目 URL 不正确"
+        ],
+        "backToDashboard": "返回仪表板",
+        "createNewProject": "创建新项目"
+      },
+      "accessDenied": {
+        "title": "拒绝访问",
+        "subtitle": "你没有访问此资源的权限。",
+        "hints": [
+          "你不是该项目的所有者",
+          "你的账户不具备所需权限",
+          "你的团队成员身份已发生变化"
+        ],
+        "backToDashboard": "返回仪表板"
+      }
+    },
+    "machineSettings": {
+      "title": "机器设置",
+      "configureFor": "配置计算资源，用于",
+      "docs": "文档",
+      "cpu": "CPU",
+      "memory": "内存",
+      "storage": "存储",
+      "base": "基础",
+      "current": "当前",
+      "creditsPerMonth": "点数/月",
+      "fromCurrent": "相较当前",
+      "viewPricing": "查看定价",
+      "cancel": "取消",
+      "saving": "正在保存……",
+      "saveChanges": "保存更改",
+      "toastUpdated": "机器设置已更新",
+      "toastFailed": "更新设置失败"
+    },
+    "serverSelector": {
+      "serverLabel": "服务器",
+      "loadingServers": "正在加载服务器……",
+      "noServerConnected": "未连接服务器",
+      "connectServerFirst": "请先连接一台服务器，然后返回继续设置。",
+      "addServer": "添加服务器",
+      "selectServer": "选择服务器……",
+      "addNewServer": "添加新服务器……"
+    }
+  },
+  "backup": {
+    "runCard": {
+      "streamError": "无法实时获取运行进度：{message}",
+      "loading": "正在加载……",
+      "live": "实时",
+      "started": "开始时间",
+      "finished": "完成时间",
+      "elapsed": "已用时间",
+      "bytes": "字节数",
+      "runId": "运行 ID",
+      "status": {
+        "queued": "排队中",
+        "preparing": "准备中",
+        "snapshotting": "正在创建快照",
+        "uploading": "正在上传",
+        "verifying": "正在验证",
+        "succeeded": "已成功",
+        "failed": "已失败",
+        "cancelled": "已取消",
+        "serverError": "服务器错误"
+      },
+      "phase": {
+        "queued": "正在等待工作节点……",
+        "preparing": "正在解析目标位置和服务……",
+        "snapshotting": "正在生成制品（预处理钩子运行中）……",
+        "uploading": "正在流式传输到目标位置……",
+        "verifying": "正在写入清单……"
+      }
+    },
+    "policyEditor": {
+      "presetHourly": "每小时",
+      "presetDaily": "每天（03:17）",
+      "presetWeekly": "每周（周日 03:17）",
+      "presetMonthly": "每月（1 日 03:17）",
+      "presetManual": "仅手动",
+      "selectDestinationAlert": "请选择一个目标位置",
+      "failedSave": "保存策略失败",
+      "rotateConfirm": "要轮换 webhook 令牌吗？当前 URL 将失效。",
+      "failedRotate": "轮换令牌失败",
+      "editTitle": "编辑备份策略",
+      "createTitle": "创建备份策略",
+      "serviceLabel": "服务：{name}",
+      "projectLevel": "项目级策略",
+      "destination": "目标位置",
+      "selectOption": "— 选择 —",
+      "schedule": "计划",
+      "cronPlaceholder": "自定义 cron（5 个字段），留空则仅手动",
+      "retainCount": "保留数量",
+      "retainCountHint": "保留最近 N 次成功的运行",
+      "retainDays": "保留天数",
+      "retainDaysHint": "删除超过 N 天的运行",
+      "preDeployTrigger": "部署前触发",
+      "preDeployLabel": "在每次新部署上线前自动进行备份",
+      "preDeployHint": "在每次构建成功后、新代码上线前触发。",
+      "webhookTrigger": "Webhook 触发",
+      "webhookLabel": "启用入站 webhook URL",
+      "webhookHint": "为每个策略生成一个令牌。可从任意外部触发器（GitHub Actions、监控系统、你自己的调度器）向该 URL 发送 POST 请求。",
+      "copyUrl": "复制 URL",
+      "rotateToken": "轮换令牌",
+      "preHook": "预处理钩子（在快照前运行）",
+      "preHookHint": "常用于数据库：pg_dump > /tmp/dump.sql。失败将中止运行。",
+      "postHook": "后处理钩子（在上传后运行）",
+      "postHookHint": "用于清理；失败会被记录但不会导致运行失败。",
+      "policyEnabled": "策略已启用",
+      "cancel": "取消",
+      "saving": "正在保存……",
+      "saveChanges": "保存更改",
+      "createPolicy": "创建策略"
+    }
+  },
+  "cloud": {
+    "connectionGate": {
+      "reconnect": "重新连接 Openship Cloud",
+      "deployedOn": "此项目已部署在 Openship Cloud 上",
+      "sessionMissing": "你的 Openship Cloud 会话已丢失。请连接以管理部署、查看日志，并访问 {name} 的运行时控制。",
+      "thisProject": "此项目",
+      "connecting": "正在连接……",
+      "connect": "连接到 Openship Cloud",
+      "readOnlyNote": "断开连接期间，你仍可以只读模式浏览此页面。"
+    }
+  },
+  "integrations": {
+    "githubPermission": {
+      "title": "连接到 GitHub",
+      "subtitle": "选择仓库访问级别",
+      "intro": "选择 Openship 可以访问哪些仓库。你之后可以在 GitHub 设置中更改此选项。",
+      "publicTitle": "仅公开仓库",
+      "publicDesc": "访问你的公开仓库。非常适合开源项目。",
+      "publicItem1": "读取公开仓库数据",
+      "publicItem2": "部署公开仓库",
+      "publicItem3": "为公开仓库创建 webhook",
+      "allTitle": "公开和私有仓库",
+      "allDesc": "完全访问你的所有仓库。私有项目需要此权限。",
+      "allItem1": "读取公开和私有仓库数据",
+      "allItem2": "部署任意仓库",
+      "allItem3": "为所有仓库创建 webhook",
+      "allItem4": "访问组织仓库",
+      "noteLabel": "注意：",
+      "noteText": "你可以随时在 GitHub 设置的 Applications → Authorized OAuth Apps 中撤销访问权限。",
+      "cancel": "取消",
+      "connecting": "正在连接……",
+      "connect": "连接到 GitHub"
+    }
+  },
+  "permissions": {
+    "resourcePicker": {
+      "failedLoadResources": "加载资源失败",
+      "searchPlaceholder": "搜索 {type}……",
+      "allResources": "所有 {type}",
+      "noMatch": "没有与你的搜索匹配的资源。",
+      "noResourcesYet": "此组织中还没有 {type}。",
+      "selectedSummaryOne": "已跨所有类型选择 {count} 个资源。",
+      "selectedSummaryOther": "已跨所有类型选择 {count} 个资源。",
+      "wildcard": "通配符",
+      "coveredByAll": "已被全部涵盖",
+      "failedLoadOrgs": "加载 GitHub 组织失败",
+      "failedLoadRepos": "加载 {login} 的仓库失败",
+      "noOrgs": "未连接任何 GitHub 组织。",
+      "collapse": "折叠",
+      "expand": "展开",
+      "entireOrg": "整个组织",
+      "repoCountOne": "{count} 个仓库",
+      "repoCountOther": "{count} 个仓库",
+      "coveredByOrg": "已被上方的组织级授权涵盖。",
+      "noRepos": "没有仓库。",
+      "searchRepos": "搜索仓库……"
+    }
+  },
+  "routing": {
+    "domainSwitcher": {
+      "notConfigured": "未配置",
+      "selectDomain": "选择域名"
+    },
+    "publicEndpoints": {
+      "mappedToPort": "已映射到端口 {port}。",
+      "noPortYet": "尚未选择端口。",
+      "mappedTo": "已映射到 {path}。",
+      "exposedPort": "暴露的端口",
+      "staticPath": "静态路径",
+      "auto": "自动",
+      "domain": "域名",
+      "domainsRouted": "有 {count} 个域名路由到此应用。",
+      "accessibleWhere": "你的站点可访问的位置",
+      "addDomain": "添加域名",
+      "primaryDomain": "主域名",
+      "domainN": "域名 {n}",
+      "remove": "移除"
+    },
+    "configEditor": {
+      "remove": "移除",
+      "removeHeader": "移除标头",
+      "add": "添加",
+      "addHeader": "添加标头",
+      "rewrites": "重写",
+      "rewritesHint": "在不改变 URL 的情况下提供另一个路径/后端（例如 /api/(.*) → backend）。",
+      "redirects": "重定向",
+      "redirectsHint": "HTTP 重定向（301/308 为永久重定向，否则为 307）。",
+      "headers": "标头",
+      "headersHint": "为匹配的路径添加的响应标头。",
+      "permanent": "永久",
+      "cleanUrls": "简洁 URL",
+      "cleanUrlsHint": "（去除 .html）",
+      "trailingSlash": "尾部斜杠"
+    },
+    "settingsCard": {
+      "recordLabels": {
+        "CNAME": "通过边缘网络路由流量",
+        "A": "指向你的服务器 IP",
+        "TXT": "验证域名所有权"
+      },
+      "publiclyExposed": "对外公开",
+      "internalOnly": "仅内部",
+      "freeSubdomain": "免费子域名",
+      "free": "免费",
+      "customDomain": "自定义域名",
+      "custom": "自定义",
+      "save": "保存",
+      "checkingDns": "正在检查 DNS……",
+      "addRecordHint": "添加一条 {primary} 记录和一条 {txt} 记录",
+      "viewRecords": "查看记录",
+      "exposedPort": "暴露的端口",
+      "staticPath": "静态路径",
+      "staticPathHint": "从构建输出内的此子目录提供文件。使用 {path} 表示根输出目录。",
+      "dnsConfiguration": "DNS 配置",
+      "addRecordsFor": "为 {hostname} 添加这些记录",
+      "nameHost": "名称 / 主机",
+      "valueTarget": "值 / 目标",
+      "dnsHintSelfhosted": "先添加指向你服务器 IP 的 A 记录，然后添加用于验证的 TXT 记录。",
+      "dnsHintCloud": "先添加用于路由的 CNAME 记录，然后添加用于验证的 TXT 记录。",
+      "dnsPropagation": "DNS 更改最多可能需要 48 小时才能生效。"
+    }
+  },
+  "updates": {
+    "severity": {
+      "critical": "严重",
+      "recommended": "推荐",
+      "info": "提示"
+    },
+    "viewChangelog": "查看更新日志",
+    "available": "已可用",
+    "youreOn": "· 你当前使用的是 {version}",
+    "rerunInstall": "重新运行安装以更新你的自托管服务器。",
+    "updateNow": "立即更新",
+    "changelog": "更新日志",
+    "updatedTo": "已更新到 Openship {version}",
+    "seeChanges": "查看此版本中的变更。",
+    "onLatest": "你已使用最新版本。",
+    "whatsNew": "新增内容",
+    "whatsNewIn": "{version} 中的新增内容",
+    "close": "关闭",
+    "noNotes": "此版本没有发布说明。",
+    "viewOnGithub": "在 GitHub 上查看",
+    "dismiss": "忽略"
+  }
+}

@@ -1,8 +1,10 @@
 import { Download, CheckCircle2, XCircle, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { SetupComponentProgress, SetupLogEvent } from "@/lib/api/system";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 function ComponentProgressRow({ component }: { component: SetupComponentProgress }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 py-2 px-3 rounded-lg">
       <div className="shrink-0">
@@ -31,12 +33,12 @@ function ComponentProgressRow({ component }: { component: SetupComponentProgress
         }`}
       >
         {component.status === "installing"
-          ? "Installing\u2026"
+          ? t.servers.setup.statusInstalling
           : component.status === "installed"
-            ? "Done"
+            ? t.servers.setup.statusDone
             : component.status === "failed"
-              ? "Failed"
-              : "Waiting"}
+              ? t.servers.setup.statusFailed
+              : t.servers.setup.statusWaiting}
       </span>
     </div>
   );
@@ -80,6 +82,7 @@ export function InstallingPanel({
   onDone: () => void;
   onRetry: () => void;
 }) {
+  const { t } = useI18n();
   const [logsExpanded, setLogsExpanded] = useState(true);
   const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -125,14 +128,18 @@ export function InstallingPanel({
             <h2 className="font-semibold text-foreground text-[15px]">
               {isDone
                 ? finalStatus === "completed"
-                  ? "Setup Complete"
-                  : "Setup Finished with Errors"
-                : "Installing Components"}
+                  ? t.servers.setup.setupComplete
+                  : t.servers.setup.setupFinishedErrors
+                : t.servers.setup.installingComponents}
             </h2>
             <p className="text-xs text-muted-foreground">
               {isDone
-                ? `${installedCount} of ${totalCount} installed on ${serverHost}`
-                : `Setting up ${serverHost}\u2026`}
+                ? interpolate(t.servers.setup.installedOf, {
+                    count: String(installedCount),
+                    total: String(totalCount),
+                    host: serverHost,
+                  })
+                : interpolate(t.servers.setup.settingUp, { host: serverHost })}
             </p>
           </div>
           {!isDone && (
@@ -166,18 +173,18 @@ export function InstallingPanel({
       <div className="bg-card rounded-2xl border border-border/50">
         <button
           onClick={() => setLogsExpanded(!logsExpanded)}
-          className="flex items-center gap-2 w-full px-5 py-3 text-left hover:bg-muted/30 transition-colors rounded-t-2xl"
+          className="flex items-center gap-2 w-full px-5 py-3 text-start hover:bg-muted/30 transition-colors rounded-t-2xl"
         >
           {logsExpanded ? (
             <ChevronDown className="size-4 text-muted-foreground" />
           ) : (
-            <ChevronRight className="size-4 text-muted-foreground" />
+            <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
           )}
           <span className="text-sm font-medium text-foreground">
-            Install Logs
+            {t.servers.setup.installLogs}
           </span>
           <span className="text-xs text-muted-foreground">
-            ({logs.length} {logs.length === 1 ? "line" : "lines"})
+            ({logs.length} {logs.length === 1 ? t.servers.setup.line : t.servers.setup.lines})
           </span>
         </button>
 
@@ -186,7 +193,7 @@ export function InstallingPanel({
             <div className="max-h-[400px] overflow-y-auto p-4 bg-muted/20 rounded-b-2xl">
               {logs.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">
-                  Waiting for output\u2026
+                  {t.servers.setup.waitingForOutput}
                 </p>
               ) : (
                 <div className="space-y-0.5">
@@ -209,7 +216,7 @@ export function InstallingPanel({
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all"
           >
             <CheckCircle2 className="size-4" />
-            {finalStatus === "completed" ? "Done - Go to Servers" : "Go to Servers"}
+            {finalStatus === "completed" ? t.servers.setup.doneGoToServers : t.servers.setup.goToServers}
           </button>
           {failedCount > 0 && (
             <button
@@ -217,7 +224,7 @@ export function InstallingPanel({
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
             >
               <XCircle className="size-4" />
-              Retry Failed ({failedCount})
+              {interpolate(t.servers.setup.retryFailed, { count: String(failedCount) })}
             </button>
           )}
         </div>

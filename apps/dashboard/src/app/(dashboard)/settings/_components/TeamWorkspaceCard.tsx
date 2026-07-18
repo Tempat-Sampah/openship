@@ -16,41 +16,40 @@ import { useState } from "react";
 import { Rocket, Loader2 } from "lucide-react";
 import { SettingsSection } from "./SettingsSection";
 import { MigrateModal } from "./MigrateModal";
+import { useI18n } from "@/components/i18n-provider";
 
 export function TeamWorkspaceCard({ canMigrate }: { canMigrate: boolean }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [migrated, setMigrated] = useState(false);
 
   return (
     <SettingsSection
       icon={Rocket}
-      title="Team workspace"
-      description="Move this instance into multi-user mode."
+      title={t.settings.teamWorkspace.title}
+      description={t.settings.teamWorkspace.description}
       iconBg="bg-primary/10"
       iconColor="text-primary"
     >
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Right now this instance is single-user — only you can sign in.
-          When you're ready to add teammates, migrate the deployment to a
-          shared location: your own server, Openship Cloud, or expose this
-          machine via a tunnel.
+          {t.settings.teamWorkspace.body}
         </p>
 
         <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/[0.04] p-4">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Current mode</p>
-            <p className="text-xs text-muted-foreground">Single-user (local)</p>
+            <p className="text-sm font-medium text-foreground">{t.settings.teamWorkspace.currentMode}</p>
+            <p className="text-xs text-muted-foreground">{t.settings.teamWorkspace.singleUserLocal}</p>
           </div>
           <button
             type="button"
             onClick={() => setOpen(true)}
             disabled={!canMigrate}
-            title={canMigrate ? undefined : "Only the workspace owner can migrate"}
+            title={canMigrate ? undefined : t.settings.teamWorkspace.ownerOnlyTitle}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             {migrated && <Loader2 className="size-4 animate-spin" />}
-            Migrate
+            {t.settings.teamWorkspace.migrate}
           </button>
         </div>
       </div>

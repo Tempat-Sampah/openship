@@ -18,6 +18,7 @@ import { useEffect, useState, useRef } from "react";
 import { Check, ChevronsUpDown, Plus, Building2, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { setActiveOrganizationId } from "@/lib/api/client";
 
 interface Org {
@@ -45,6 +46,7 @@ const orgClient = (authClient as unknown as {
 
 export function AccountSwitcher() {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -94,7 +96,11 @@ export function AccountSwitcher() {
     try {
       const res = await orgClient.setActive({ organizationId: orgId });
       if (res.error) {
-        showToast(res.error.message ?? "Failed to switch", "error", "Organization");
+        showToast(
+          res.error.message ?? t.chrome.accountSwitcher.switchFailed,
+          "error",
+          t.chrome.accountSwitcher.toastTitle,
+        );
         return;
       }
       // Update both: session cookie default (via setActive above) AND the
@@ -114,7 +120,11 @@ export function AccountSwitcher() {
       const slug = newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       const res = await orgClient.create({ name: newName.trim(), slug });
       if (res.error || !res.data) {
-        showToast(res.error?.message ?? "Failed to create", "error", "Organization");
+        showToast(
+          res.error?.message ?? t.chrome.accountSwitcher.createFailed,
+          "error",
+          t.chrome.accountSwitcher.toastTitle,
+        );
         return;
       }
       // Auto-switch to the new org — update both session and header slot.
@@ -135,7 +145,7 @@ export function AccountSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-muted/40 transition-colors text-left"
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-muted/40 transition-colors text-start"
       >
         <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
           <Building2 className="size-3.5 text-foreground" />
@@ -143,14 +153,16 @@ export function AccountSwitcher() {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{activeOrg.name}</p>
           {orgs.length > 1 && (
-            <p className="text-xs text-muted-foreground truncate">{orgs.length} workspaces</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {interpolate(t.chrome.accountSwitcher.workspacesCount, { count: String(orgs.length) })}
+            </p>
           )}
         </div>
         <ChevronsUpDown className="size-3.5 text-muted-foreground shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 mt-1.5 rounded-xl border border-border/50 bg-popover shadow-lg z-50 overflow-hidden">
+        <div className="absolute start-0 end-0 mt-1.5 rounded-xl border border-border/50 bg-popover shadow-lg z-50 overflow-hidden">
           <div className="py-1 max-h-72 overflow-y-auto">
             {orgs.map((o) => (
               <button
@@ -158,7 +170,7 @@ export function AccountSwitcher() {
                 type="button"
                 onClick={() => handleSwitch(o.id)}
                 disabled={switching}
-                className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/40 transition-colors text-left disabled:opacity-50"
+                className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/40 transition-colors text-start disabled:opacity-50"
               >
                 <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0">
                   <Building2 className="size-3 text-muted-foreground" />
@@ -181,7 +193,7 @@ export function AccountSwitcher() {
               className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 transition-colors text-sm text-foreground"
             >
               <Plus className="size-3.5 text-muted-foreground" />
-              New workspace
+              {t.chrome.accountSwitcher.newWorkspace}
             </button>
           </div>
         </div>
@@ -197,18 +209,18 @@ export function AccountSwitcher() {
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <h3 className="text-lg font-semibold text-foreground">Create a workspace</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.chrome.accountSwitcher.createTitle}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                A separate org for projects, deployments, servers, and members.
+                {t.chrome.accountSwitcher.createDescription}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Name</label>
+              <label className="text-sm font-medium text-foreground block mb-1.5">{t.chrome.accountSwitcher.nameLabel}</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Acme Corp"
+                placeholder={t.chrome.accountSwitcher.namePlaceholder}
                 disabled={creating}
                 className="w-full px-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
@@ -220,7 +232,7 @@ export function AccountSwitcher() {
                 disabled={creating}
                 className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
               >
-                Cancel
+                {t.chrome.accountSwitcher.cancel}
               </button>
               <button
                 type="button"
@@ -229,7 +241,7 @@ export function AccountSwitcher() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
               >
                 {creating && <Loader2 className="size-4 animate-spin" />}
-                Create
+                {t.chrome.accountSwitcher.create}
               </button>
             </div>
           </div>

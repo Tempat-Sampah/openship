@@ -20,6 +20,7 @@
 
 import { type BuildStrategy } from "@repo/core";
 import { tokenFor, requireTokenFor, type TokenContext } from "./github.token";
+import { isPublicRepo } from "./github.http";
 import type { RequestContext } from "../../lib/request-context";
 
 /**
@@ -109,6 +110,14 @@ export async function resolveBuildGitToken(opts: {
   // off-host via the URL).
   const r = await tokenFor(opts.ctx, "remote", tokenCtx);
   if (r?.token) return { token: r.token };
+
+  // No remote token — but a PUBLIC github.com repo clones anonymously (nothing
+  // to ship off-host, no relay/fallback needed). This is what lets a public
+  // repo deploy with zero credentials, exactly like Vercel. Checked here (only
+  // when no token resolved) so it never costs an API call for private repos.
+  if (opts.owner && opts.repo && (await isPublicRepo(opts.owner, opts.repo))) {
+    return {};
+  }
 
   // No remote token. If the target server opted into credential forwarding,
   // the operator's gh identity is forwarded on demand via the relay (never

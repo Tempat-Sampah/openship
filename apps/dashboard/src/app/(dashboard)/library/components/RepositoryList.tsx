@@ -18,19 +18,28 @@ import type { GitHubRepo } from "@/context/GitHubContext";
 import { encodeRepoSlug } from "@/utils/repoSlug";
 import type { VisibilityFilter, SortBy } from "../types";
 import { LANG_COLORS } from "@/constants/lang-colors";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 
-function timeAgo(dateStr: string): string {
+interface TimeStrings {
+  justNow: string;
+  minutesAgo: string;
+  hoursAgo: string;
+  daysAgo: string;
+  monthsAgo: string;
+}
+
+function timeAgo(dateStr: string, tr: TimeStrings): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return tr.justNow;
+  if (mins < 60) return interpolate(tr.minutesAgo, { n: String(mins) });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return interpolate(tr.hoursAgo, { n: String(hrs) });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
+  if (days < 30) return interpolate(tr.daysAgo, { n: String(days) });
+  return interpolate(tr.monthsAgo, { n: String(Math.floor(days / 30)) });
 }
 
 /* ── Component ────────────────────────────────────────────────────── */
@@ -63,6 +72,7 @@ export function RepositoryList({
   onSelect,
   installUrl,
 }: RepositoryListProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
@@ -138,8 +148,8 @@ export function RepositoryList({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-all hover:border-border hover:bg-muted/50 hover:text-foreground"
-                aria-label="Add GitHub account"
-                title="Add GitHub account"
+                aria-label={t.library.repositoryList.addAccount}
+                title={t.library.repositoryList.addAccount}
               >
                 <Plus className="size-4" />
               </a>
@@ -150,13 +160,13 @@ export function RepositoryList({
         {/* ── Search + filter row ───────────────────────── */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search repositories..."
-              className="w-full pl-10 pr-4 py-2.5 bg-muted/40 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all"
+              placeholder={t.library.repositoryList.searchPlaceholder}
+              className="w-full ps-10 pe-4 py-2.5 bg-muted/40 border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all"
             />
           </div>
 
@@ -172,7 +182,7 @@ export function RepositoryList({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {v}
+                {t.library.repositoryList.visibility[v]}
               </button>
             ))}
           </div>
@@ -182,13 +192,13 @@ export function RepositoryList({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortBy)}
-              className="appearance-none pl-3.5 pr-8 py-2.5 bg-muted/40 border border-border/50 rounded-xl text-xs font-medium text-foreground cursor-pointer hover:bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="appearance-none ps-3.5 pe-8 py-2.5 bg-muted/40 border border-border/50 rounded-xl text-xs font-medium text-foreground cursor-pointer hover:bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             >
-              <option value="updated">Recent</option>
-              <option value="name">Name</option>
-              <option value="stars">Stars</option>
+              <option value="updated">{t.library.repositoryList.sort.recent}</option>
+              <option value="name">{t.library.repositoryList.sort.name}</option>
+              <option value="stars">{t.library.repositoryList.sort.stars}</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            <ChevronDown className="absolute end-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
           </div>
         </div>
       </div>
@@ -215,10 +225,10 @@ export function RepositoryList({
                 <Github className="size-6 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium text-foreground/80 mb-2">
-                Install the GitHub App
+                {t.library.repositoryList.installTitle}
               </h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed mb-4">
-                Install the GitHub App on your account or organization to grant access to your repositories.
+                {t.library.repositoryList.installDesc}
               </p>
               <a
                 href={installUrl}
@@ -227,7 +237,7 @@ export function RepositoryList({
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-foreground text-background rounded-xl hover:bg-foreground/90 transition-colors"
               >
                 <Github className="size-4" />
-                Install GitHub App
+                {t.library.repositoryList.installButton}
               </a>
             </>
           ) : (
@@ -254,12 +264,12 @@ export function RepositoryList({
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-foreground/80 mb-2">
-                {search ? "No matching repositories" : "No repositories found"}
+                {search ? t.library.repositoryList.noMatching : t.library.repositoryList.noRepos}
               </h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 {search
-                  ? "Try a different search term or adjust your filters"
-                  : "This account doesn\u2019t have any repositories yet"}
+                  ? t.library.repositoryList.noMatchingDesc
+                  : t.library.repositoryList.noReposDesc}
               </p>
             </>
           )}
@@ -292,7 +302,7 @@ export function RepositoryList({
                       </p>
                       {repo.private && (
                         <span className="px-1.5 py-0.5 rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
-                          Private
+                          {t.library.repositoryList.privateBadge}
                         </span>
                       )}
                       {/* "Local only" chip — surfaces when the repo is
@@ -302,10 +312,10 @@ export function RepositoryList({
                       {repo.source === "cli" && (
                         <span
                           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 text-[10px] font-medium text-amber-600 dark:text-amber-400"
-                          title={`The Openship App isn't installed on ${typeof repo.owner === "string" ? repo.owner : repo.owner.login}. Local builds only — install the App on this owner to enable remote deploys.`}
+                          title={interpolate(t.library.repositoryList.localOnlyTooltip, { owner: typeof repo.owner === "string" ? repo.owner : repo.owner.login })}
                         >
                           <AlertTriangle className="size-2.5" />
-                          Local only
+                          {t.library.repositoryList.localOnly}
                         </span>
                       )}
                     </div>
@@ -314,7 +324,7 @@ export function RepositoryList({
                         <p className="text-xs text-muted-foreground truncate">{repo.description}</p>
                       )}
                       {repo.description && <span className="text-muted-foreground/40">·</span>}
-                      <span className="text-xs text-muted-foreground shrink-0">{timeAgo(repo.updated_at)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{timeAgo(repo.updated_at, t.library.repositoryList.time)}</span>
                     </div>
                   </div>
 
@@ -340,7 +350,7 @@ export function RepositoryList({
                         {forks}
                       </span>
                     )}
-                    <ArrowRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                    <ArrowRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors rtl:rotate-180" />
                   </div>
                 </div>
               );
@@ -348,8 +358,8 @@ export function RepositoryList({
           </div>
           {filtered.length > 0 && (
             <div className="px-5 py-3 text-center text-xs text-muted-foreground/50 border-t border-border/30">
-              {filtered.length} repositor{filtered.length === 1 ? "y" : "ies"}
-              {search && ` matching "${search}"`}
+              {interpolate(filtered.length === 1 ? t.library.repositoryList.repoCountSingular : t.library.repositoryList.repoCountPlural, { count: String(filtered.length) })}
+              {search && ` ${interpolate(t.library.repositoryList.matching, { query: search })}`}
             </div>
           )}
         </>

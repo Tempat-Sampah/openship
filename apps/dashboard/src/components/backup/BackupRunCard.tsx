@@ -3,7 +3,10 @@
 import React from "react";
 import { CheckCircle2, XCircle, Loader2, Activity } from "lucide-react";
 import { useBackupRunStream } from "@/hooks/useBackupRunStream";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { BackupRun } from "@/lib/api";
+
+type RunCardDict = ReturnType<typeof useI18n>["t"]["widgets"]["backup"]["runCard"];
 
 interface Props {
   runId: string;
@@ -16,19 +19,21 @@ interface Props {
 
 export function BackupRunCard({ runId, initial }: Props): React.JSX.Element {
   const { run: streamed, connected, error } = useBackupRunStream(runId);
+  const { t } = useI18n();
+  const w = t.widgets.backup.runCard;
   const run = streamed ?? initial ?? null;
 
   if (error && !run) {
     return (
       <div className="rounded-2xl border border-red-500/40 bg-red-500/5 p-4 text-sm text-red-600 dark:text-red-400">
-        Couldn't stream run progress: {error.message}
+        {interpolate(w.streamError, { message: error.message })}
       </div>
     );
   }
   if (!run) {
     return (
       <div className="rounded-2xl border border-border/50 bg-card p-4 text-sm text-muted-foreground">
-        Loading…
+        {w.loading}
       </div>
     );
   }
@@ -51,7 +56,7 @@ export function BackupRunCard({ runId, initial }: Props): React.JSX.Element {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <StatusIcon className={`size-4 ${color} ${inFlight ? "animate-spin" : ""}`} />
-          <span className={`text-sm font-medium ${color}`}>{labelFor(run.status)}</span>
+          <span className={`text-sm font-medium ${color}`}>{labelFor(run.status, w)}</span>
           <span className="text-[11px] text-muted-foreground uppercase tracking-wide">
             {run.triggeredBy}
           </span>
@@ -59,15 +64,15 @@ export function BackupRunCard({ runId, initial }: Props): React.JSX.Element {
         {connected && inFlight && (
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <Activity className="size-3 animate-pulse" />
-            Live
+            {w.live}
           </span>
         )}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-        <Stat label="Started" value={new Date(run.startedAt).toLocaleString()} />
+        <Stat label={w.started} value={new Date(run.startedAt).toLocaleString()} />
         <Stat
-          label={run.finishedAt ? "Finished" : "Elapsed"}
+          label={run.finishedAt ? w.finished : w.elapsed}
           value={
             run.finishedAt
               ? new Date(run.finishedAt).toLocaleString()
@@ -75,10 +80,10 @@ export function BackupRunCard({ runId, initial }: Props): React.JSX.Element {
           }
         />
         <Stat
-          label="Bytes"
+          label={w.bytes}
           value={run.bytesTransferred ? formatBytes(run.bytesTransferred) : "—"}
         />
-        <Stat label="Run id" value={<code className="text-[10px]">{run.id.slice(0, 16)}…</code>} />
+        <Stat label={w.runId} value={<code className="text-[10px]">{run.id.slice(0, 16)}…</code>} />
       </div>
 
       {run.errorMessage && (
@@ -92,48 +97,48 @@ export function BackupRunCard({ runId, initial }: Props): React.JSX.Element {
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div className="h-full w-1/3 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full bg-primary" />
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">{phaseLabel(run.status)}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{phaseLabel(run.status, w)}</p>
         </div>
       )}
     </div>
   );
 }
 
-function labelFor(status: BackupRun["status"]): string {
+function labelFor(status: BackupRun["status"], w: RunCardDict): string {
   switch (status) {
     case "queued":
-      return "Queued";
+      return w.status.queued;
     case "preparing":
-      return "Preparing";
+      return w.status.preparing;
     case "snapshotting":
-      return "Snapshotting";
+      return w.status.snapshotting;
     case "uploading":
-      return "Uploading";
+      return w.status.uploading;
     case "verifying":
-      return "Verifying";
+      return w.status.verifying;
     case "succeeded":
-      return "Succeeded";
+      return w.status.succeeded;
     case "failed":
-      return "Failed";
+      return w.status.failed;
     case "cancelled":
-      return "Cancelled";
+      return w.status.cancelled;
     case "server_error":
-      return "Server error";
+      return w.status.serverError;
   }
 }
 
-function phaseLabel(status: BackupRun["status"]): string {
+function phaseLabel(status: BackupRun["status"], w: RunCardDict): string {
   switch (status) {
     case "queued":
-      return "Waiting for a worker…";
+      return w.phase.queued;
     case "preparing":
-      return "Resolving destination + service…";
+      return w.phase.preparing;
     case "snapshotting":
-      return "Producing artifacts (pre-hook running)…";
+      return w.phase.snapshotting;
     case "uploading":
-      return "Streaming to destination…";
+      return w.phase.uploading;
     case "verifying":
-      return "Writing manifest…";
+      return w.phase.verifying;
     default:
       return "";
   }

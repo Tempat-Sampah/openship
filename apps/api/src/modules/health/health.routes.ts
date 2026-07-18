@@ -4,6 +4,12 @@
 import { Hono } from "hono";
 import { hostname, userInfo } from "node:os";
 import { cloudRuntimeTarget, env } from "../../config/env";
+import apiPackage from "../../../package.json";
+
+/** Running server version (from apps/api/package.json). Lets the dashboard tell
+ *  a self-hosted operator their instance is outdated / has a security advisory.
+ *  The desktop dashboard uses window.desktop.app.version() instead. */
+const APP_VERSION = apiPackage.version;
 
 /**
  * Best-effort friendly name for the local machine. On macOS with Bonjour
@@ -87,6 +93,7 @@ healthRoutes.get("/env", async (c) => {
   return c.json({
     selfHosted: !env.CLOUD_MODE,
     deployMode: env.DEPLOY_MODE,
+    version: APP_VERSION,
     authMode,
     teamMode,
     migrationTargetUrl,

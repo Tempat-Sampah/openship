@@ -5,6 +5,7 @@ import { Search, CheckCircle2, Loader2, MailCheck, AlertCircle } from "lucide-re
 import Modal from "@/components/shared/Modal";
 import ServerSelector, { type ServerOption } from "@/components/shared/ServerSelector";
 import { mailApi, getApiErrorMessage } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface ScanResult {
   serverId: string;
@@ -31,6 +32,7 @@ export function AdoptMailModal({
   onClose: () => void;
   onAdopted: (serverId: string) => void;
 }) {
+  const { t } = useI18n();
   const [server, setServer] = useState<ServerOption | null>(null);
   const [scanning, setScanning] = useState(false);
   const [adopting, setAdopting] = useState(false);
@@ -59,10 +61,10 @@ export function AdoptMailModal({
       const res = await mailApi.scan(server.id);
       setResult(res);
       if (!res.adoptable) {
-        setError("No mail server installation was found on this server.");
+        setError(t.emails.adopt.noInstall);
       }
     } catch (e) {
-      setError(getApiErrorMessage(e, "Scan failed — is the server reachable?"));
+      setError(getApiErrorMessage(e, t.emails.adopt.scanFailed));
     } finally {
       setScanning(false);
     }
@@ -77,19 +79,17 @@ export function AdoptMailModal({
       onAdopted(res.serverId);
       close();
     } catch (e) {
-      setError(getApiErrorMessage(e, "Adopt failed"));
+      setError(getApiErrorMessage(e, t.emails.adopt.adoptFailed));
     } finally {
       setAdopting(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={close} title="Adopt existing mail server">
+    <Modal isOpen={isOpen} onClose={close} title={t.emails.adopt.title}>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Already set up a mail server with Openship on one of your servers? Pick it and scan — if a
-          mail stack is found, it&apos;s re-adopted into the dashboard without reinstalling or
-          touching your data.
+          {t.emails.adopt.intro}
         </p>
 
         <ServerSelector value={server?.id ?? null} onSelect={pickServer} compact />
@@ -101,19 +101,24 @@ export function AdoptMailModal({
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {scanning ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
-          {scanning ? "Scanning…" : "Scan server"}
+          {scanning ? t.emails.adopt.scanning : t.emails.adopt.scan}
         </button>
 
         {result?.adoptable && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-foreground space-y-1.5">
             <div className="flex items-center gap-2 font-medium text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="size-4" /> Mail server detected
+              <CheckCircle2 className="size-4" /> {t.emails.adopt.detected}
             </div>
-            <p>Domain: <span className="font-semibold">{result.domain ?? "unknown"}</span></p>
+            <p>
+              {t.emails.adopt.domainLabel}{" "}
+              <span className="font-semibold">{result.domain ?? t.emails.adopt.unknown}</span>
+            </p>
             <p className="text-muted-foreground">
-              iRedMail running: {result.iredmailInstalled ? "yes" : "no"} · Install:{" "}
-              {result.installComplete ? "complete" : "in progress"} · Webmail:{" "}
-              {result.webmailPresent ? "present" : "not deployed"}
+              {interpolate(t.emails.adopt.stats, {
+                iredmail: result.iredmailInstalled ? t.emails.adopt.yes : t.emails.adopt.no,
+                install: result.installComplete ? t.emails.adopt.complete : t.emails.adopt.inProgress,
+                webmail: result.webmailPresent ? t.emails.adopt.present : t.emails.adopt.notDeployed,
+              })}
             </p>
           </div>
         )}
@@ -131,7 +136,7 @@ export function AdoptMailModal({
             onClick={close}
             className="px-4 py-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
           >
-            Cancel
+            {t.emails.adopt.cancel}
           </button>
           <button
             type="button"
@@ -140,7 +145,7 @@ export function AdoptMailModal({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {adopting ? <Loader2 className="size-4 animate-spin" /> : <MailCheck className="size-4" />}
-            Adopt
+            {t.emails.adopt.adopt}
           </button>
         </div>
       </div>

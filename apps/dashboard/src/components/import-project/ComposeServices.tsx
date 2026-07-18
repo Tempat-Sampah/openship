@@ -33,6 +33,7 @@ import DropdownMenu from "@/components/ui/DropdownMenu";
 import EnvironmentVariables from "./EnvironmentVariables";
 import BuildSettings from "./BuildSettings";
 import { cn } from "@/lib/utils";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -172,6 +173,8 @@ const ServiceDomainSection: React.FC<{
   onChange: (updates: Partial<ComposeServiceInfo>) => void;
 }> = ({ service, projectName, onChange }) => {
   const { baseDomain } = usePlatform();
+  const { t } = useI18n();
+  const d = t.importProject.composeServices.domain;
   const hasPorts = service.ports.length > 0;
 
   if (!hasPorts) {
@@ -181,8 +184,8 @@ const ServiceDomainSection: React.FC<{
           <Lock className="size-4 text-muted-foreground" />
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">Internal service</p>
-          <p className="text-xs text-muted-foreground">No public ports detected</p>
+          <p className="text-sm font-medium text-foreground">{d.internalService}</p>
+          <p className="text-xs text-muted-foreground">{d.noPublicPorts}</p>
         </div>
       </div>
     );
@@ -208,9 +211,9 @@ const ServiceDomainSection: React.FC<{
             }`} />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">Public domain</p>
+            <p className="text-sm font-medium text-foreground">{d.publicDomain}</p>
             <p className="text-xs text-muted-foreground">
-              {service.exposed ? "Internet traffic enabled" : "Private by default"}
+              {service.exposed ? d.internetEnabled : d.privateByDefault}
             </p>
           </div>
         </div>
@@ -233,12 +236,12 @@ const ServiceDomainSection: React.FC<{
 
       {/* Domain config - prominent when on */}
       {service.exposed && (
-        <div className="ml-12 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="ms-12 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
           {/* Port picker (if multiple) */}
           {service.ports.length > 1 && (
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                Exposed Port
+                {d.exposedPort}
               </label>
               <select
                 value={exposedPort}
@@ -249,7 +252,7 @@ const ServiceDomainSection: React.FC<{
                   const port = portDisplay(p);
                   return (
                     <option key={p} value={port}>
-                      Port {port}
+                      {interpolate(d.portOption, { port })}
                     </option>
                   );
                 })}
@@ -260,7 +263,7 @@ const ServiceDomainSection: React.FC<{
           {/* Domain type toggle + input */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Domain</label>
+              <label className="text-xs font-medium text-muted-foreground">{d.domainLabel}</label>
               <div className="flex items-center bg-muted/60 rounded-lg p-0.5">
                 <button
                   type="button"
@@ -271,7 +274,7 @@ const ServiceDomainSection: React.FC<{
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Free
+                  {d.free}
                 </button>
                 <button
                   type="button"
@@ -282,7 +285,7 @@ const ServiceDomainSection: React.FC<{
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Custom
+                  {d.custom}
                 </button>
               </div>
             </div>
@@ -297,9 +300,9 @@ const ServiceDomainSection: React.FC<{
                     })
                   }
                   placeholder={defaultSubdomain}
-                  className="w-full px-3.5 py-2.5 pr-16 bg-background border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3.5 py-2.5 pe-16 bg-background border border-border/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   .{baseDomain}
                 </span>
               </div>
@@ -316,7 +319,7 @@ const ServiceDomainSection: React.FC<{
 
           {service.ports.length === 1 && (
             <p className="text-xs text-muted-foreground">
-              Routing traffic to port{" "}
+              {d.routingTrafficPrefix}{" "}
               <span className="font-mono font-medium text-foreground">{exposedPort}</span>
             </p>
           )}
@@ -374,6 +377,8 @@ const SharedEnvironmentCard: React.FC<{
   rootEnvVars: EnvVarRow[];
   onChange: (envVars: EnvVarRow[]) => void;
 }> = ({ envVars, rootEnvVars, onChange }) => {
+  const { t } = useI18n();
+  const sh = t.importProject.composeServices.shared;
   const [envModalOpen, setEnvModalOpen] = useState(false);
   const envCount = envVars.filter((env) => env.key.trim()).length;
   const importedKeys = new Set(envVars.map((env) => env.key).filter(Boolean));
@@ -393,18 +398,18 @@ const SharedEnvironmentCard: React.FC<{
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-medium text-foreground">Shared environment</p>
+              <p className="text-sm font-medium text-foreground">{sh.title}</p>
               {rootEnvVars.length > 0 && (
                 <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                  Root .env found
+                  {sh.rootEnvFound}
                 </span>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
               {envCount === 0
-                ? "Optional vars applied to every service"
-                : `${envCount} shared variable${envCount === 1 ? "" : "s"}`}
-              {" "}· service values override shared values
+                ? sh.optionalVars
+                : interpolate(envCount === 1 ? sh.sharedVariableOne : sh.sharedVariableOther, { count: String(envCount) })}
+              {" "}{sh.overrideNote}
             </p>
           </div>
         </div>
@@ -415,7 +420,7 @@ const SharedEnvironmentCard: React.FC<{
               onClick={importRootEnv}
               className="rounded-lg bg-muted/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              Import .env
+              {sh.importEnv}
             </button>
           )}
           <button
@@ -423,7 +428,7 @@ const SharedEnvironmentCard: React.FC<{
             onClick={() => setEnvModalOpen(true)}
             className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Manage
+            {sh.manage}
           </button>
         </div>
       </div>
@@ -444,10 +449,10 @@ const SharedEnvironmentCard: React.FC<{
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground">
-                  Shared environment
+                  {sh.title}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Applied to every service. Service variables win on conflict.
+                  {sh.modalSubtitle}
                 </p>
               </div>
             </div>
@@ -455,7 +460,7 @@ const SharedEnvironmentCard: React.FC<{
               type="button"
               onClick={() => setEnvModalOpen(false)}
               className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-              aria-label="Close shared environment"
+              aria-label={sh.close}
             >
               <X className="size-4" />
             </button>
@@ -466,7 +471,7 @@ const SharedEnvironmentCard: React.FC<{
               onClick={importRootEnv}
               className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-500/15 dark:text-emerald-400"
             >
-              Import {importableRootVars.length} variable{importableRootVars.length === 1 ? "" : "s"} from root .env
+              {interpolate(importableRootVars.length === 1 ? sh.importFromRootOne : sh.importFromRootOther, { count: String(importableRootVars.length) })}
             </button>
           )}
         </div>
@@ -494,6 +499,9 @@ const ServiceConfigSection: React.FC<{
   onChange: (updates: Partial<ComposeServiceInfo>) => void;
 }> = ({ service, onChange }) => {
   const { config } = useDeployment();
+  const { t } = useI18n();
+  const cfg = t.importProject.composeServices.config;
+  const cnt = t.importProject.counts;
   const isCloud = config.deployTarget === "cloud";
   const [open, setOpen] = useState(false);
 
@@ -534,7 +542,9 @@ const ServiceConfigSection: React.FC<{
 
   const routedPort = service.exposedPort || getExposedPort(service) || "";
   const statefulOnCloud = isCloud && (isStatefulImage(service.image) || service.volumes.length > 0);
-  const summary = `${service.ports.length} port${service.ports.length === 1 ? "" : "s"} · ${service.volumes.length} volume${service.volumes.length === 1 ? "" : "s"}`;
+  const portsStr = interpolate(service.ports.length === 1 ? cnt.portOne : cnt.portOther, { count: String(service.ports.length) });
+  const volumesStr = interpolate(service.volumes.length === 1 ? cnt.volumeOne : cnt.volumeOther, { count: String(service.volumes.length) });
+  const summary = interpolate(cfg.summary, { ports: portsStr, volumes: volumesStr });
 
   const inputCls =
     "w-full rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -545,11 +555,11 @@ const ServiceConfigSection: React.FC<{
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start"
       >
         <span className="flex items-center gap-2.5">
           <Settings2 className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Configuration</span>
+          <span className="text-sm font-medium text-foreground">{cfg.title}</span>
           <span className="text-xs text-muted-foreground">{summary}</span>
         </span>
         {open ? (
@@ -565,12 +575,12 @@ const ServiceConfigSection: React.FC<{
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Network className="size-4 text-foreground/70" />
-              <span className={labelCls}>Ports</span>
+              <span className={labelCls}>{cfg.ports}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Container</span> = inside the service ·{" "}
-              <span className="font-medium text-foreground">Published</span> = reachable on the host.
-              {isCloud && " On cloud the published port is ignored — only the container port is routed."}
+              <span className="font-medium text-foreground">{cfg.containerLabel}</span> {cfg.equalsInsideService}{" "}
+              <span className="font-medium text-foreground">{cfg.publishedLabel}</span> {cfg.equalsReachableHost}
+              {isCloud && ` ${cfg.cloudPortIgnored}`}
             </p>
             <div className="space-y-2">
               {portRows.map((row, i) => {
@@ -582,7 +592,7 @@ const ServiceConfigSection: React.FC<{
                       onChange={(e) =>
                         commitPorts(portRows.map((r, j) => (j === i ? { ...r, host: e.target.value } : r)))
                       }
-                      placeholder={isCloud ? "n/a on cloud" : "Published"}
+                      placeholder={isCloud ? cfg.naOnCloud : cfg.publishedLabel}
                       disabled={isCloud}
                       inputMode="numeric"
                       className={cn(inputCls, "flex-1", isCloud && "opacity-50")}
@@ -593,20 +603,20 @@ const ServiceConfigSection: React.FC<{
                       onChange={(e) =>
                         commitPorts(portRows.map((r, j) => (j === i ? { ...r, container: e.target.value } : r)))
                       }
-                      placeholder="Container"
+                      placeholder={cfg.containerLabel}
                       inputMode="numeric"
                       className={cn(inputCls, "flex-1")}
                     />
                     {isRouted && (
                       <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                        public
+                        {cfg.publicBadge}
                       </span>
                     )}
                     <button
                       type="button"
                       onClick={() => commitPorts(portRows.filter((_, j) => j !== i))}
                       className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                      aria-label="Remove port"
+                      aria-label={cfg.removePort}
                     >
                       <X className="size-3.5" />
                     </button>
@@ -618,7 +628,7 @@ const ServiceConfigSection: React.FC<{
                 onClick={() => commitPorts([...portRows, { ip: "", host: "", container: "", proto: "" }])}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                <Plus className="size-3.5" /> Add port
+                <Plus className="size-3.5" /> {cfg.addPort}
               </button>
             </div>
           </div>
@@ -627,22 +637,19 @@ const ServiceConfigSection: React.FC<{
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <HardDrive className="size-4 text-foreground/70" />
-              <span className={labelCls}>Volumes</span>
+              <span className={labelCls}>{cfg.volumes}</span>
             </div>
             {statefulOnCloud && (
               <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                 <span>
-                  Stateful service on cloud: data lives on the workspace's persistent disk
-                  (survives restarts) but is <span className="font-medium">not carried across
-                  rebuilds</span> unless backups are enabled. Docker volume mounts don't apply.
+                  {cfg.statefulWarnPart1}<span className="font-medium">{cfg.statefulWarnBold}</span>{cfg.statefulWarnPart2}
                 </span>
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Named volume or host path → container path.
-              {isCloud &&
-                " On cloud these mounts don't apply — data persists on the workspace's disk (not across rebuilds without backups)."}
+              {cfg.volumeHint}
+              {isCloud && ` ${cfg.volumeCloudNote}`}
             </p>
             <div className="space-y-2">
               {volumeRows.map((row, i) => (
@@ -652,7 +659,7 @@ const ServiceConfigSection: React.FC<{
                     onChange={(e) =>
                       commitVolumes(volumeRows.map((r, j) => (j === i ? { ...r, source: e.target.value } : r)))
                     }
-                    placeholder="Source"
+                    placeholder={cfg.sourcePlaceholder}
                     disabled={isCloud}
                     className={cn(inputCls, "flex-1", isCloud && "opacity-50")}
                   />
@@ -662,7 +669,7 @@ const ServiceConfigSection: React.FC<{
                     onChange={(e) =>
                       commitVolumes(volumeRows.map((r, j) => (j === i ? { ...r, target: e.target.value } : r)))
                     }
-                    placeholder="Container path"
+                    placeholder={cfg.containerPathPlaceholder}
                     disabled={isCloud}
                     className={cn(inputCls, "flex-1", isCloud && "opacity-50")}
                   />
@@ -677,7 +684,7 @@ const ServiceConfigSection: React.FC<{
                       row.ro ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground",
                       isCloud && "opacity-50",
                     )}
-                    title="Read-only mount"
+                    title={cfg.readOnlyMount}
                   >
                     ro
                   </button>
@@ -685,7 +692,7 @@ const ServiceConfigSection: React.FC<{
                     type="button"
                     onClick={() => commitVolumes(volumeRows.filter((_, j) => j !== i))}
                     className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    aria-label="Remove volume"
+                    aria-label={cfg.removeVolume}
                   >
                     <X className="size-3.5" />
                   </button>
@@ -700,7 +707,7 @@ const ServiceConfigSection: React.FC<{
                   isCloud && "cursor-not-allowed opacity-50 hover:bg-muted/60 hover:text-muted-foreground",
                 )}
               >
-                <Plus className="size-3.5" /> Add volume
+                <Plus className="size-3.5" /> {cfg.addVolume}
               </button>
             </div>
           </div>
@@ -708,16 +715,16 @@ const ServiceConfigSection: React.FC<{
           {/* Command + Restart */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <span className={labelCls}>Command</span>
+              <span className={labelCls}>{cfg.command}</span>
               <input
                 value={service.command ?? ""}
                 onChange={(e) => onChange({ command: e.target.value || undefined })}
-                placeholder="(image default)"
+                placeholder={cfg.imageDefault}
                 className={cn(inputCls, "font-mono")}
               />
             </div>
             <div className="space-y-1.5">
-              <span className={labelCls}>Restart policy</span>
+              <span className={labelCls}>{cfg.restartPolicy}</span>
               <select
                 value={service.restart ?? ""}
                 onChange={(e) => onChange({ restart: e.target.value || undefined })}
@@ -725,7 +732,7 @@ const ServiceConfigSection: React.FC<{
               >
                 {RESTART_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt === "" ? "Default (unless-stopped)" : opt}
+                    {opt === "" ? cfg.restartDefault : opt}
                   </option>
                 ))}
               </select>
@@ -746,6 +753,9 @@ const ServiceCard: React.FC<{
   onEnvChange: (env: Record<string, string>) => void;
   onDelete: () => void;
 }> = ({ service, projectName, onUpdate, onEnvChange, onDelete }) => {
+  const { t } = useI18n();
+  const cs = t.importProject.composeServices;
+  const cnt = t.importProject.counts;
   const missingCount = missingEnvCount(service);
   const envCount = Object.keys(service.environment).length;
   const [envModalOpen, setEnvModalOpen] = useState(false);
@@ -754,10 +764,10 @@ const ServiceCard: React.FC<{
   );
 
   const statusLabel = service.exposed
-    ? "Public"
+    ? cs.status.public
     : service.ports.length > 0
-      ? "Private"
-      : "Internal";
+      ? cs.status.private
+      : cs.status.internal;
   const ports = service.ports.map(portDisplay);
 
   /** Bridge: EnvironmentVariables uses editable rows - our service config persists Record<string,string>. */
@@ -809,13 +819,13 @@ const ServiceCard: React.FC<{
           </div>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <span className="max-w-full truncate">
-              {service.image || `Build: ${service.build || "."}`}
+              {service.image || interpolate(cs.card.buildLabel, { value: service.build || "." })}
             </span>
             {service.dependsOn.length > 0 && (
-              <span>{service.dependsOn.length} dep{service.dependsOn.length === 1 ? "" : "s"}</span>
+              <span>{interpolate(service.dependsOn.length === 1 ? cnt.depOne : cnt.depOther, { count: String(service.dependsOn.length) })}</span>
             )}
             {service.volumes.length > 0 && (
-              <span>{service.volumes.length} volume{service.volumes.length === 1 ? "" : "s"}</span>
+              <span>{interpolate(service.volumes.length === 1 ? cnt.volumeOne : cnt.volumeOther, { count: String(service.volumes.length) })}</span>
             )}
           </div>
         </div>
@@ -826,13 +836,13 @@ const ServiceCard: React.FC<{
           actions={[
             {
               id: "edit",
-              label: "Edit",
+              label: cs.card.edit,
               icon: <Pencil className="size-4" />,
               onClick: () => setEnvModalOpen(true),
             },
             {
               id: "delete",
-              label: "Delete",
+              label: cs.card.delete,
               icon: <Trash2 className="size-4" />,
               variant: "danger",
               onClick: onDelete,
@@ -859,23 +869,23 @@ const ServiceCard: React.FC<{
           <button
             type="button"
             onClick={() => setEnvModalOpen(true)}
-            className="w-full self-start rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-left transition-colors hover:bg-muted/30"
+            className="w-full self-start rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-start transition-colors hover:bg-muted/30"
           >
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">Environment variables</p>
+                <p className="truncate text-sm font-medium text-foreground">{cs.card.envVars}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {envCount === 0
-                    ? "None configured"
-                    : `${envCount} variable${envCount === 1 ? "" : "s"} configured`}
+                    ? cs.card.noneConfigured
+                    : interpolate(envCount === 1 ? cs.card.variablesConfiguredOne : cs.card.variablesConfiguredOther, { count: String(envCount) })}
                   {missingCount > 0 && (
                     <span className="font-medium text-amber-600 dark:text-amber-400">
-                      {" "}· {missingCount} missing
+                      {" "}{interpolate(cs.card.missingSuffix, { count: String(missingCount) })}
                     </span>
                   )}
                 </p>
               </div>
-              <span className="shrink-0 text-xs font-medium text-primary">Manage</span>
+              <span className="shrink-0 text-xs font-medium text-primary">{cs.card.manage}</span>
             </div>
           </button>
         </div>
@@ -902,8 +912,8 @@ const ServiceCard: React.FC<{
                   {service.name}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Environment variables
-                  {envCount > 0 && ` · ${envCount} variable${envCount === 1 ? "" : "s"}`}
+                  {cs.card.envVars}
+                  {envCount > 0 && ` ${interpolate(envCount === 1 ? cs.card.variableSuffixOne : cs.card.variableSuffixOther, { count: String(envCount) })}`}
                 </p>
               </div>
             </div>
@@ -911,14 +921,14 @@ const ServiceCard: React.FC<{
               type="button"
               onClick={() => setEnvModalOpen(false)}
               className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-              aria-label="Close environment variables"
+              aria-label={cs.card.closeEnv}
             >
               <X className="size-4" />
             </button>
           </div>
           {missingCount > 0 && (
             <div className="mt-3 inline-flex rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-              {missingCount} environment variable{missingCount === 1 ? "" : "s"} need{missingCount === 1 ? "s" : ""} value
+              {interpolate(missingCount === 1 ? cs.card.needsValueOne : cs.card.needsValueOther, { count: String(missingCount) })}
             </div>
           )}
         </div>
@@ -944,6 +954,9 @@ const ServiceCard: React.FC<{
 
 const ComposeServices: React.FC = () => {
   const { config, updateConfig } = useDeployment();
+  const { t } = useI18n();
+  const cs = t.importProject.composeServices;
+  const cnt = t.importProject.counts;
 
   const services = config.services || [];
   const sharedEnvVars = config.envVars || [];
@@ -994,14 +1007,14 @@ const ComposeServices: React.FC = () => {
   const modeOptions = [
     {
       id: "services" as const,
-      label: "Service stack",
-      description: "Deploy every compose service with its own runtime and domain.",
+      label: cs.main.modeServicesLabel,
+      description: cs.main.modeServicesDesc,
       icon: Layers,
     },
     {
       id: "single" as const,
-      label: "Single app",
-      description: "Use the normal build and start command flow for one app.",
+      label: cs.main.modeSingleLabel,
+      description: cs.main.modeSingleDesc,
       icon: Code2,
     },
   ];
@@ -1020,13 +1033,13 @@ const ComposeServices: React.FC = () => {
             <div>
               <h3 className="text-[15px] font-semibold text-foreground">Docker Compose</h3>
               <p className="text-xs text-muted-foreground">
-                {isServiceDeployment ? "Deploying as services" : "Deploying as a single app"}
+                {isServiceDeployment ? cs.main.deployingServices : cs.main.deployingSingle}
                 {isServiceDeployment && (
                   <>
                     {" · "}
-                    {services.length} service{services.length !== 1 ? "s" : ""}
-                    {buildCount > 0 && ` · ${buildCount} build`}
-                    {exposedCount > 0 && ` · ${exposedCount} exposed`}
+                    {interpolate(services.length === 1 ? cnt.serviceOne : cnt.serviceOther, { count: String(services.length) })}
+                    {buildCount > 0 && ` ${interpolate(cs.main.buildCountSuffix, { count: String(buildCount) })}`}
+                    {exposedCount > 0 && ` ${interpolate(cs.main.exposedCountSuffix, { count: String(exposedCount) })}`}
                   </>
                 )}
               </p>
@@ -1065,17 +1078,15 @@ const ComposeServices: React.FC = () => {
               {/* Info */}
               <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Internal services can reach each other by service name. Enable{" "}
-                  <strong className="text-foreground">Public domain</strong> only for services that
-                  should receive internet traffic.
+                  {cs.main.infoPart1}
+                  <strong className="text-foreground">{cs.main.infoBold}</strong>{cs.main.infoPart2}
                 </p>
               </div>
             </>
           ) : (
             <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Parsed compose services are kept for later, but this deployment will use the normal
-                single-app build, start command, environment, and domain settings.
+                {cs.main.singleAppNote}
               </p>
             </div>
           )}
@@ -1084,16 +1095,16 @@ const ComposeServices: React.FC = () => {
             <button
               type="button"
               onClick={() => setModeOptionsOpen((open) => !open)}
-              className="flex w-full items-center justify-between gap-4 text-left"
+              className="flex w-full items-center justify-between gap-4 text-start"
             >
               <div className="flex items-center gap-3">
                 <div className="flex size-9 items-center justify-center rounded-xl bg-muted/40">
                   <Settings2 className="size-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Deployment mode</p>
+                  <p className="text-sm font-semibold text-foreground">{cs.main.deploymentMode}</p>
                   <p className="text-xs text-muted-foreground">
-                    {selectedMode.label} · Switch between service stack and single app handling.
+                    {interpolate(cs.main.deploymentModeDesc, { mode: selectedMode.label })}
                   </p>
                 </div>
               </div>
@@ -1116,7 +1127,7 @@ const ComposeServices: React.FC = () => {
                         type="button"
                         onClick={() => setDeploymentMode(option.id)}
                         className={cn(
-                          "flex items-start gap-3 rounded-xl border p-3 text-left transition-colors",
+                          "flex items-start gap-3 rounded-xl border p-3 text-start transition-colors",
                           selected
                             ? "border-primary/40 bg-primary/10 text-foreground"
                             : "border-border/50 bg-background/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground",

@@ -1,0 +1,165 @@
+{
+  "home": {
+    "goodMorning": "Bonjour",
+    "goodAfternoon": "Bon après-midi",
+    "goodEvening": "Bonsoir",
+    "subtitle": "Voici ce qui se passe dans vos projets",
+    "statsProjects": "Projets",
+    "statsDeployments": "Déploiements",
+    "statsSuccessful": "Réussis",
+    "statsFailed": "Échoués",
+    "recentProjects": "Projets récents",
+    "yourLatestActivity": "Votre activité récente",
+    "viewAll": "Tout voir",
+    "noProjectsYet": "Aucun projet pour le moment",
+    "createFirstProject": "Créez votre premier projet",
+    "justNow": "à l'instant",
+    "minutesAgo": "il y a {n} min",
+    "hoursAgo": "il y a {n} h",
+    "daysAgo": "il y a {n} j",
+    "monthsAgo": "il y a {n} mois",
+    "statusLive": "En ligne",
+    "statusPaused": "En pause",
+    "yourProjects": "Vos projets",
+    "loading": "Chargement...",
+    "projectCountOne": "{count} projet",
+    "projectCountOther": "{count} projets",
+    "viewAllProjects": "Voir les {count} projets →",
+    "greetingName": "{greeting}, {name}",
+    "importGit": "Importer depuis Git",
+    "importGitDesc": "Depuis un dépôt",
+    "mcpDeploy": "Déploiement MCP",
+    "mcpDeployDesc": "Connecter un agent IA",
+    "settingsCard": "Paramètres",
+    "settingsCardDesc": "Compte et équipe",
+    "docs": "Documentation",
+    "docsDesc": "En savoir plus",
+    "activityTitle": "Activité",
+    "successRate": "Taux de réussite",
+    "recentTitle": "Récent",
+    "activityEmpty": "Votre activité apparaîtra ici",
+    "allSystemsOperational": "Tous les systèmes sont opérationnels",
+    "runningSmoothly": "Vos projets fonctionnent sans problème",
+    "time": {
+      "justNow": "à l'instant",
+      "minutes": "il y a {n} min",
+      "hours": "il y a {n} h",
+      "days": "il y a {n} j",
+      "months": "il y a {n} mois"
+    }
+  },
+  "nav": {
+    "home": "Accueil",
+    "new-project": "Nouveau projet",
+    "projects": "Projets",
+    "deployments": "Déploiements",
+    "backups": "Sauvegardes",
+    "domains": "Domaines",
+    "monitoring": "Supervision",
+    "servers": "Serveurs",
+    "emails": "E-mails",
+    "settings": "Paramètres",
+    "billing": "Facturation",
+    "sections": {
+      "main": "Principal",
+      "settings": "Paramètres",
+      "infrastructure": "Infrastructure",
+      "account": "Compte"
+    }
+  },
+  "sidebar": {
+    "expand": "Développer la barre latérale",
+    "collapse": "Réduire la barre latérale"
+  },
+  "user": {
+    "logout": "Se déconnecter",
+    "loggingOut": "Déconnexion…",
+    "profile": "Profil",
+    "preferences": "Préférences"
+  },
+  "pages": {
+    "projects": {
+      "title": "Projets",
+      "description": "Déployez et gérez vos applications en toute simplicité",
+      "createButton": "Créer un projet",
+      "stats": {
+        "totalProjects": "Total des projets",
+        "liveNow": "En ligne actuellement",
+        "avgPerDay": "Moyenne par jour",
+        "successRate": "Taux de réussite"
+      },
+      "searchPlaceholder": "Rechercher des projets...",
+      "pinnedProjects": "Projets épinglés",
+      "otherProjects": "Autres projets",
+      "noResultsFound": "Aucun projet trouvé correspondant à « {query} »",
+      "emptyState": {
+        "title": "Démarrez votre premier projet",
+        "description": "Importez un dépôt Git, utilisez un modèle ou déployez depuis la CLI. Vos projets apparaîtront ici.",
+        "createProject": "Créer un projet",
+        "browseTemplates": "Parcourir les modèles",
+        "zeroConfig": "Déploiement sans configuration",
+        "instant": "Instantané",
+        "instantDesc": "Déployez en quelques secondes",
+        "global": "Mondial",
+        "globalDesc": "Plus de 100 régions edge",
+        "previews": "Aperçus",
+        "previewsDesc": "Une URL par branche",
+        "rollbacks": "Restaurations",
+        "rollbacksDesc": "Rétablissement en un clic",
+        "commandPalette": "Ou appuyez sur {key} pour ouvrir la palette de commandes"
+      }
+    },
+    "deployments": {
+      "title": "Déploiements",
+      "description": "Consultez et gérez l'historique de vos déploiements."
+    },
+    "domains": {
+      "title": "Domaines",
+      "description": "Gérez les domaines personnalisés et les enregistrements DNS."
+    },
+    "monitoring": {
+      "title": "Supervision",
+      "description": "Journaux, métriques et contrôles de santé pour vos services."
+    },
+    "servers": {
+      "title": "Serveurs",
+      "description": "Gérez vos serveurs de déploiement et votre infrastructure."
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Paramètres du compte, de l'équipe et de la plateforme."
+    },
+    "billing": {
+      "title": "Facturation",
+      "description": "Gérez votre abonnement, votre consommation et vos moyens de paiement."
+    }
+  },
+  "quickLinks": {
+    "title": "Actions rapides",
+    "subtitle": "Accédez aux tâches courantes",
+    "deployProject": {
+      "title": "Déployer un projet",
+      "description": "Importer depuis Git"
+    },
+    "projects": {
+      "title": "Projets",
+      "description": "Tous les projets"
+    },
+    "deployments": {
+      "title": "Déploiements",
+      "description": "Historique des builds"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "description": "Gérer les accès"
+    },
+    "domains": {
+      "title": "Domaines",
+      "description": "Domaines personnalisés"
+    },
+    "billing": {
+      "title": "Facturation",
+      "description": "Consommation et forfaits"
+    }
+  }
+}

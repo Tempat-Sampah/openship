@@ -297,7 +297,13 @@ function resolvePreparedProjectContext(
   response: PrepareProjectResponse,
 ): PreparedProjectContext {
   const projectType = response.projectType || "app";
-  const serviceDeploymentMode = projectType === "services" ? "services" : "single";
+  // Multi-app projects (compose services AND monorepos) default to separate
+  // per-app runtimes ("services"), in BOTH cloud and self-hosted - it's the
+  // non-lossy shape (every app actually runs). Cloud may later default monorepos
+  // to a unified single deployment; branch on platform (usePlatform().selfHosted)
+  // here when that runtime lands. Single apps stay "single".
+  const serviceDeploymentMode =
+    projectType === "services" || projectType === "monorepo" ? "services" : "single";
   const detectedStack = (response.stack || "nextjs") as FrameworkId;
   const stackDef = STACKS[detectedStack as keyof typeof STACKS] as StackDefinition | undefined;
   const singleAppCandidate = response.singleAppCandidate;
@@ -564,6 +570,7 @@ export function useDeploymentConfig() {
         singleAppCandidate: preparedContext.singleAppCandidate,
         monorepoApps: preparedContext.monorepoApps,
         monorepoWorkspace: preparedContext.monorepoWorkspace,
+        routingConfig: response.routing ?? undefined,
         modeSnapshots: undefined,
         // For an EXISTING project (projectId set — config edit or redeploy)
         // prefer the SAVED framework so a fresh re-detection can't silently

@@ -272,7 +272,7 @@ export default function SelectOrganizationPage() {
                     type="button"
                     onClick={() => handlePick(o.id)}
                     disabled={disabled || isPicking}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-start transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
                       <Icon className="size-5 text-foreground" />
@@ -293,7 +293,7 @@ export default function SelectOrganizationPage() {
                     {isPicking ? (
                       <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
                     )}
                   </button>
                 </li>

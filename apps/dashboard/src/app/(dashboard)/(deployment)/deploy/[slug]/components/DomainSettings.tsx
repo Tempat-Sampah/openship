@@ -1,7 +1,10 @@
+"use client";
+
 import React, { useCallback } from "react";
 import PublicEndpointsCard from "@/components/routing/PublicEndpointsCard";
 import { getApiErrorMessage, projectsApi } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 import type { PublicEndpoint } from "@/context/deployment/types";
 
 interface DomainSettingsProps {
@@ -64,6 +67,7 @@ const DomainSettings: React.FC<DomainSettingsProps> = ({
   setEndpoints,
 }) => {
   const { showToast } = useToast();
+  const { t } = useI18n();
 
   const handleChange = useCallback(async (
     nextEndpoints: PublicEndpoint[],
@@ -92,7 +96,7 @@ const DomainSettings: React.FC<DomainSettingsProps> = ({
       });
     } catch (error) {
       console.error("Failed to persist deploy domains:", error);
-      showToast(getApiErrorMessage(error, "Failed to save domains"), "error", "Domains");
+      showToast(getApiErrorMessage(error, t.deploy.domainSettings.saveFailed), "error", t.deploy.domainSettings.toastTitle);
     }
   }, [hasServer, projectId, setEndpoints, showToast]);
 

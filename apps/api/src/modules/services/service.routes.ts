@@ -45,7 +45,12 @@ r.get(
 r.post(
   "/",
   {
+    // Create: no :serviceId yet, so scope the check to the collection (the
+    // parent project :id is in the basePath + enforced by cloudProjectProxy /
+    // the handler). Without collection:true the middleware demands :serviceId
+    // and 400s "Missing route param" before the handler runs.
     tag: "project:service:write",
+    collection: true,
     mcp: { description: "Add a service to a project.", body: CreateServiceBody },
   },
   cloudProjectProxy,
@@ -60,7 +65,7 @@ r.get(
 );
 r.post(
   "/sync",
-  { tag: "project:service:write", mcp: { description: "Sync services from the project's docker-compose file into the service table." } },
+  { tag: "project:service:write", collection: true, mcp: { description: "Sync services from the project's docker-compose file into the service table." } },
   cloudProjectProxy,
   ctrl.syncFromCompose,
 );

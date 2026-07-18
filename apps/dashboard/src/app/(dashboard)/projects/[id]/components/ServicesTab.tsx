@@ -8,6 +8,8 @@ import { deployApi } from "@/lib/api/deploy";
 import { useToast } from "@/context/ToastContext";
 import { resolveServiceHostnameLabel } from "@repo/core";
 import { useRouter } from "next/navigation";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 import {
   Layers,
   RefreshCw,
@@ -40,6 +42,7 @@ export const ServicesTab = () => {
   const { id, slug, projectData, servicesData, refreshServices } = useProjectSettings();
   const { baseDomain } = usePlatform();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const router = useRouter();
 
   const [containers, setContainers] = useState<ServiceContainer[]>([]);
@@ -71,7 +74,7 @@ export const ServicesTab = () => {
       const [, ctRes] = await Promise.all([refreshServices(), servicesApi.containers(id)]);
       if (ctRes.success) setContainers(ctRes.containers ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load services");
+      setError(e instanceof Error ? e.message : t.projects.services.failedLoad);
     } finally {
       setContainersLoading(false);
     }
@@ -114,7 +117,7 @@ export const ServicesTab = () => {
 
     const result = await servicesApi.create(id, data);
     if (!result.success) {
-      throw new Error("Failed to create service");
+      throw new Error(t.projects.services.failedCreateService);
     }
 
     await fetchData();
@@ -128,22 +131,22 @@ export const ServicesTab = () => {
     // softer message - the user has to do the first deploy themselves.
     const activeDeploymentId = projectData?.activeDeploymentId;
     if (activeDeploymentId) {
-      showToast(`${data.name} added - deploying…`, "success", "Service");
+      showToast(interpolate(t.projects.services.toastAddedDeploying, { name: data.name }), "success", t.projects.services.toastServiceTitle);
       deployApi
         .buildRedeploy(activeDeploymentId)
         .then((res: any) => {
           if (res?.success === false) {
-            showToast(res?.error || "Deploy failed", "error", data.name);
+            showToast(res?.error || t.projects.services.toastDeployFailed, "error", data.name);
             return;
           }
-          showToast(`${data.name} is starting`, "success", "Service");
+          showToast(interpolate(t.projects.services.toastStarting, { name: data.name }), "success", t.projects.services.toastServiceTitle);
         })
         .catch((err) => {
-          const msg = err instanceof Error ? err.message : "Deploy failed";
+          const msg = err instanceof Error ? err.message : t.projects.services.toastDeployFailed;
           showToast(msg, "error", data.name);
         });
     } else {
-      showToast(`${data.name} saved - deploy the project to start it`, "success", "Service");
+      showToast(interpolate(t.projects.services.toastSavedDeploy, { name: data.name }), "success", t.projects.services.toastServiceTitle);
     }
 
     if (result.service?.id) {
@@ -160,20 +163,22 @@ export const ServicesTab = () => {
           action === "accept"
             ? await servicesApi.acceptDrift(id, serviceId)
             : await servicesApi.keepDrift(id, serviceId);
-        if (res.success === false) throw new Error("Request failed");
+        if (res.success === false) throw new Error(t.projects.services.requestFailed);
         showToast(
-          action === "accept" ? `${name}: applied repo changes` : `${name}: kept your edits`,
+          action === "accept"
+            ? interpolate(t.projects.services.toastAppliedRepo, { name })
+            : interpolate(t.projects.services.toastKeptEdits, { name }),
           "success",
-          "Service",
+          t.projects.services.toastServiceTitle,
         );
         await fetchData();
       } catch (e) {
-        showToast(e instanceof Error ? e.message : "Failed to resolve drift", "error", name);
+        showToast(e instanceof Error ? e.message : t.projects.services.failedResolveDrift, "error", name);
       } finally {
         setDriftBusy(null);
       }
     },
-    [hasProjectId, id, showToast, fetchData],
+    [hasProjectId, id, showToast, fetchData, t],
   );
 
   const driftedServices = services.filter((s) => s.drift && s.drift.changes.length > 0);
@@ -202,14 +207,14 @@ export const ServicesTab = () => {
     return (
       <div className="bg-card rounded-2xl border border-border/50 p-8 text-center">
         <AlertCircle className="size-8 text-red-400 mx-auto mb-3" />
-        <p className="text-sm font-medium text-foreground mb-1">Failed to load services</p>
+        <p className="text-sm font-medium text-foreground mb-1">{t.projects.services.failedLoad}</p>
         <p className="text-xs text-muted-foreground mb-4">{error || servicesData.error}</p>
         <button
           onClick={fetchData}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-medium bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1] transition-colors"
         >
           <RefreshCw className="size-3.5" />
-          Retry
+          {t.projects.services.retry}
         </button>
       </div>
     );
@@ -310,11 +315,10 @@ export const ServicesTab = () => {
           </div>
 
           <h3 className="text-lg font-medium text-foreground/80 mb-2">
-            No services connected
+            {t.projects.services.emptyTitle}
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-8 leading-relaxed">
-            Add a database, cache, or any other service to extend your app.
-            Pick from the catalog or paste any Docker image.
+            {t.projects.services.emptyDescription}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -323,14 +327,14 @@ export const ServicesTab = () => {
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
             >
               <Plus className="size-4" />
-              Add Service
+              {t.projects.services.addService}
             </button>
             <button
               onClick={fetchData}
               className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
             >
               <RefreshCw className="size-4" />
-              Refresh
+              {t.projects.services.refresh}
             </button>
           </div>
         </div>
@@ -355,15 +359,15 @@ export const ServicesTab = () => {
             onClick={closeService}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1] transition-colors"
           >
-            <ArrowLeft className="size-3.5" />
-            All services
+            <ArrowLeft className="size-3.5 rtl:rotate-180" />
+            {t.projects.services.allServices}
           </button>
           <button
             onClick={fetchData}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1] transition-colors"
           >
             <RefreshCw className="size-3.5" />
-            Refresh
+            {t.projects.services.refresh}
           </button>
         </div>
 
@@ -394,10 +398,13 @@ export const ServicesTab = () => {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                {services.length} Service{services.length !== 1 ? "s" : ""}
+                {interpolate(
+                  services.length === 1 ? t.projects.services.countOne : t.projects.services.countOther,
+                  { count: String(services.length) },
+                )}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Choose a service to open its full settings screen.
+                {t.projects.services.chooseService}
               </p>
             </div>
           </div>
@@ -407,14 +414,14 @@ export const ServicesTab = () => {
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1] transition-colors"
             >
               <RefreshCw className="size-3.5" />
-              Refresh
+              {t.projects.services.refresh}
             </button>
             <button
               onClick={() => setCreateOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <Plus className="size-3.5" />
-              Add Service
+              {t.projects.services.addService}
             </button>
           </div>
         </div>
@@ -426,12 +433,16 @@ export const ServicesTab = () => {
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
             <h4 className="text-sm font-semibold text-foreground">
-              {driftedServices.length} service{driftedServices.length === 1 ? "" : "s"} changed in the repo
+              {interpolate(
+                driftedServices.length === 1
+                  ? t.projects.services.driftCountOne
+                  : t.projects.services.driftCountOther,
+                { count: String(driftedServices.length) },
+              )}
             </h4>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            The repo&apos;s docker-compose changed values you had edited here. Your edits are still
-            live — for each, keep yours or take the repo&apos;s.
+            {t.projects.services.driftDescription}
           </p>
           <div className="mt-4 space-y-3">
             {driftedServices.map((svc) => (
@@ -445,7 +456,7 @@ export const ServicesTab = () => {
                       onClick={() => resolveDrift(svc.id, "keep", svc.name)}
                       className="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
                     >
-                      Keep mine
+                      {t.projects.services.keepMine}
                     </button>
                     <button
                       type="button"
@@ -453,7 +464,7 @@ export const ServicesTab = () => {
                       onClick={() => resolveDrift(svc.id, "accept", svc.name)}
                       className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-500/90 disabled:opacity-50"
                     >
-                      Accept upstream
+                      {t.projects.services.acceptUpstream}
                     </button>
                   </div>
                 </div>
@@ -496,7 +507,7 @@ export const ServicesTab = () => {
           const monorepoBits: string[] = [];
           if (svc.rootDirectory) monorepoBits.push(svc.rootDirectory);
           if (svc.framework) monorepoBits.push(svc.framework);
-          if (svc.exposedPort) monorepoBits.push(`port ${svc.exposedPort}`);
+          if (svc.exposedPort) monorepoBits.push(interpolate(t.projects.services.port, { port: String(svc.exposedPort) }));
           const subtitle = isMonorepo
             ? monorepoBits.join(" · ")
             : svc.image || svc.build || "";
@@ -506,7 +517,7 @@ export const ServicesTab = () => {
             <button
               key={svc.id}
               onClick={() => openService(svc.id)}
-              className="w-full flex items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-foreground/[0.025]"
+              className="w-full flex items-center gap-4 px-5 py-4 text-start transition-colors hover:bg-foreground/[0.025]"
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-muted/50">
                 <Container className="size-[18px] text-muted-foreground" />
@@ -521,12 +532,12 @@ export const ServicesTab = () => {
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.12em] ${svc.exposed ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted/60 text-muted-foreground/70"}`}
                   >
                     <Globe className="size-2.5" />
-                    {svc.exposed ? "Public" : "Internal"}
+                    {svc.exposed ? t.projects.services.public : t.projects.services.internal}
                   </span>
                   {svc.drift && svc.drift.changes.length > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-600 dark:text-amber-400">
                       <AlertTriangle className="size-2.5" />
-                      Upstream change
+                      {t.projects.services.upstreamChange}
                     </span>
                   )}
                 </div>
@@ -552,8 +563,8 @@ export const ServicesTab = () => {
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
-                <StatusBadge status={status} />
-                <ChevronRight className="size-4 text-muted-foreground/50" />
+                <StatusBadge status={status} t={t} />
+                <ChevronRight className="size-4 text-muted-foreground/50 rtl:rotate-180" />
               </div>
             </button>
           );
@@ -573,32 +584,32 @@ export const ServicesTab = () => {
 
 /* ── Status Badge ───────────────────────────────────────────────────── */
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, t }: { status: string; t: Dictionary }) {
   const map: Record<string, { dot: string; badge: string; label: string }> = {
     running: {
       dot: "bg-emerald-500",
       badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-      label: "Running",
+      label: t.projects.serviceStatus.running,
     },
     stopped: {
       dot: "bg-muted-foreground/30",
       badge: "bg-muted/60 text-muted-foreground/70",
-      label: "Stopped",
+      label: t.projects.serviceStatus.stopped,
     },
     disabled: {
       dot: "bg-muted-foreground/20",
       badge: "bg-muted/40 text-muted-foreground/50",
-      label: "Disabled",
+      label: t.projects.serviceStatus.disabled,
     },
     failed: {
       dot: "bg-red-500",
       badge: "bg-red-500/10 text-red-600 dark:text-red-400",
-      label: "Failed",
+      label: t.projects.serviceStatus.failed,
     },
     starting: {
       dot: "bg-amber-500",
       badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-      label: "Starting",
+      label: t.projects.serviceStatus.starting,
     },
   };
   const s = map[status] ?? map.stopped;

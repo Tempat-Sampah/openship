@@ -22,10 +22,23 @@ export function Switch({
   size = "md",
   ariaLabel,
 }: SwitchProps) {
+  // `transform: translateX` is NOT auto-mirrored under dir="rtl", so each
+  // position gets an `rtl:-translate-x-*` counterpart — the knob rests at the
+  // (flex-start) trailing edge and slides the opposite way in Arabic.
   const dims =
     size === "sm"
-      ? { track: "h-4 w-7", knob: "size-3", on: "translate-x-3.5", off: "translate-x-0.5" }
-      : { track: "h-5 w-9", knob: "size-4", on: "translate-x-[18px]", off: "translate-x-0.5" };
+      ? {
+          track: "h-4 w-7",
+          knob: "size-3",
+          on: "translate-x-3.5 rtl:-translate-x-3.5",
+          off: "translate-x-0.5 rtl:-translate-x-0.5",
+        }
+      : {
+          track: "h-5 w-9",
+          knob: "size-4",
+          on: "translate-x-[18px] rtl:-translate-x-[18px]",
+          off: "translate-x-0.5 rtl:-translate-x-0.5",
+        };
 
   return (
     <button

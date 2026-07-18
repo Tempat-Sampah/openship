@@ -155,10 +155,16 @@ export async function transferProjectToCloud(
     if (result.code === "INGEST_VALIDATION_FAILED") {
       throw new TransferCloudCallFailedError(result.error);
     }
-    // A leftover SaaS copy of this project. Surfaces as code "PK_COLLISION"
-    // (typed) or a "duplicate key value" message (legacy SaaS). Reported as a
-    // conflict; cleanup is an explicit, runtime-aware operation (not a
-    // deploy-triggered auto-delete).
+    // A DIFFERENT project on the SaaS already owns this project's name/slug —
+    // a naming conflict, not a leftover copy. Surface it as a slug conflict so
+    // callers show "rename and retry", never the leftover-copy cleanup message.
+    if (result.code === "SLUG_TAKEN") {
+      throw new TransferConflictError("slug", project.slug);
+    }
+    // A leftover SaaS copy of THIS project (its id already exists). Surfaces as
+    // code "PK_COLLISION" (typed) or a "duplicate key value" message (legacy
+    // SaaS). Reported as a conflict; cleanup is an explicit, runtime-aware
+    // operation (not a deploy-triggered auto-delete).
     if (result.code === "PK_COLLISION" || /duplicate key value/i.test(result.error)) {
       throw new TransferConflictError("id", project.id);
     }

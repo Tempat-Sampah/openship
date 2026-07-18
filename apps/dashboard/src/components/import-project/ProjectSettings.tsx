@@ -1,13 +1,17 @@
+"use client";
+
 import React, { useCallback, useState, useMemo } from "react";
 import { frameworks, getFrameworkConfig, stackCategories } from "./Frameworks";
 import type { StackCategory } from "./Frameworks";
 import { STACKS } from "@repo/core";
 import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { useDeployment } from "@/context/DeploymentContext";
+import { useI18n } from "@/components/i18n-provider";
 import type { FrameworkId } from "./types";
 
 const ProjectSettings: React.FC = () => {
   const { config, updateConfig } = useDeployment();
+  const { t } = useI18n();
   const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
 
   const isAutoDetected = config.detectedFramework != null && config.framework === config.detectedFramework;
@@ -50,7 +54,7 @@ const ProjectSettings: React.FC = () => {
       {isAutoDetected && !showFrameworkPicker && detectedFw && (
         <div className="bg-card rounded-2xl border border-border/50 p-5">
           <label className="text-[15px] font-semibold text-foreground mb-3 block">
-            Framework
+            {t.importProject.projectSettings.framework}
           </label>
           <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/50 bg-muted/40">
             <div className="flex items-center gap-3">
@@ -64,7 +68,7 @@ const ProjectSettings: React.FC = () => {
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-medium text-primary">
                     <Sparkles className="size-2.5" />
-                    Detected
+                    {t.importProject.projectSettings.detected}
                   </span>
                 </div>
               </div>
@@ -74,7 +78,7 @@ const ProjectSettings: React.FC = () => {
               onClick={handleChangeClick}
               className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              Change
+              {t.importProject.projectSettings.change}
               <ChevronDown className="size-3.5" />
             </button>
           </div>
@@ -86,7 +90,7 @@ const ProjectSettings: React.FC = () => {
         <div className="bg-card rounded-2xl border border-border/50 p-5">
           <div className="flex items-center justify-between mb-3">
             <label className="text-[15px] font-semibold text-foreground">
-              Framework
+              {t.importProject.projectSettings.framework}
             </label>
             {showFrameworkPicker && detectedFw && (
               <button
@@ -99,7 +103,7 @@ const ProjectSettings: React.FC = () => {
                 className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
               >
                 <Sparkles className="size-3" />
-                Use detected
+                {t.importProject.projectSettings.useDetected}
                 <ChevronUp className="size-3" />
               </button>
             )}
@@ -118,7 +122,7 @@ const ProjectSettings: React.FC = () => {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {cat.label}
+                {t.importProject.categories[cat.id]}
               </button>
             ))}
           </div>
@@ -149,7 +153,7 @@ const ProjectSettings: React.FC = () => {
             })}
           </div>
           <p className="text-sm text-muted-foreground mt-3">
-            Select your framework to auto-configure build settings
+            {t.importProject.projectSettings.selectHint}
           </p>
         </div>
       )}

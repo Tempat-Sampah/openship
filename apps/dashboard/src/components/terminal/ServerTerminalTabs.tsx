@@ -27,6 +27,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { ServerTerminal, type ServerTerminalHandle } from "./ServerTerminal";
 import { useTheme } from "@/components/theme-provider";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface ServerTerminalTabsProps {
   serverId: string;
@@ -107,6 +108,8 @@ export function ServerTerminalTabs({
   className = "",
 }: ServerTerminalTabsProps) {
   const { resolvedTheme } = useTheme();
+  const { t } = useI18n();
+  const m = t.misc.terminalTabs;
   // Seed from localStorage if a prior session left state for this
   // server. On first mount we either get { shells: [...], counter: N }
   // from prior runs, or we fall back to a single fresh "Shell 1". The
@@ -122,7 +125,7 @@ export function ServerTerminalTabs({
       counterRef.current = Math.max(loaded.counter, loaded.shells.length, 1);
       return loaded.shells;
     }
-    return [{ id: genId(), label: "Shell 1", resumeToken: null }];
+    return [{ id: genId(), label: interpolate(m.shell, { n: "1" }), resumeToken: null }];
   });
   const [activeId, setActiveId] = useState<string>(() => shells[0]?.id ?? "");
 
@@ -139,12 +142,12 @@ export function ServerTerminalTabs({
     counterRef.current += 1;
     const next: ShellEntry = {
       id: genId(),
-      label: `Shell ${counterRef.current}`,
+      label: interpolate(m.shell, { n: String(counterRef.current) }),
       resumeToken: null,
     };
     setShells((prev) => [...prev, next]);
     setActiveId(next.id);
-  }, [atMax]);
+  }, [atMax, m]);
 
   /**
    * Per-shell resume token updater. Wired into every <ServerTerminal>
@@ -204,7 +207,7 @@ export function ServerTerminalTabs({
               <div
                 key={shell.id}
                 className={
-                  "group inline-flex shrink-0 items-center gap-1.5 rounded-lg py-1.5 pl-2.5 pr-1.5 text-[12px] transition-colors " +
+                  "group inline-flex shrink-0 items-center gap-1.5 rounded-lg py-1.5 ps-2.5 pe-1.5 text-[12px] transition-colors " +
                   (isActive
                     ? "bg-card text-foreground shadow-sm ring-1 ring-border/60"
                     : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground")
@@ -229,7 +232,7 @@ export function ServerTerminalTabs({
                     e.stopPropagation();
                     handleClose(shell.id);
                   }}
-                  aria-label={`Close ${shell.label}`}
+                  aria-label={interpolate(m.close, { label: shell.label })}
                   className={
                     "rounded-md p-0.5 text-muted-foreground transition-all hover:bg-foreground/10 hover:text-foreground " +
                     (isActive
@@ -247,7 +250,7 @@ export function ServerTerminalTabs({
           type="button"
           onClick={handleAdd}
           disabled={atMax}
-          title={atMax ? `Server limit: ${maxShells} concurrent shells.` : "New shell"}
+          title={atMax ? interpolate(m.serverLimit, { max: String(maxShells) }) : m.newShell}
           className={
             "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors " +
             (atMax
@@ -256,7 +259,7 @@ export function ServerTerminalTabs({
           }
         >
           <Plus className="size-3.5" />
-          New shell
+          {m.newShell}
         </button>
       </div>
 
@@ -266,14 +269,14 @@ export function ServerTerminalTabs({
       <div className="relative min-h-0 flex-1">
         {shells.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-            <p className="text-sm text-muted-foreground/70">No open terminals.</p>
+            <p className="text-sm text-muted-foreground/70">{m.noTerminals}</p>
             <button
               type="button"
               onClick={handleAdd}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border/50 bg-muted/30 px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted/60"
             >
               <Plus className="size-3.5" />
-              New shell
+              {m.newShell}
             </button>
           </div>
         )}

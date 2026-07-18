@@ -19,6 +19,8 @@ export type ClientDeploymentInfo = {
   selfHosted: boolean;
   deployMode: string;
   authMode: "cloud" | "local" | "none";
+  /** Running server release (self-hosted). Absent on older servers. */
+  version?: string;
 };
 
 let cached: Promise<ClientDeploymentInfo> | null = null;

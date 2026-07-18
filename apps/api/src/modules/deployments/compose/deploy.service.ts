@@ -40,6 +40,7 @@ import {
 import { ensureManagedEdgeProxy } from "../../../lib/managed-edge-proxy";
 import * as sessionManager from "../session-manager";
 import { resolveServicePort } from "./domain-helpers";
+import { buildCompositeRegistration } from "./composite-route";
 import { serviceKind } from "./project-services";
 
 export interface ComposeDeployResult {
@@ -942,6 +943,63 @@ export async function deployComposeServices(
         });
         unavailableServiceNames.add(svc.name);
       }
+    }
+  }
+
+  // Vercel-style single-domain composition: when the monorepo is exactly one
+  // static frontend + one server backend, serve both on ONE domain (frontend at
+  // `/`, backend reverse-proxied at `/api/` or the vercel.json rewrite prefix).
+  // Best-effort + additive: it only fires when every piece resolves (frontend
+  // IP+port+domain, backend IP+port) on a self-hosted runtime, and any failure
+  // just leaves the per-service routes already registered in the loop. NOTE:
+  // the static frontend must be exposed with a routable port for this to form
+  // (otherwise buildServiceRouteDomain/port resolution yields nothing and we
+  // no-op) — verify end-to-end on a live self-hosted deploy.
+  if (routeContext?.routing && runtime.name !== "cloud") {
+    try {
+      // Reusable routing core (shared with the routing API): resolve each
+      // service's live upstream from this deploy's results + its public domain.
+      const composite = buildCompositeRegistration({
+        services: enabled,
+        routingConfig: project.routingConfig,
+        resolveTargetUrl: (serviceId) => {
+          const svc = enabled.find((s) => s.id === serviceId);
+          const res = results.find((r) => r.serviceId === serviceId);
+          const port = svc ? resolveServicePublicPort(svc) : undefined;
+          return res?.ip && port ? `http://${res.ip}:${port}` : null;
+        },
+        resolveDomain: (serviceId) => {
+          const svc = enabled.find((s) => s.id === serviceId);
+          const domain = svc
+            ? buildServiceRouteDomain({
+                project,
+                service: svc,
+                runtimeName: runtime.name,
+                usesManagedRouting: routeContext.usesManagedRouting,
+              })
+            : null;
+          return domain ? { hostname: domain.hostname, isCustomDomain: domain.domainType === "custom" } : null;
+        },
+      });
+      if (composite) {
+        const r = composite.register;
+        await routeContext.routing.registerRoute({
+          domain: r.hostname,
+          tls: true,
+          targetUrl: r.targetUrl!,
+          ...(r.proxyLocations?.length ? { proxyLocations: r.proxyLocations } : {}),
+          ...(r.redirects?.length ? { redirects: r.redirects } : {}),
+          ...(r.headerRules?.length ? { headerRules: r.headerRules } : {}),
+        });
+        logger.log(
+          `Composed single domain ${r.hostname}: frontend at "/", backend proxied per vercel.json.\n`,
+        );
+      }
+    } catch (err) {
+      logger.log(
+        `Single-domain composition skipped: ${err instanceof Error ? err.message : "error"} (services remain on their own routes).\n`,
+        "warn",
+      );
     }
   }
 

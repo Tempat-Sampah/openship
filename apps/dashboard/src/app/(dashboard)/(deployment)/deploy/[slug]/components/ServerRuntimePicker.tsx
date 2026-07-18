@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { ShieldCheck, Terminal, ShieldAlert, Server } from "lucide-react";
 import { useDeployment } from "@/context/DeploymentContext";
 import { useMonitorStream } from "@/hooks/useMonitorStream";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { RuntimeMode } from "@/context/deployment/types";
 
 /**
@@ -24,31 +25,30 @@ import type { RuntimeMode } from "@/context/deployment/types";
 // single-digit-% CPU + ~30-80MB RAM, negligible vs. the isolation upside.
 const TWO_GB = 2 * 1024 * 1024 * 1024;
 
-const runtimeOptions: Array<{
-  value: RuntimeMode;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-}> = [
-  {
-    value: "docker",
-    label: "Sandboxed",
-    description:
-      "Runs in an isolated container. A compromised process can't reach your host's files or other apps. Tiny overhead, big safety net.",
-    icon: <ShieldCheck className="size-5" />,
-  },
-  {
-    value: "bare",
-    label: "Direct",
-    description:
-      "Runs as a regular system process. Lowest overhead, but a compromise has full host access. Only pick this if RAM is genuinely tight.",
-    icon: <Terminal className="size-5" />,
-  },
-];
-
 const ServerRuntimePicker: React.FC = () => {
   const { config, updateConfig } = useDeployment();
+  const { t } = useI18n();
   const { stats } = useMonitorStream(config.serverId ?? null, true);
+
+  const runtimeOptions: Array<{
+    value: RuntimeMode;
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+  }> = [
+    {
+      value: "docker",
+      label: t.deploy.runtime.sandboxedLabel,
+      description: t.deploy.runtime.sandboxedDesc,
+      icon: <ShieldCheck className="size-5" />,
+    },
+    {
+      value: "bare",
+      label: t.deploy.runtime.directLabel,
+      description: t.deploy.runtime.directDesc,
+      icon: <Terminal className="size-5" />,
+    },
+  ];
 
   const hasAutoDefaultedRef = useRef(false);
   const hasUserSelectedRef = useRef(false);
@@ -78,11 +78,12 @@ const ServerRuntimePicker: React.FC = () => {
       <div>
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Server className="size-4 text-muted-foreground" />
-          Runtime
+          {t.deploy.runtime.heading}
         </h3>
         <p className="text-sm text-muted-foreground mt-0.5">
-          How this app is isolated on the server
-          {ramGB ? ` — ${ramGB} GB RAM` : ""}.
+          {ramGB
+            ? interpolate(t.deploy.runtime.subtitleRam, { ram: ramGB })
+            : `${t.deploy.runtime.subtitle}.`}
         </p>
       </div>
 
@@ -98,7 +99,7 @@ const ServerRuntimePicker: React.FC = () => {
                 hasUserSelectedRef.current = true;
                 updateConfig({ runtimeMode: option.value });
               }}
-              className={`w-full rounded-xl border p-4 text-left transition-all ${
+              className={`w-full rounded-xl border p-4 text-start transition-all ${
                 isSelected
                   ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                   : "border-border/50 bg-card hover:border-primary/30 hover:bg-primary/[0.02]"
@@ -115,7 +116,7 @@ const ServerRuntimePicker: React.FC = () => {
                     </p>
                     {isRecommended && (
                       <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                        Recommended
+                        {t.deploy.runtime.recommended}
                       </span>
                     )}
                   </div>
@@ -135,19 +136,7 @@ const ServerRuntimePicker: React.FC = () => {
         <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-3 py-2.5">
           <ShieldAlert className="size-4 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-[12px] leading-relaxed text-amber-700 dark:text-amber-300">
-            {lowRam ? (
-              <>
-                We suggest Direct here because this server has limited RAM —
-                Sandboxed adds ~50–80&nbsp;MB. If you can spare it, Sandboxed is still
-                safer.
-              </>
-            ) : (
-              <>
-                Direct runs the app straight on the host — an exploit means full host
-                access. Sandboxed adds maybe 1–2% CPU and a few dozen MB of RAM. For
-                most apps the tradeoff isn&apos;t close.
-              </>
-            )}
+            {lowRam ? t.deploy.runtime.caveatLowRam : t.deploy.runtime.caveat}
           </p>
         </div>
       )}

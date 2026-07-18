@@ -38,7 +38,11 @@ import {
   type CloudAnalyticsOperation,
 } from "./cloud-analytics.service";
 import { revokeCloudSession } from "./cloud-session.service";
-import { syncCloudEdgeProxy } from "./cloud-edge-proxy.service";
+import {
+  syncCloudEdgeProxy,
+  requestTargetVerification,
+  checkTargetVerification,
+} from "./cloud-edge-proxy.service";
 import {
   createCloudPage,
   dispatchCloudPageAction,
@@ -406,6 +410,39 @@ export async function syncEdgeProxy(c: Context) {
   }
 }
 
+/**
+ * POST /api/cloud/edge-proxy/verify-request  { target }
+ * Ownership handshake step 1 — proxied to Oblien's requestVerification. Returns
+ * the challenge { id, token, path } the caller serves on the target's :443.
+ */
+export async function requestEdgeVerification(c: Context) {
+  const ctx = getRequestContext(c);
+  const body = await c.req.json<{ target?: string }>();
+  if (!body.target) return c.json({ error: "target is required" }, 400);
+  try {
+    const verification = await requestTargetVerification(ctx.organizationId, body.target);
+    return c.json({ ok: true, verification });
+  } catch (err) {
+    return oblienErrorResponse(c, err, "Failed to request target verification");
+  }
+}
+
+/**
+ * POST /api/cloud/edge-proxy/verify-check  { id }
+ * Ownership handshake step 2 — proxied to Oblien's checkVerification.
+ */
+export async function checkEdgeVerification(c: Context) {
+  const ctx = getRequestContext(c);
+  const body = await c.req.json<{ id?: number }>();
+  if (typeof body.id !== "number") return c.json({ error: "id is required" }, 400);
+  try {
+    const result = await checkTargetVerification(ctx.organizationId, body.id);
+    return c.json({ ok: true, ...result });
+  } catch (err) {
+    return oblienErrorResponse(c, err, "Failed to check target verification");
+  }
+}
+
 // ─── Pages proxy ────────────────────────────────────────────────────────────
 
 /**
@@ -596,10 +633,27 @@ export async function ingestSubgraphHandler(c: Context) {
       return c.json({ error: err.message, code: err.code }, 400);
     }
     if (err instanceof PkCollisionError) {
-      // Duplicate-PK on the subgraph restore — typically the operator
-      // is re-submitting an already-transferred project. Surface as a
-      // typed 409 so the dashboard wizard can offer a clean "already
-      // transferred" remediation instead of an opaque 500.
+      // A pkey collision = the SAME project id already exists → a genuine
+      // leftover transfer of THIS project (PK_COLLISION). Any OTHER unique
+      // constraint (slug / name / hostname) = a DIFFERENT project already owns
+      // that name → SLUG_TAKEN, so the operator gets "rename and retry" instead
+      // of the misleading "clean up the leftover copy". Unknown constraint falls
+      // back to PK_COLLISION (unchanged behavior).
+      const constraint = (err.cause as { constraint?: unknown } | null)?.constraint;
+      const nameTaken = typeof constraint === "string" && !constraint.endsWith("_pkey");
+      if (nameTaken) {
+        return c.json(
+          {
+            error: "A project with this name already exists on Openship Cloud. Rename this project and retry.",
+            code: "SLUG_TAKEN",
+            table: err.table,
+          },
+          409,
+        );
+      }
+      // Duplicate-PK on the subgraph restore — the operator is re-submitting an
+      // already-transferred project. Typed 409 so the dashboard can offer a
+      // clean "already transferred" remediation instead of an opaque 500.
       return c.json(
         { error: err.message, code: err.code, table: err.table },
         409,

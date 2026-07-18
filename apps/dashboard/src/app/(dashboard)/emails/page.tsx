@@ -14,6 +14,7 @@ import {
 import type { ServerOption } from "@/components/shared/ServerSelector";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { useModal } from "@/context/ModalContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { FormModalContent } from "./_components/admin/_shared/form-modal-content";
 import { MailSetupForm } from "./_components/mail-setup-form";
 import { MailProgress } from "./_components/mail-progress";
@@ -24,6 +25,7 @@ import { MailAdminPanel } from "./_components/admin/admin-panel";
 import { MailServerList, type MailServerListItem } from "./_components/mail-server-list";
 
 export default function EmailsPage() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -267,10 +269,10 @@ export default function EmailsPage() {
         showCloseButton: false,
         customContent: (
           <FormModalContent
-            title="Remove this mail server?"
-            description={`Removes ${label} from the mail list only. The mail stack keeps running and nothing is uninstalled — re-add it anytime with "Adopt" for an existing install.`}
-            submitLabel="Remove from list"
-            submittingLabel="Removing…"
+            title={t.emails.page.removeModal.title}
+            description={interpolate(t.emails.page.removeModal.description, { label })}
+            submitLabel={t.emails.page.removeModal.submit}
+            submittingLabel={t.emails.page.removeModal.submitting}
             submitVariant="danger"
             onSubmit={async () => {
               await mailApi.forget(server.id);
@@ -280,14 +282,13 @@ export default function EmailsPage() {
             onCancel={() => hideModal(id)}
           >
             <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground leading-relaxed">
-              Because the on-server install is left intact, re-adopting it later
-              restores full management with no reinstall.
+              {t.emails.page.removeModal.body}
             </div>
           </FormModalContent>
         ),
       });
     },
-    [showModal, hideModal, reconcileAfterForget],
+    [showModal, hideModal, reconcileAfterForget, t],
   );
 
   // The `mail_servers` registry drives the view; the URL (?serverId=) names
@@ -541,7 +542,7 @@ export default function EmailsPage() {
     try {
       await mailApi.resetSetup(selectedServer.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reset failed");
+      setError(err instanceof Error ? err.message : t.emails.page.errors.resetFailed);
       return;
     }
 
@@ -566,7 +567,7 @@ export default function EmailsPage() {
     // the (now-empty) server actually returns. Belt-and-suspenders against
     // any race or missed setter above.
     await fetchStatusForServer(selectedServer.id);
-  }, [selectedServer, fetchStatusForServer]);
+  }, [selectedServer, fetchStatusForServer, t]);
 
   /**
    * "I've set the DNS records - continue" click. Acks the gate on the
@@ -618,11 +619,11 @@ export default function EmailsPage() {
         await handleStart(next);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not acknowledge DNS");
+      setError(err instanceof Error ? err.message : t.emails.page.errors.ackDns);
     } finally {
       setAcknowledgingDns(false);
     }
-  }, [selectedServer, domain, dnsPendingStep, dnsRecords, handleStart]);
+  }, [selectedServer, domain, dnsPendingStep, dnsRecords, handleStart, t]);
 
   /**
    * "I've set the PTRs - continue" click. Acks the gate on the backend,
@@ -638,16 +639,16 @@ export default function EmailsPage() {
       setPtrPending(null);
       await handleStart(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not acknowledge PTR");
+      setError(err instanceof Error ? err.message : t.emails.page.errors.ackPtr);
     } finally {
       setAcknowledgingPtr(false);
     }
-  }, [selectedServer, ptrPending, handleStart]);
+  }, [selectedServer, ptrPending, handleStart, t]);
 
   const handleResolveConflict = useCallback(
     async (conflict: PortConflict, resolutionId: string) => {
       if (!selectedServer?.id) {
-        setError("Select a server first");
+        setError(t.emails.page.errors.selectServer);
         return;
       }
       setResolving(true);
@@ -669,12 +670,12 @@ export default function EmailsPage() {
           setError(result.message);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Resolution failed");
+        setError(err instanceof Error ? err.message : t.emails.page.errors.resolutionFailed);
       } finally {
         setResolving(false);
       }
     },
-    [selectedServer],
+    [selectedServer, t],
   );
 
   // A just-finished install (SSE reported every step complete).
@@ -757,9 +758,9 @@ export default function EmailsPage() {
                 type="button"
                 onClick={handleBack}
                 className="flex size-9 items-center justify-center rounded-xl border border-border/60 bg-card text-muted-foreground transition-colors hover:text-foreground"
-                title="Back to mail servers"
+                title={t.emails.page.backToServers}
               >
-                <ArrowLeft className="size-4" />
+                <ArrowLeft className="size-4 rtl:rotate-180" />
               </button>
             )}
             <div>
@@ -767,10 +768,10 @@ export default function EmailsPage() {
                 className="text-2xl font-medium text-foreground/80"
                 style={{ letterSpacing: "-0.2px" }}
               >
-                Email Server
+                {t.emails.page.title}
               </h1>
               <p className="text-sm text-muted-foreground/70 mt-1">
-                Set up a self-hosted mail server with a few clicks
+                {t.emails.page.subtitle}
               </p>
             </div>
           </div>
@@ -783,10 +784,10 @@ export default function EmailsPage() {
               type="button"
               onClick={handleAddNew}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              title="Add mail server"
+              title={t.emails.page.addServer}
             >
               <Plus className="size-4" />
-              Add mail server
+              {t.emails.page.addServer}
             </button>
           )}
         </div>

@@ -378,6 +378,19 @@ export async function buildAccess(c: Context) {
       // a clear message. Cleanup is an explicit, runtime-aware operation (the
       // teardown endpoint) — never a deploy-triggered auto-delete of cloud data.
       if (err instanceof TransferConflictError) {
+        // A slug/name conflict (a DIFFERENT cloud project owns the name) is not
+        // a leftover copy — tell the operator to rename, not to "clean up".
+        if (err.conflictKind === "slug") {
+          return c.json(
+            {
+              success: false,
+              code: "CLOUD_SLUG_TAKEN",
+              message: `The name "${err.conflictValue}" is already taken on Openship Cloud. Rename this project and try again.`,
+            },
+            409,
+          );
+        }
+        // A leftover cloud copy of THIS project (id) from an earlier transfer.
         return c.json(
           {
             success: false,

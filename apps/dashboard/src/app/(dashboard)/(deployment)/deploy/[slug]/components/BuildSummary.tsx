@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Terminal, FolderOutput, Server, Globe, Container, Layers, Hash, Cloud, Monitor } from "lucide-react";
 import { useDeployment } from "@/context/DeploymentContext";
@@ -5,9 +7,11 @@ import { getPublicEndpointHosts, usesServiceDeployment } from "@/context/deploym
 import { usePlatform } from "@/context/PlatformContext";
 import { getFrameworkConfig } from "@/components/import-project/Frameworks";
 import { STACKS, STACK_ICONS } from "@repo/core";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 const BuildSummary: React.FC = () => {
   const { config } = useDeployment();
+  const { t } = useI18n();
   const { baseDomain } = usePlatform();
   const isServices = usesServiceDeployment(config);
   const isApp = config.projectType === "app" || (config.projectType === "services" && !isServices);
@@ -25,22 +29,22 @@ const BuildSummary: React.FC = () => {
   // SERVER build takes the target's name ("Openship Cloud" vs generic "Server").
   const buildLocation = config.buildStrategy === "local"
     ? {
-        label: "Local Machine",
+        label: t.deploy.buildSummary.localMachine,
         icon: <Monitor className="size-3.5 text-muted-foreground" />,
       }
     : config.deployTarget === "cloud"
       ? {
-          label: "Openship Cloud",
+          label: t.deploy.buildSummary.cloud,
           icon: <Cloud className="size-3.5 text-muted-foreground" />,
         }
       : {
-          label: "Server",
+          label: t.deploy.buildSummary.server,
           icon: <Cloud className="size-3.5 text-muted-foreground" />,
         };
   const appDetailItems = [
     {
-      label: "Framework",
-      value: fw ? fw.name : stackDef?.name || "App",
+      label: t.deploy.buildSummary.framework,
+      value: fw ? fw.name : stackDef?.name || t.deploy.buildSummary.app,
       icon: fw
         ? (
             <span className="flex size-3.5 items-center justify-center overflow-hidden rounded-sm [&>img]:h-full [&>img]:w-full [&>img]:object-contain">
@@ -50,13 +54,13 @@ const BuildSummary: React.FC = () => {
         : <Container className="size-3 text-muted-foreground" />,
     },
     config.options.installCommand
-      ? { label: "Install", value: config.options.installCommand, icon: <Server className="size-3 text-muted-foreground" /> }
+      ? { label: t.deploy.buildSummary.install, value: config.options.installCommand, icon: <Server className="size-3 text-muted-foreground" /> }
       : null,
     config.options.buildCommand
-      ? { label: "Build", value: config.options.buildCommand, icon: <Terminal className="size-3 text-muted-foreground" /> }
+      ? { label: t.deploy.buildSummary.build, value: config.options.buildCommand, icon: <Terminal className="size-3 text-muted-foreground" /> }
       : null,
     config.options.outputDirectory
-      ? { label: "Output", value: config.options.outputDirectory, icon: <FolderOutput className="size-3 text-muted-foreground" /> }
+      ? { label: t.deploy.buildSummary.output, value: config.options.outputDirectory, icon: <FolderOutput className="size-3 text-muted-foreground" /> }
       : null,
   ].filter(Boolean) as Array<{ label: string; value: string; icon: React.ReactNode }>;
 
@@ -69,7 +73,7 @@ const BuildSummary: React.FC = () => {
   return (
     <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 via-primary/3 to-transparent border border-primary/10 space-y-3">
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        Deploy Summary
+        {t.deploy.buildSummary.title}
       </p>
       <div className="space-y-2.5">
         {/* Domain - for app/docker */}
@@ -79,10 +83,10 @@ const BuildSummary: React.FC = () => {
               <Globe className="size-3.5 text-primary" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Domain</p>
+              <p className="text-xs text-muted-foreground">{t.deploy.buildSummary.domain}</p>
               <p className="text-sm font-medium text-foreground truncate">
                 {domainDisplay}
-                {extraEndpointCount > 0 ? ` +${extraEndpointCount} more` : ""}
+                {extraEndpointCount > 0 ? interpolate(t.deploy.buildSummary.extraMore, { count: String(extraEndpointCount) }) : ""}
               </p>
             </div>
           </div>
@@ -95,9 +99,9 @@ const BuildSummary: React.FC = () => {
               <Layers className="size-3.5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Services</p>
+              <p className="text-xs text-muted-foreground">{t.deploy.buildSummary.services}</p>
               <p className="text-sm font-medium text-foreground">
-                {services.length} total · {exposedServices.length} exposed
+                {interpolate(t.deploy.buildSummary.servicesValue, { total: String(services.length), exposed: String(exposedServices.length) })}
               </p>
             </div>
           </div>
@@ -110,7 +114,7 @@ const BuildSummary: React.FC = () => {
               {buildLocation.icon}
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Build Location</p>
+              <p className="text-xs text-muted-foreground">{t.deploy.buildSummary.buildLocation}</p>
               <p className="text-sm font-medium text-foreground">
                 {buildLocation.label}
               </p>
@@ -150,7 +154,7 @@ const BuildSummary: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">
-                  {isServices ? "Stack" : "Runtime"}
+                  {isServices ? t.deploy.buildSummary.stack : t.deploy.buildSummary.runtime}
                 </p>
                 <p className="text-sm font-medium text-foreground truncate">
                   {stackDef?.name || "Docker"}
@@ -161,7 +165,7 @@ const BuildSummary: React.FC = () => {
             {isDocker && config.options.productionPort && (
               <div className="flex items-start gap-2 text-xs min-w-0 border-t border-border/30 pt-2">
                 <Hash className="size-3 mt-0.5 text-muted-foreground shrink-0" />
-                <span className="text-muted-foreground shrink-0">Port</span>
+                <span className="text-muted-foreground shrink-0">{t.deploy.buildSummary.port}</span>
                 <span className="text-foreground font-medium truncate">{config.options.productionPort}</span>
               </div>
             )}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ExternalLink, BookOpen } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/context/ToastContext';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 import { projectsApi, sandboxApi } from '@/lib/api';
 
 // Resource tier definitions (credits per month)
@@ -62,6 +63,8 @@ interface ResourceRowProps {
 }
 
 const ResourceRow = ({ label, tiers, currentValue, selectedValue, onChange }: ResourceRowProps) => {
+  const { t } = useI18n();
+  const w = t.widgets.shared.machineSettings;
   return (
     <div className="flex items-center gap-6">
       <div className="w-24 shrink-0">
@@ -89,12 +92,12 @@ const ResourceRow = ({ label, tiers, currentValue, selectedValue, onChange }: Re
                 </div>
               ) : (
                 <div className={`text-xs mt-0.5 ${isSelected ? 'text-white/50' : 'text-black/40'}`}>
-                  Base
+                  {w.base}
                 </div>
               )}
               {isCurrent && !isSelected && (
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/5 text-black/50 text-[10px] font-medium rounded-full">
-                  Current
+                  {w.current}
                 </div>
               )}
             </button>
@@ -115,6 +118,8 @@ export default function MachineSettingsModal({
   onUpdate,
 }: MachineSettingsModalProps) {
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const w = t.widgets.shared.machineSettings;
   const [selectedCpu, setSelectedCpu] = useState(currentConfig.cpu);
   const [selectedRam, setSelectedRam] = useState(currentConfig.ram);
   const [selectedStorage, setSelectedStorage] = useState(currentConfig.storage);
@@ -164,15 +169,15 @@ export default function MachineSettingsModal({
         : await projectsApi.updateResources(resourceId, resources);
 
       if (response.success) {
-        showToast('Machine settings updated', 'success');
+        showToast(w.toastUpdated, 'success');
         onUpdate?.({ cpu: selectedCpu, ram: selectedRam, storage: selectedStorage });
         onClose();
       } else {
-        showToast(response.message || 'Failed to update settings', 'error');
+        showToast(response.message || w.toastFailed, 'error');
       }
     } catch (error) {
       console.error('Error updating resources:', error);
-      showToast('Failed to update settings', 'error');
+      showToast(w.toastFailed, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -194,10 +199,10 @@ export default function MachineSettingsModal({
         <div className="px-8 py-6 border-b border-black/5 flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-black" style={{ letterSpacing: '-0.5px' }}>
-              Machine Settings
+              {w.title}
             </h2>
             <p className="text-sm text-black/50 mt-1">
-              Configure compute resources for <span className="font-medium text-black/60">{resourceName}</span>
+              {w.configureFor} <span className="font-medium text-black/60">{resourceName}</span>
             </p>
           </div>
           <Link
@@ -205,14 +210,14 @@ export default function MachineSettingsModal({
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-black/50 hover:text-black bg-black/5 hover:bg-black/10 rounded-lg transition-all"
           >
             <BookOpen className="w-4 h-4" />
-            Docs
+            {w.docs}
           </Link>
         </div>
 
         {/* Content */}
         <div className="px-8 py-6 space-y-5">
           <ResourceRow
-            label="CPU"
+            label={w.cpu}
             tiers={CPU_TIERS}
             currentValue={currentConfig.cpu}
             selectedValue={selectedCpu}
@@ -220,7 +225,7 @@ export default function MachineSettingsModal({
           />
 
           <ResourceRow
-            label="Memory"
+            label={w.memory}
             tiers={RAM_TIERS}
             currentValue={currentConfig.ram}
             selectedValue={selectedRam}
@@ -228,7 +233,7 @@ export default function MachineSettingsModal({
           />
 
           <ResourceRow
-            label="Storage"
+            label={w.storage}
             tiers={STORAGE_TIERS}
             currentValue={currentConfig.storage}
             selectedValue={selectedStorage}
@@ -241,18 +246,18 @@ export default function MachineSettingsModal({
           <div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-black/80">{formatCredits(newTotal)}</span>
-              <span className="text-sm text-black/40">credits/month</span>
+              <span className="text-sm text-black/40">{w.creditsPerMonth}</span>
             </div>
             {hasChanges && creditsDiff !== 0 && (
               <p className={`text-sm ${creditsDiff > 0 ? 'text-black/50' : 'text-emerald-600'}`}>
-                {creditsDiff > 0 ? `+${formatCredits(creditsDiff)}` : `-${formatCredits(Math.abs(creditsDiff))}`} from current
+                {creditsDiff > 0 ? `+${formatCredits(creditsDiff)}` : `-${formatCredits(Math.abs(creditsDiff))}`} {w.fromCurrent}
               </p>
             )}
-            <Link 
-              href="/pricing" 
+            <Link
+              href="/pricing"
               className="inline-flex items-center gap-1 text-xs text-black/40 hover:text-black/60 mt-1 transition-colors"
             >
-              View pricing
+              {w.viewPricing}
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
@@ -262,7 +267,7 @@ export default function MachineSettingsModal({
               onClick={onClose}
               className="px-5 py-2.5 text-sm font-medium text-black/50 hover:text-black transition-colors"
             >
-              Cancel
+              {w.cancel}
             </button>
             <button
               onClick={handleSave}
@@ -272,10 +277,10 @@ export default function MachineSettingsModal({
               {isSaving ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Saving...
+                  {w.saving}
                 </>
               ) : (
-                'Save Changes'
+                w.saveChanges
               )}
             </button>
           </div>

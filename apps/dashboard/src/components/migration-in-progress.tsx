@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { api } from "@/lib/api/client";
+import { useI18n } from "@/components/i18n-provider";
 
 /**
  * Shown in place of the dashboard while a migration is mid-flight.
@@ -19,6 +20,7 @@ import { api } from "@/lib/api/client";
  * a backgrounded dashboard.
  */
 export function MigrationInProgress() {
+  const { t } = useI18n();
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -82,18 +84,16 @@ export function MigrationInProgress() {
             aria-hidden="true"
             className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white"
           />
-          <h1 className="text-2xl font-semibold">Migration in progress</h1>
+          <h1 className="text-2xl font-semibold">{t.chrome.migration.inProgressTitle}</h1>
         </div>
 
         <p className="text-sm text-white/60">
-          Your data is being moved. This page will refresh when the cutover
-          finishes — typically 30-90 seconds.
+          {t.chrome.migration.inProgressBody}
         </p>
 
         <div className="space-y-1 border-t border-white/10 pt-6">
           <p className="text-xs text-white/40">
-            Don&apos;t close this tab. We&apos;re checking the migration
-            status every few seconds and will reload automatically.
+            {t.chrome.migration.inProgressHint}
           </p>
         </div>
       </div>

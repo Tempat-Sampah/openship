@@ -29,6 +29,7 @@ import {
   type BackupRun,
 } from "@/lib/api";
 import { useRestoreRunStream } from "@/hooks/useRestoreRunStream";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface MailServerOption {
   id: string;
@@ -53,6 +54,7 @@ export function MailRestoreModal({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const [targets, setTargets] = useState<MailServerOption[]>([]);
   const [targetId, setTargetId] = useState("");
   const [confirmText, setConfirmText] = useState("");
@@ -93,7 +95,7 @@ export function MailRestoreModal({
       setRestoreId(data.restoreId);
       setPhase("running");
     } catch (err) {
-      setError(getApiErrorMessage(err, "Could not start restore"));
+      setError(getApiErrorMessage(err, t.emailsAdmin.restore.startFailed));
     }
   }, [run.id, mode, targetId]);
 
@@ -103,7 +105,7 @@ export function MailRestoreModal({
     if (restore?.status === "prepared") {
       appliedRef.current = true;
       backupsApi.applyRestore(restoreId, tokenRef.current).catch((err) => {
-        setError(getApiErrorMessage(err, "Could not apply restore"));
+        setError(getApiErrorMessage(err, t.emailsAdmin.restore.applyFailed));
       });
     }
   }, [restore?.status, restoreId]);
@@ -117,7 +119,7 @@ export function MailRestoreModal({
     if (done) onDone();
   }, [done, onDone]);
 
-  const title = mode === "to_fork" ? "Migrate to another server" : "Restore backup";
+  const title = mode === "to_fork" ? t.emailsAdmin.restore.titleMigrate : t.emailsAdmin.restore.titleRestore;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -162,7 +164,7 @@ export function MailRestoreModal({
               onClick={onClose}
               className="px-4 py-2 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              Close
+              {t.emailsAdmin.restore.close}
             </button>
           ) : (
             <>
@@ -171,7 +173,7 @@ export function MailRestoreModal({
                 disabled={busy}
                 className="px-4 py-2 text-sm font-semibold rounded-xl bg-muted text-foreground hover:bg-muted/80 border border-border disabled:opacity-50"
               >
-                Cancel
+                {t.emailsAdmin.restore.cancel}
               </button>
               <button
                 onClick={start}
@@ -179,7 +181,7 @@ export function MailRestoreModal({
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {phase === "running" && <Loader2 className="size-3.5 animate-spin" />}
-                {mode === "to_fork" ? "Migrate" : "Restore"}
+                {mode === "to_fork" ? t.emailsAdmin.restore.migrate : t.emailsAdmin.restore.restore}
               </button>
             </>
           )}
@@ -208,25 +210,24 @@ function ReviewStep({
   setConfirmText: (v: string) => void;
   backupDate: string;
 }) {
+  const { t } = useI18n();
+  const r = t.emailsAdmin.restore;
   return (
     <>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Restoring the backup from{" "}
+        {r.reviewBefore}
         <span className="font-medium text-foreground">
           {new Date(backupDate).toLocaleString()}
         </span>
-        {mode === "to_fork"
-          ? " onto another mail server."
-          : " onto this mail server."}
+        {mode === "to_fork" ? r.reviewOntoFork : r.reviewOntoInPlace}
       </p>
 
       {mode === "to_fork" && (
         <label className="block">
-          <span className="block text-sm font-medium text-foreground mb-1.5">Target server</span>
+          <span className="block text-sm font-medium text-foreground mb-1.5">{r.targetServer}</span>
           {targets.length === 0 ? (
             <p className="text-xs text-muted-foreground rounded-xl border border-border/60 bg-muted/20 px-3.5 py-2.5">
-              No other installed mail servers. Set the target up with the install wizard first
-              (same domain, <span className="font-mono">{domain}</span>), then it'll appear here.
+              {r.noTargetsBefore}<span className="font-mono">{domain}</span>{r.noTargetsAfter}
             </p>
           ) : (
             <select
@@ -234,10 +235,10 @@ function ReviewStep({
               onChange={(e) => setTargetId(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
-              <option value="">Select a server…</option>
-              {targets.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.domain || t.name} · {t.host}
+              <option value="">{r.selectServer}</option>
+              {targets.map((srv) => (
+                <option key={srv.id} value={srv.id}>
+                  {srv.domain || srv.name} · {srv.host}
                 </option>
               ))}
             </select>
@@ -248,14 +249,14 @@ function ReviewStep({
       <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3.5 py-2.5">
         <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
         <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-          This wipes the {mode === "to_fork" ? "target" : "current"} server's accounts, domains
-          and aliases, then loads the backup. {mode === "to_fork" && "The target should be set up with the same domain. After migrating, repoint MX/A DNS + PTR to the new server."}
+          {interpolate(r.warnMain, { which: mode === "to_fork" ? r.warnWhichTarget : r.warnWhichCurrent })}
+          {mode === "to_fork" && ` ${r.warnForkExtra}`}
         </p>
       </div>
 
       <label className="block">
         <span className="block text-sm font-medium text-foreground mb-1.5">
-          Type <span className="font-mono">{domain}</span> to confirm
+          {r.confirmBefore}<span className="font-mono">{domain}</span>{r.confirmAfter}
         </span>
         <input
           value={confirmText}
@@ -275,6 +276,8 @@ function ProgressStep({
   status: BackupRun["status"] | BackupRestore_Status | undefined;
   domain: string;
 }) {
+  const { t } = useI18n();
+  const r = t.emailsAdmin.restore;
   const done = status === "succeeded";
   const failed = status === "failed" || status === "server_error" || status === "cancelled";
   return (
@@ -294,14 +297,18 @@ function ProgressStep({
       </div>
       <div>
         <p className="text-sm font-medium text-foreground capitalize">
-          {done ? "Restore complete" : failed ? `Restore ${status}` : (status ?? "starting") + "…"}
+          {done
+            ? r.progressComplete
+            : failed
+              ? interpolate(r.progressFailed, { status: status ?? "" })
+              : (status ?? r.startingFallback) + "…"}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {done
-            ? `${domain} restored. Mail daemons reloaded.`
+            ? interpolate(r.subDone, { domain })
             : failed
-              ? "See the error above."
-              : "Moving accounts, domains and message data. This can take a while."}
+              ? r.subFailed
+              : r.subRunning}
         </p>
       </div>
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">

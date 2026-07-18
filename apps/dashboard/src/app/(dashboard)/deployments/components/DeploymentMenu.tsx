@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { generateIcon } from "@/utils/icons";
 import { deployApi, getApiErrorMessage } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface Deployment {
   id: string;
@@ -43,6 +44,7 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
   triggerClassName,
   onStatusChange,
 }) => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -96,16 +98,13 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
     e.stopPropagation();
     setIsOpen(false);
     if (!canRollback) return;
-    const ok = window.confirm(
-      "Roll back to this version?\n\n" +
-        "This restores the application code only. Database and volume data are unchanged.",
-    );
+    const ok = window.confirm(t.deployments.menu.confirmRollback);
     if (!ok) return;
     try {
       await deployApi.rollback(deployment.id);
       onStatusChange?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Rollback failed"));
+      window.alert(getApiErrorMessage(err, t.deployments.menu.rollbackFailed));
     }
   };
 
@@ -115,17 +114,14 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
     if (!canRedeployCommit) return;
     const shortHash = deployment.commit.hash;
     const ok = window.confirm(
-      `Redeploy commit ${shortHash}?\n\n` +
-        "Rebuilds this exact commit from source. Slower than rollback " +
-        "(full build runs again), but works even after the rollback artifact " +
-        "has been pruned. A new deployment will appear in the list.",
+      interpolate(t.deployments.menu.confirmRedeploy, { hash: shortHash }),
     );
     if (!ok) return;
     try {
       await deployApi.redeploy(deployment.id, { useExistingCommit: true });
       onStatusChange?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Redeploy failed"));
+      window.alert(getApiErrorMessage(err, t.deployments.menu.redeployFailed));
     }
   };
 
@@ -139,7 +135,7 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
       window.alert(
         getApiErrorMessage(
           err,
-          deployment.pinned ? "Failed to unpin deployment" : "Failed to pin deployment",
+          deployment.pinned ? t.deployments.menu.unpinFailed : t.deployments.menu.pinFailed,
         ),
       );
     }
@@ -169,17 +165,17 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-10 w-56 bg-popover rounded-xl shadow-lg border border-border/50 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute end-0 top-10 w-56 bg-popover rounded-xl shadow-lg border border-border/50 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {deployment.domain && (
             <button
               onClick={() => {
                 window.open(`https://${deployment.domain}`, "_blank");
                 setIsOpen(false);
               }}
-              className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
+              className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
             >
               <ExternalLink className="w-4 h-4" />
-              Open Deployment
+              {t.deployments.menu.openDeployment}
             </button>
           )}
 
@@ -189,10 +185,10 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
                 window.open(`https://github.com/${deployment.owner}/${deployment.repo}`, "_blank");
                 setIsOpen(false);
               }}
-              className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
+              className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
             >
               {generateIcon('https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg', 16, 'currentColor', {}, true)}
-              View Repository
+              {t.deployments.menu.viewRepository}
             </button>
           )}
 
@@ -204,10 +200,10 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
                 navigator.clipboard.writeText(`https://${deployment.domain}`);
                 setIsOpen(false);
               }}
-              className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
+              className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
             >
               <Copy className="w-4 h-4" />
-              Copy Domain URL
+              {t.deployments.menu.copyDomainUrl}
             </button>
           )}
 
@@ -216,10 +212,10 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
               navigator.clipboard.writeText(deployment.id);
               setIsOpen(false);
             }}
-            className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
+            className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
           >
             <Copy className="w-4 h-4" />
-            Copy Build ID
+            {t.deployments.menu.copyBuildId}
           </button>
 
           {isInFlight && (
@@ -227,10 +223,10 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
               <div className="h-px bg-border/50 my-2" />
               <button
                 onClick={handleCancel}
-                className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-3"
+                className="w-full px-4 py-2.5 text-start text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-3"
               >
                 <XCircle className="w-4 h-4" />
-                Cancel Deployment
+                {t.deployments.menu.cancelDeployment}
               </button>
             </>
           )}
@@ -246,17 +242,17 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
                 disabled={!canRollback}
                 title={
                   canRollback
-                    ? "Restore the project to this version (code only — data is unchanged)"
+                    ? t.deployments.menu.rollbackTitle.enabled
                     : deployment.isActive
-                      ? "This is already the active version"
+                      ? t.deployments.menu.rollbackTitle.active
                       : !deployment.artifactRetainedAt
-                        ? "Rollback artifact has been pruned. Use 'Redeploy this commit' to rebuild from source instead."
-                        : "Only ready deployments can be rolled back to"
+                        ? t.deployments.menu.rollbackTitle.pruned
+                        : t.deployments.menu.rollbackTitle.notReady
                 }
-                className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
                 <RotateCcw className="w-4 h-4" />
-                Rollback to this version
+                {t.deployments.menu.rollback}
               </button>
 
               {/* Fallback for when the artifact has been pruned out of the
@@ -266,11 +262,11 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
               {canRedeployCommit && (
                 <button
                   onClick={handleRedeployCommit}
-                  title="Rebuild this exact commit from source. Slower than rollback but works after the artifact has been pruned."
-                  className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
+                  title={t.deployments.menu.redeployTitle}
+                  className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  Redeploy this commit
+                  {t.deployments.menu.redeploy}
                 </button>
               )}
             </>
@@ -284,15 +280,15 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
               disabled={!deployment.pinned && !deployment.artifactRetainedAt}
               title={
                 deployment.pinned
-                  ? "Allow this deployment to be pruned when retention overflows"
+                  ? t.deployments.menu.pinTitle.unpin
                   : !deployment.artifactRetainedAt
-                    ? "Cannot pin — artifact has already been pruned"
-                    : "Keep this deployment rollback-restorable indefinitely (cap: 10 pinned per project)"
+                    ? t.deployments.menu.pinTitle.pruned
+                    : t.deployments.menu.pinTitle.pin
               }
-              className="w-full px-4 py-2.5 text-left text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="w-full px-4 py-2.5 text-start text-sm text-foreground/70 hover:bg-muted transition-colors flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               {deployment.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-              {deployment.pinned ? "Unpin" : "Pin"}
+              {deployment.pinned ? t.deployments.menu.unpin : t.deployments.menu.pin}
             </button>
           )}
 
@@ -301,10 +297,10 @@ export const DeploymentMenu: React.FC<DeploymentMenuProps> = ({
               <div className="h-px bg-border/50 my-2" />
               <button
                 onClick={handleDelete}
-                className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-3"
+                className="w-full px-4 py-2.5 text-start text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-3"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete Deployment
+                {t.deployments.menu.deleteDeployment}
               </button>
             </>
           )}

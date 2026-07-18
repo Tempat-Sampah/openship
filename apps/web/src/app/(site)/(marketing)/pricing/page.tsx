@@ -27,9 +27,9 @@ const PLANS: Plan[] = [
     priceNote: "Forever, on your servers",
     lead: "Run the full platform on a server you own. No metering, no caps, no telemetry.",
     cta: "Read the source",
-    ctaHref: "https://github.com/openship/openship",
+    ctaHref: "https://github.com/oblien/openship",
     features: [
-      "Full platform, open source (AGPL-3)",
+      "Full platform, open source (Apache 2.0)",
       "Unlimited deploys, domains, projects",
       "All managed services - Postgres, Redis, mail",
       "CLI, web, desktop - same backend",
@@ -154,7 +154,7 @@ const FAQ = [
   },
   {
     q: "What's the license for Hobby?",
-    a: "AGPL-3.0. The platform stays open for everyone who deploys with it, including anyone who forks it. You can run it in your cloud, on a Raspberry Pi, or in production for a SaaS - no commercial restrictions.",
+    a: "Apache 2.0 - a permissive license. Use it, modify it, fork it, and ship it in commercial or closed-source products, no strings attached. Run it in your cloud, on a Raspberry Pi, or in production for a SaaS - no restrictions.",
   },
   {
     q: "Do you store my source code?",
@@ -210,7 +210,7 @@ export default function PricingPage() {
             <ul className="pp-hero-trust">
               <li>No credit card</li>
               <li>Cancel anytime</li>
-              <li>Open source · AGPL-3</li>
+              <li>Open source · Apache 2.0</li>
               <li>Migrate cloud ⇄ self-host any day</li>
             </ul>
           </div>
@@ -346,7 +346,7 @@ export default function PricingPage() {
               </p>
               <div className="pp-end-cta-row">
                 <a href="/login" className="pp-btn pp-btn--primary">Start free</a>
-                <a href="https://github.com/openship/openship" target="_blank" rel="noreferrer" className="pp-btn pp-btn--ghost">
+                <a href="https://github.com/oblien/openship" target="_blank" rel="noreferrer" className="pp-btn pp-btn--ghost">
                   Self-host on GitHub
                 </a>
               </div>

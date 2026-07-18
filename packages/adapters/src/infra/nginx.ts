@@ -33,6 +33,56 @@ import type { RoutingProvider, SslProvider } from "./types";
 import { LUA_LOGGER_PATH, buildReloadCommand, detectOpenRestyPaths, type OpenRestyPaths } from "./openresty-lua";
 import { safeErrorMessage } from "@repo/core";
 
+/** Reverse-proxy headers shared by every proxy_pass location. */
+const PROXY_HEADERS = `proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";`;
+
+/** Render extra path-prefix proxy locations (composite single-domain routing). */
+function renderProxyLocations(route: RouteConfig): string {
+  if (!route.proxyLocations || route.proxyLocations.length === 0) return "";
+  return route.proxyLocations
+    .map(
+      (loc) => `
+    location ${loc.pathPrefix} {
+        proxy_pass ${loc.targetUrl};
+        ${PROXY_HEADERS}
+    }`,
+    )
+    .join("");
+}
+
+/** Render vercel.json `redirects` as `return <code> <dest>` locations. */
+function renderRedirects(route: RouteConfig): string {
+  if (!route.redirects || route.redirects.length === 0) return "";
+  return route.redirects
+    .map(
+      (r) => `
+    location ${r.exact ? "= " : ""}${r.path} {
+        return ${r.statusCode} ${r.destination};
+    }`,
+    )
+    .join("");
+}
+
+/**
+ * Render GLOBAL (source `/(.*)` → path `/`) header rules as server-scope
+ * `add_header … always;`. Path-scoped header rules are skipped here (they'd
+ * need a dedicated location that could shadow proxy/static behavior) — the
+ * common case is global security headers.
+ */
+function renderServerHeaders(route: RouteConfig): string {
+  const global = (route.headerRules ?? []).filter((rule) => rule.path === "/");
+  const lines = global.flatMap((rule) =>
+    rule.headers.map((h) => `    add_header ${h.key} "${h.value.replace(/"/g, '\\"')}" always;`),
+  );
+  return lines.length > 0 ? `\n${lines.join("\n")}` : "";
+}
+
 // ─── Rate Limit Config ──────────────────────────────────────────────────────
 
 export interface RateLimitConfig {
@@ -221,18 +271,19 @@ export class NginxProvider implements RoutingProvider, SslProvider {
 
     const slug = this.domainSlug(route.domain);
     const configPath = join(this.sitesDir, `${slug}.conf`);
-    const locationBody = "staticRoot" in route
+    const locationBody = "staticRoot" in route && route.staticRoot
       ? `root ${route.staticRoot};
         index index.html;
         try_files $uri $uri/ /index.html;`
-      : `proxy_pass ${route.targetUrl};
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";`;
+      : `proxy_pass ${(route as { targetUrl: string }).targetUrl};
+        ${PROXY_HEADERS}`;
+
+    // Composite single-domain: extra path-prefix proxy locations (e.g. /api/ →
+    // backend) + vercel.json redirects, emitted BEFORE `location /` so nginx
+    // longest-prefix / exact match routes them ahead of the primary target.
+    const extraLocations = `${renderRedirects(route)}${renderProxyLocations(route)}`;
+    // Global response headers (vercel.json `headers` with source "/(.*)").
+    const serverHeaders = renderServerHeaders(route);
 
     // Optional: webhook proxy location for GitHub push delivery
     const webhookLocation = route.webhookProxy
@@ -277,7 +328,8 @@ server {
 
     ssl_certificate ${certPath};
     ssl_certificate_key ${keyPath};
-${webhookLocation}
+${serverHeaders}
+${webhookLocation}${extraLocations}
     location / {
         ${locationBody}
     }
@@ -291,11 +343,11 @@ server {
     server_name ${route.domain};
 
     log_by_lua_file ${LUA_LOGGER_PATH};
-
+${serverHeaders}
     location /.well-known/acme-challenge/ {
         root /var/www/acme;
     }
-${webhookLocation}
+${webhookLocation}${extraLocations}
     location / {
         ${locationBody}
     }
@@ -315,6 +367,16 @@ ${webhookLocation}
       await this.reload().catch(() => undefined);
       throw err;
     }
+
+    // Persist the full RouteConfig alongside the conf so `provisionCert` can
+    // re-register the EXACT route (proxyLocations + webhookProxy) after issuing a
+    // cert, instead of regex-reconstructing it from the generated conf (which
+    // only recovered the primary target and dropped composite locations).
+    await this._writeFile(this.routeStatePath(slug), JSON.stringify(route)).catch(() => undefined);
+  }
+
+  private routeStatePath(slug: string): string {
+    return join(this.sitesDir, `${slug}.route.json`);
   }
 
   /**
@@ -325,6 +387,7 @@ ${webhookLocation}
     const slug = this.domainSlug(domain);
     const configPath = join(this.sitesDir, `${slug}.conf`);
     await this._rm(configPath);
+    await this._rm(this.routeStatePath(slug)).catch(() => undefined);
     await this.reload();
   }
 
@@ -366,6 +429,17 @@ ${webhookLocation}
     // Rewrite the config with SSL now that certs exist
     const slug = this.domainSlug(domain);
     const configPath = join(this.sitesDir, `${slug}.conf`);
+
+    // Prefer the persisted RouteConfig sidecar so the re-register keeps every
+    // location (composite proxyLocations + webhookProxy), not just the primary.
+    try {
+      const state = await this._readFile(this.routeStatePath(slug));
+      const saved = JSON.parse(state) as RouteConfig;
+      await this.registerRoute({ ...saved, domain, tls: true });
+      return this.readCertInfo(domain);
+    } catch {
+      // No sidecar (legacy route or unreadable) - fall back to scraping the conf.
+    }
 
     try {
       const existing = await this._readFile(configPath);

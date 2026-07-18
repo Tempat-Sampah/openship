@@ -14,7 +14,7 @@
  *         └─ API (remote server, reached via HTTP)
  */
 
-import { app, BrowserWindow, shell, ipcMain, net, dialog, globalShortcut, screen } from "electron";
+import { app, BrowserWindow, shell, ipcMain, net, dialog, globalShortcut, screen, nativeTheme } from "electron";
 import { join } from "node:path";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { randomBytes, createHash } from "node:crypto";
@@ -33,6 +33,7 @@ import {
   getLocalDashboardUrl,
   startLocalServices,
   stopLocalServices,
+  stopLocalServicesAndWait,
 } from "./services";
 import {
   checkForUpdate,
@@ -67,12 +68,24 @@ interface AppConfig {
   system?: SystemSettings;
   /** Tunnel configuration - pushed to API during onboarding */
   tunnel?: TunnelConfig;
+  /** Auto-install updates without asking. Default OFF for security — the user
+   *  stays in control and updates are only ever pulled from GitHub. */
+  autoUpdate?: boolean;
+  /** Show update + security-advisory notifications. Default ON. Muting hides
+   *  everything EXCEPT critical advisories (those always surface once). */
+  updateNotifications?: boolean;
+  /** Highest version the "what's new" was shown for (post-update notice). */
+  lastSeenVersion?: string;
+  /** Advisory ids the user dismissed (non-critical only). */
+  dismissedAdvisoryIds?: string[];
 }
 
 const defaults: AppConfig = {
   apiUrl: "",
   dashboardUrl: "",
   onboardingComplete: false,
+  autoUpdate: false,
+  updateNotifications: true,
 };
 
 /** Minimal JSON config store using app.getPath('userData') */
@@ -224,7 +237,10 @@ function createWindow() {
     // a drag region for them (see the `is-desktop` handling in the web app).
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     trafficLightPosition: { x: 16, y: 18 },
-    backgroundColor: "#ffffff", // light default — no dark flash while loading
+    // Match the OS appearance so there's no wrong-theme flash while the dashboard
+    // loads (the web UI defaults to "system" in desktop). Dark bg is the app's
+    // --th-bg-page dark value (#000000); light is #ffffff.
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#000000" : "#ffffff",
     show: false, // Show after content is ready
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
@@ -351,14 +367,26 @@ app.whenReady().then(async () => {
   }
   routeInitialView();
 
-  // Background: ask GitHub if there's a newer release; if so, offer it. Never
-  // blocks launch — a failed/offline check just resolves to "no update".
+  // Background: ask GitHub if there's a newer release; if so, act per the user's
+  // update settings. Never blocks launch — a failed/offline check resolves to
+  // "no update". Data is only ever PULLED from GitHub; nothing pushes to us.
   if (app.isPackaged) {
-    void checkForUpdate().then((result) => {
-      if (result.available) {
-        pendingUpdate = result;
+    void checkForUpdate().then(async (result) => {
+      if (!result.available) return;
+      pendingUpdate = result;
+      const autoUpdate = store.get("autoUpdate") === true;
+      const notify = store.get("updateNotifications") !== false; // default ON
+
+      if (autoUpdate) {
+        // Auto-install: show the progress window, then download + install.
+        openUpdateWindow(mainWindow, result);
+        await runUpdate();
+      } else if (notify) {
+        // Notify-only (the default): offer it, user decides.
         openUpdateWindow(mainWindow, result);
       }
+      // Muted + not auto → stay silent here. The dashboard still surfaces
+      // matching advisories on its own (critical ones always).
     });
   }
 
@@ -399,7 +427,17 @@ ipcMain.handle("update:dismiss", () => {
   return true;
 });
 
-ipcMain.handle("update:start", async () => {
+// Reopen the native update window on demand (e.g. the dashboard's "Update now"
+// when notifications were muted at launch). No-op if there's no pending update.
+ipcMain.handle("update:open", () => {
+  if (!pendingUpdate) return false;
+  openUpdateWindow(mainWindow, pendingUpdate);
+  return true;
+});
+
+/** Download + install the pending update, pushing progress to the update
+ *  window. Shared by the user-initiated IPC handler and the auto-update path. */
+async function runUpdate(): Promise<boolean> {
   if (!pendingUpdate) return false;
   const win = getUpdateWindow();
   try {
@@ -409,7 +447,10 @@ ipcMain.handle("update:start", async () => {
     });
     win?.webContents.send("update:done");
     mainWindow?.setProgressBar(-1); // clear
-    stopLocalServices();
+    // Wait for the old API to fully exit (releasing the PGlite lock) BEFORE the
+    // new version launches — otherwise the fresh app races the still-draining
+    // old process for the data dir and can fail to open it.
+    await stopLocalServicesAndWait();
     installUpdate(file); // quits + relaunches on the new version (or opens installer)
     return true;
   } catch (err) {
@@ -420,7 +461,9 @@ ipcMain.handle("update:start", async () => {
     );
     return false;
   }
-});
+}
+
+ipcMain.handle("update:start", () => runUpdate());
 
 // ─── IPC: Config store ───────────────────────────────────────────────────────
 

@@ -7,6 +7,7 @@ import { buildFolderTarGz, collectFolderFiles } from "@/utils/tarGz";
 import { encodeUploadSlug } from "@/utils/repoSlug";
 import { folderApi } from "@/lib/api/folder";
 import { frameworks, type FrameworkConfig } from "@/components/import-project/Frameworks";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type Phase = "idle" | "packing" | "uploading";
 
@@ -33,6 +34,7 @@ function detectPackageManager(paths: Set<string>): string {
  * wizard seeded from the chosen stack.
  */
 export function FolderUpload() {
+  const { t } = useI18n();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [stack, setStack] = useState<FrameworkConfig | null>(null);
@@ -47,7 +49,7 @@ export function FolderUpload() {
     setError("");
     const entries = collectFolderFiles(fileList);
     if (entries.length === 0) {
-      setError("That folder looks empty (or everything was ignored). Pick a project folder.");
+      setError(t.library.folderUpload.emptyFolder);
       return;
     }
 
@@ -90,7 +92,7 @@ export function FolderUpload() {
       const params = new URLSearchParams({ stack: stack.id, name: picked.name });
       router.push(`/deploy/${encodeUploadSlug(session.sessionId)}?${params.toString()}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to upload folder");
+      setError(err instanceof Error ? err.message : t.library.folderUpload.uploadError);
       setPhase("idle");
     }
   };
@@ -106,9 +108,9 @@ export function FolderUpload() {
     return (
       <div className="bg-card rounded-2xl border border-border/50 p-6">
         <div className="mb-4">
-          <h2 className="font-semibold text-foreground text-[15px]">What are you deploying?</h2>
+          <h2 className="font-semibold text-foreground text-[15px]">{t.library.folderUpload.stackTitle}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Pick the stack for your folder — this sets the build environment. You&apos;ll upload it next.
+            {t.library.folderUpload.stackDesc}
           </p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -139,17 +141,17 @@ export function FolderUpload() {
           <button
             onClick={() => { setStack(null); setPicked(null); setError(""); }}
             className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Back to stack selection"
+            aria-label={t.library.folderUpload.backToStack}
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4 rtl:rotate-180" />
           </button>
         )}
         <div className="w-9 h-9 bg-muted/60 rounded-xl flex items-center justify-center">
           {stack.icon("hsl(var(--foreground))")}
         </div>
         <div>
-          <h2 className="font-semibold text-foreground text-[15px]">Upload your {stack.name} folder</h2>
-          <p className="text-xs text-muted-foreground">Packed in your browser — node_modules, .git and build output are skipped</p>
+          <h2 className="font-semibold text-foreground text-[15px]">{interpolate(t.library.folderUpload.uploadTitle, { stack: stack.name })}</h2>
+          <p className="text-xs text-muted-foreground">{t.library.folderUpload.uploadSubtitle}</p>
         </div>
       </div>
 
@@ -178,10 +180,10 @@ export function FolderUpload() {
               <Upload className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground mb-0.5">
-              Drop your project folder or click to browse
+              {t.library.folderUpload.dropTitle}
             </p>
             <p className="text-xs text-muted-foreground">
-              The whole folder is uploaded and built as a {stack.name} app
+              {interpolate(t.library.folderUpload.dropSubtitle, { stack: stack.name })}
             </p>
           </div>
         ) : (
@@ -193,14 +195,14 @@ export function FolderUpload() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{picked.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {picked.fileCount} file{picked.fileCount !== 1 ? "s" : ""} · {picked.packageManager} · {stack.name}
+                  {interpolate(picked.fileCount !== 1 ? t.library.folderUpload.filesPlural : t.library.folderUpload.filesSingular, { count: String(picked.fileCount) })} · {picked.packageManager} · {stack.name}
                 </p>
               </div>
               {!busy && (
                 <button
                   onClick={() => { setPicked(null); setError(""); }}
                   className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Clear selection"
+                  aria-label={t.library.folderUpload.clearSelection}
                 >
                   <X className="size-4" />
                 </button>
@@ -212,8 +214,8 @@ export function FolderUpload() {
               disabled={busy}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-              {phase === "packing" ? "Packing folder…" : phase === "uploading" ? "Uploading…" : "Continue"}
+              {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4 rtl:rotate-180" />}
+              {phase === "packing" ? t.library.folderUpload.packing : phase === "uploading" ? t.library.folderUpload.uploading : t.library.folderUpload.continue}
             </button>
           </div>
         )}

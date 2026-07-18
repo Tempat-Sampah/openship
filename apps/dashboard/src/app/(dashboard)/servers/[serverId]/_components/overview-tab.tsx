@@ -9,6 +9,7 @@ import {
   Activity,
 } from "lucide-react";
 import type { ComponentStatus, ServerStats } from "@/lib/api/system";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -97,6 +98,7 @@ export function OverviewTab({
   monitorError: string | null;
   onReconnectMonitor: () => void;
 }) {
+  const { t } = useI18n();
   const healthyCount = components.filter((c) => c.healthy).length;
   const totalCount = components.length;
   const allHealthy = totalCount > 0 && healthyCount === totalCount;
@@ -119,42 +121,52 @@ export function OverviewTab({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Cpu}
-          label="CPU"
+          label={t.servers.overview.cpu}
           value={stats ? `${stats.cpu}%` : "-"}
           sub={
             stats
-              ? `Load ${stats.load1} · ${stats.load5} · ${stats.load15}`
+              ? interpolate(t.servers.overview.load, {
+                  load1: String(stats.load1),
+                  load5: String(stats.load5),
+                  load15: String(stats.load15),
+                })
               : undefined
           }
           pct={stats?.cpu ?? undefined}
         />
         <StatCard
           icon={MemoryStick}
-          label="Memory"
+          label={t.servers.overview.memory}
           value={stats ? `${memPct}%` : "-"}
           sub={
             stats
-              ? `${formatBytes(stats.memUsed)} of ${formatBytes(stats.memTotal)}`
+              ? interpolate(t.servers.overview.usageOf, {
+                  used: formatBytes(stats.memUsed),
+                  total: formatBytes(stats.memTotal),
+                })
               : undefined
           }
           pct={memPct ?? undefined}
         />
         <StatCard
           icon={HardDrive}
-          label="Disk"
+          label={t.servers.overview.disk}
           value={stats ? `${diskPct}%` : "-"}
           sub={
             stats
-              ? `${formatBytes(stats.diskUsed)} of ${formatBytes(stats.diskTotal)}`
+              ? interpolate(t.servers.overview.usageOf, {
+                  used: formatBytes(stats.diskUsed),
+                  total: formatBytes(stats.diskTotal),
+                })
               : undefined
           }
           pct={diskPct ?? undefined}
         />
         <StatCard
           icon={Clock}
-          label="Uptime"
+          label={t.servers.overview.uptime}
           value={stats ? formatUptime(stats.uptime) : "-"}
-          sub={stats ? "since last boot" : undefined}
+          sub={stats ? t.servers.overview.sinceLastBoot : undefined}
         />
       </div>
 
@@ -169,17 +181,20 @@ export function OverviewTab({
               strokeWidth={2}
             />
             <h2 className="font-semibold text-foreground text-sm">
-              Components
+              {t.servers.overview.components}
             </h2>
           </div>
           <span className="text-xs text-muted-foreground tabular-nums shrink-0">
             {checking
-              ? "Checking…"
+              ? t.servers.overview.checking
               : allHealthy
-                ? "All systems operational"
+                ? t.servers.overview.allOperational
                 : totalCount > 0
-                  ? `${unhealthyCount} of ${totalCount} unhealthy`
-                  : "No data"}
+                  ? interpolate(t.servers.overview.unhealthyOf, {
+                      unhealthy: String(unhealthyCount),
+                      total: String(totalCount),
+                    })
+                  : t.servers.overview.noData}
           </span>
         </div>
 
@@ -220,14 +235,14 @@ export function OverviewTab({
                       : "text-red-600 dark:text-red-400"
                   }`}
                 >
-                  {comp.healthy ? "Healthy" : "Unhealthy"}
+                  {comp.healthy ? t.servers.overview.healthy : t.servers.overview.unhealthy}
                 </span>
               </div>
             ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-6">
-            No health data yet
+            {t.servers.overview.noHealthData}
           </p>
         )}
       </div>

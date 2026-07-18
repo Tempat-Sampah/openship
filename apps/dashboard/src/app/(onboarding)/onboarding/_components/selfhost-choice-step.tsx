@@ -1,6 +1,7 @@
 "use client";
 
 import { getApiOrigin } from "@/lib/api/urls";
+import { useI18n } from "@/components/i18n-provider";
 import type { StepProps } from "./step-props";
 
 /* ── Inline SVGs matching old design ── */
@@ -28,20 +29,21 @@ const MonitorIcon = () => (
   </svg>
 );
 const ChevronRight = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+  <svg className="rtl:rotate-180" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
 );
 const BackIcon = () => (
-  <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+  <svg className="rtl:rotate-180" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
   </svg>
 );
 
 export function SelfhostChoiceStep({ onUpdate, onNext, onBack }: StepProps) {
+  const { t } = useI18n();
   return (
     <div className="ob-screen">
       <div className="ob-screen-inner">
         {onBack && (
-          <button className="ob-btn-back" aria-label="Go back" onClick={onBack}>
+          <button className="ob-btn-back" aria-label={t.onboarding.common.goBack} onClick={onBack}>
             <BackIcon />
           </button>
         )}
@@ -50,10 +52,10 @@ export function SelfhostChoiceStep({ onUpdate, onNext, onBack }: StepProps) {
           <ServerIcon />
         </div>
 
-        <h2>Where should Openship run?</h2>
+        <h2>{t.onboarding.selfhost.title}</h2>
         <p className="ob-subtitle">
-          Pick where to install the Openship platform.<br/>
-          Both options give you full control and data ownership.
+          {t.onboarding.selfhost.subtitleLine1}<br/>
+          {t.onboarding.selfhost.subtitleLine2}
         </p>
 
         <div className="ob-selfhost-choices">
@@ -74,10 +76,10 @@ export function SelfhostChoiceStep({ onUpdate, onNext, onBack }: StepProps) {
             <div className="ob-selfhost-choice-icon"><MonitorIcon /></div>
             <div className="ob-selfhost-choice-content">
               <span className="ob-selfhost-choice-title">
-                This Machine <span className="ob-badge-beta">Beta</span>
+                {t.onboarding.selfhost.local.title} <span className="ob-badge-beta">{t.onboarding.selfhost.local.badge}</span>
               </span>
               <span className="ob-selfhost-choice-desc">
-                Install Openship right here - no SSH, no remote setup needed
+                {t.onboarding.selfhost.local.desc}
               </span>
             </div>
             <ChevronRight />
@@ -90,9 +92,9 @@ export function SelfhostChoiceStep({ onUpdate, onNext, onBack }: StepProps) {
           >
             <div className="ob-selfhost-choice-icon"><RemoteServerIcon /></div>
             <div className="ob-selfhost-choice-content">
-              <span className="ob-selfhost-choice-title">Another Server</span>
+              <span className="ob-selfhost-choice-title">{t.onboarding.selfhost.remote.title}</span>
               <span className="ob-selfhost-choice-desc">
-                Connect to a remote server, VPS, or any machine on your network via SSH
+                {t.onboarding.selfhost.remote.desc}
               </span>
             </div>
             <ChevronRight />

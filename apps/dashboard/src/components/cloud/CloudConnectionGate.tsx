@@ -22,6 +22,7 @@ import { ReactNode } from "react";
 import { Cloud, LinkIcon } from "lucide-react";
 import { useCloud } from "@/context/CloudContext";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface Props {
   children: ReactNode;
@@ -30,6 +31,8 @@ interface Props {
 export default function CloudConnectionGate({ children }: Props) {
   const { projectData } = useProjectSettings();
   const cloud = useCloud();
+  const { t } = useI18n();
+  const w = t.widgets.cloud.connectionGate;
 
   // `deployTarget === "cloud"` IS the cloud-project signal — set by
   // backend enrichProject from `deployment.meta.deployTarget`. No
@@ -55,17 +58,15 @@ export default function CloudConnectionGate({ children }: Props) {
               <Cloud className="w-5 h-5 text-neutral-300" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-white">Reconnect Openship Cloud</h3>
+              <h3 className="text-base font-semibold text-white">{w.reconnect}</h3>
               <p className="text-xs text-neutral-400">
-                This project is deployed on Openship Cloud
+                {w.deployedOn}
               </p>
             </div>
           </div>
 
           <p className="text-sm text-neutral-300 mb-5 leading-relaxed">
-            Your Openship Cloud session is missing. Connect to manage deployments, view logs,
-            and access runtime controls for{" "}
-            <span className="font-medium text-white">{projectData.name || "this project"}</span>.
+            {interpolate(w.sessionMissing, { name: projectData.name || w.thisProject })}
           </p>
 
           <button
@@ -75,11 +76,11 @@ export default function CloudConnectionGate({ children }: Props) {
             className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-white text-black text-sm font-medium px-4 py-2.5 hover:bg-neutral-200 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
             <LinkIcon className="w-4 h-4" />
-            {cloud.connecting ? "Connecting…" : "Connect to Openship Cloud"}
+            {cloud.connecting ? w.connecting : w.connect}
           </button>
 
           <p className="mt-3 text-xs text-neutral-500 text-center">
-            You can still browse this page in read-only mode while disconnected.
+            {w.readOnlyNote}
           </p>
         </div>
       </div>

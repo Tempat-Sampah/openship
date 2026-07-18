@@ -8,6 +8,7 @@ import { useToast } from "@/components/toast";
 import { useI18n } from "@/components/i18n-provider";
 import { AuthShell } from "@/components/auth-shell";
 import { OAuthButtons } from "@/components/oauth-buttons";
+import { useAuthContext } from "../providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,7 @@ function RegisterPageInner() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t } = useI18n();
+  const { selfHosted } = useAuthContext();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -126,13 +128,13 @@ function RegisterPageInner() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="pr-10"
+              className="pe-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -146,7 +148,10 @@ function RegisterPageInner() {
         </Button>
       </form>
 
-      <OAuthButtons callbackURL={postLoginUrl ?? "/"} />
+      {/* Social login is cloud-only — a self-hosted operator rarely sets
+          GOOGLE_/GITHUB_ client creds, so the buttons would just fail. Mirror
+          the login page, which hides them on self-hosted. */}
+      {!selfHosted && <OAuthButtons callbackURL={postLoginUrl ?? "/"} />}
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
         {t.auth.register.hasAccount}{" "}

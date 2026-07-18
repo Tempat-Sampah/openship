@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
+import { useI18n } from "@/components/i18n-provider";
 import { BILLING_TABS, type BillingTab } from "./billing-shared";
 
 /**
@@ -10,6 +11,7 @@ import { BILLING_TABS, type BillingTab } from "./billing-shared";
  * layout is a server component (it fetches billing state for the sidebar).
  */
 export function BillingTabBar() {
+  const { t } = useI18n();
   const segment = useSelectedLayoutSegment();
   const activeTab: BillingTab =
     segment && BILLING_TABS.some((tab) => tab.key === segment)
@@ -31,9 +33,9 @@ export function BillingTabBar() {
             }`}
           >
             <Icon className="size-4" />
-            {tab.label}
+            {t.billing.tabs[tab.key]}
             {active && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary" />
+              <span className="absolute bottom-0 start-0 end-0 h-0.5 rounded-full bg-primary" />
             )}
           </Link>
         );

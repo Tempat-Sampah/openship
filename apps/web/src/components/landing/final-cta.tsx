@@ -17,7 +17,7 @@ export function FinalCta() {
               Start free
             </a>
             <a
-              href="https://github.com/openship/openship"
+              href="https://github.com/oblien/openship"
               target="_blank"
               rel="noreferrer"
               className="fcta-btn fcta-btn--ghost"

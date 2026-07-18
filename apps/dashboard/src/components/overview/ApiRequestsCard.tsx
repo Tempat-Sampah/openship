@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Cpu, ArrowUpRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { ApiRequestData, DailyMetric } from './types';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface ApiRequestsCardProps {
   data: ApiRequestData;
@@ -11,6 +12,7 @@ interface ApiRequestsCardProps {
 }
 
 const ApiRequestsCard: React.FC<ApiRequestsCardProps> = ({ data, isLoading = false }) => {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <div className="bg-white rounded-[20px] border border-black/5 p-6 h-full">
@@ -53,7 +55,7 @@ const ApiRequestsCard: React.FC<ApiRequestsCardProps> = ({ data, isLoading = fal
                   : 'bg-blue-200 hover:bg-blue-300'
               }`}
               style={{ height: `${Math.max(height, 4)}%` }}
-              title={`${formatNumber(day.value)} requests`}
+              title={interpolate(t.overview.apiRequests.requestsTooltip, { count: formatNumber(day.value) })}
             />
           );
         })}
@@ -70,8 +72,8 @@ const ApiRequestsCard: React.FC<ApiRequestsCardProps> = ({ data, isLoading = fal
             <Cpu className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-black">API Requests</h3>
-            <p className="text-xs text-black/40">Last 7 days</p>
+            <h3 className="font-semibold text-black">{t.overview.apiRequests.title}</h3>
+            <p className="text-xs text-black/40">{t.overview.apiRequests.last7Days}</p>
           </div>
         </div>
         
@@ -96,7 +98,7 @@ const ApiRequestsCard: React.FC<ApiRequestsCardProps> = ({ data, isLoading = fal
             </span>
           )}
         </div>
-        <p className="text-xs text-black/40">Total requests</p>
+        <p className="text-xs text-black/40">{t.overview.apiRequests.totalRequests}</p>
       </div>
 
       {/* Mini chart */}

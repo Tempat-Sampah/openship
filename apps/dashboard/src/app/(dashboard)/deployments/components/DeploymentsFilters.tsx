@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 import { ProjectFilter } from "./ProjectFilter";
 import type { Project } from "../types";
 
@@ -17,11 +18,11 @@ interface DeploymentsFiltersProps {
 }
 
 const FILTERS = [
-  { value: "all", label: "All" },
-  { value: "success", label: "Success" },
-  { value: "failed", label: "Failed" },
-  { value: "building", label: "Building" },
-  { value: "canceled", label: "Canceled" },
+  { value: "all" },
+  { value: "success" },
+  { value: "failed" },
+  { value: "building" },
+  { value: "canceled" },
 ] as const;
 
 export const DeploymentsFilters: React.FC<DeploymentsFiltersProps> = React.memo(({
@@ -34,6 +35,7 @@ export const DeploymentsFilters: React.FC<DeploymentsFiltersProps> = React.memo(
   onProjectChange,
   isProject,
 }) => {
+  const { t } = useI18n();
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -58,13 +60,13 @@ export const DeploymentsFilters: React.FC<DeploymentsFiltersProps> = React.memo(
       {/* Row 1: Search + Project filter */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search deployments..."
+            placeholder={t.deployments.filters.searchPlaceholder}
             value={localSearchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="h-10 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+            className="h-10 w-full rounded-xl border border-border bg-background ps-10 pe-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
           />
         </div>
         {!isProject && (
@@ -88,7 +90,7 @@ export const DeploymentsFilters: React.FC<DeploymentsFiltersProps> = React.memo(
                 : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
             }`}
           >
-            {f.label}
+            {t.deployments.filters[f.value]}
           </button>
         ))}
       </div>

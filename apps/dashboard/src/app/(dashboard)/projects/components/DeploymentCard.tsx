@@ -1,13 +1,17 @@
+"use client";
+
 import { Deployment } from "@/constants/mock";
 import { formatDate } from "@/utils/date";
 import { ExternalLink, GitBranch, Clock } from "lucide-react";
 import React from "react";
+import { useI18n } from "@/components/i18n-provider";
 
 interface Props {
   deployment: Deployment;
 }
 
 const DeploymentCard = ({ deployment }: Props) => {
+  const { t } = useI18n();
   const getStatusColor = (status: string) => {
     switch (status) {
       case "success":
@@ -62,7 +66,7 @@ const DeploymentCard = ({ deployment }: Props) => {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-sm rounded-md transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            Visit
+            {t.projects.deploymentCard.visit}
           </a>
         )}
       </div>

@@ -23,6 +23,7 @@ import {
 import { ApiError, getApiErrorMessage, isAbortError, systemApi } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 import { useModal } from "@/context/ModalContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { useSetupStream } from "@/hooks/useSetupStream";
 import { useMonitorStream } from "@/hooks/useMonitorStream";
@@ -46,7 +47,6 @@ type ManualActionMode = "remove" | null;
 
 interface TabDef {
   key: Tab;
-  label: string;
   icon: React.ElementType;
   /** Desktop-only tabs are filtered out in non-desktop deployments. */
   desktopOnly?: boolean;
@@ -55,13 +55,13 @@ interface TabDef {
 // Mail management lives in /emails - that page picks any server and reads
 // its mail-install state at runtime. We don't repeat that UI here.
 const TABS: TabDef[] = [
-  { key: "overview",   label: "Overview",   icon: LayoutGrid },
-  { key: "components", label: "Components", icon: Blocks },
-  { key: "security",   label: "Security",   icon: Shield },
+  { key: "overview",   icon: LayoutGrid },
+  { key: "components", icon: Blocks },
+  { key: "security",   icon: Shield },
   // Port forwarding is meaningful only in desktop mode (the orchestrator IS
   // the user's machine); hidden elsewhere.
-  { key: "ports",      label: "Ports",      icon: Network, desktopOnly: true },
-  { key: "terminal",   label: "Terminal",   icon: Terminal },
+  { key: "ports",      icon: Network, desktopOnly: true },
+  { key: "terminal",   icon: Terminal },
 ];
 
 export default function ServerDetailPage({
@@ -74,6 +74,7 @@ export default function ServerDetailPage({
   const editing = searchParams.get("edit") === "true";
   const { showToast } = useToast();
   const { showModal, hideModal } = useModal();
+  const { t } = useI18n();
   // Port forwarding is meaningful only in desktop mode (the orchestrator IS
   // the user's machine). Backend routes are independently gated by assertDesktop.
   const { deployMode } = usePlatform();
@@ -105,14 +106,14 @@ export default function ServerDetailPage({
           setComponents(result.components);
           setActiveActionComponent(null);
           if (event.status === "completed") {
-            showToast("Component action completed", "success", "Server Setup");
+            showToast(t.servers.detail.toastComponentActionCompleted, "success", t.servers.toastTitles.serverSetup);
           } else {
-            showToast("Some component actions failed", "error", "Server Setup");
+            showToast(t.servers.detail.toastSomeActionsFailed, "error", t.servers.toastTitles.serverSetup);
           }
         } catch (err) {
-          const message = getApiErrorMessage(err, "Health check failed after install");
+          const message = getApiErrorMessage(err, t.servers.detail.toastHealthCheckFailedAfterInstall);
           setCheckError(message);
-          showToast(message, "error", "Server Setup");
+          showToast(message, "error", t.servers.toastTitles.serverSetup);
         }
       })();
     },
@@ -149,7 +150,7 @@ export default function ServerDetailPage({
       const result = await systemApi.checkServer(serverId);
       setComponents(result.components);
     } catch (err) {
-      const message = getApiErrorMessage(err, "Health check failed");
+      const message = getApiErrorMessage(err, t.servers.detail.toastHealthCheckFailed);
       const body = err instanceof ApiError ? err.body : undefined;
       const kind = classifyConnectionError(body, message);
       setComponents([]);
@@ -159,12 +160,12 @@ export default function ServerDetailPage({
       // shapes so the user isn't getting both a toast and a banner for the
       // same problem.
       if (kind === "unknown") {
-        showToast(message, "error", "Server Check");
+        showToast(message, "error", t.servers.toastTitles.serverCheck);
       }
     } finally {
       setChecking(false);
     }
-  }, [serverId, showToast]);
+  }, [serverId, showToast, t]);
 
   const installMissingComponents = useCallback(async () => {
     const missing = components.filter(
@@ -173,7 +174,7 @@ export default function ServerDetailPage({
     );
 
     if (missing.length === 0) {
-      showToast("No installable components are missing", "success", "Server Setup");
+      showToast(t.servers.detail.toastNoInstallableMissing, "success", t.servers.toastTitles.serverSetup);
       return;
     }
 
@@ -188,20 +189,20 @@ export default function ServerDetailPage({
 
     try {
       if (!serverId) {
-        showToast("Server is missing", "error", "Server Setup");
+        showToast(t.servers.detail.toastServerMissing, "error", t.servers.toastTitles.serverSetup);
         return;
       }
       await setupStream.startInstall(serverId, missing.map((c) => c.name));
     } catch (err) {
-      const message = getApiErrorMessage(err, "Failed to start installation");
+      const message = getApiErrorMessage(err, t.servers.detail.toastFailedStartInstall);
       setCheckError(message);
-      showToast(message, "error", "Server Setup");
+      showToast(message, "error", t.servers.toastTitles.serverSetup);
     }
-  }, [components, serverId, showToast, setupStream]);
+  }, [components, serverId, showToast, setupStream, t]);
 
   const runComponentAction = useCallback(async (component: ComponentStatus) => {
     if (!serverId) {
-      showToast("Server is missing", "error", "Server Setup");
+      showToast(t.servers.detail.toastServerMissing, "error", t.servers.toastTitles.serverSetup);
       return;
     }
 
@@ -217,35 +218,35 @@ export default function ServerDetailPage({
     try {
       await setupStream.startInstall(serverId, [component.name]);
     } catch (err) {
-      const message = getApiErrorMessage(err, `Failed to run ${component.label}`);
+      const message = getApiErrorMessage(err, interpolate(t.servers.detail.toastFailedRun, { label: component.label }));
       setCheckError(message);
-      showToast(message, "error", "Server Setup");
+      showToast(message, "error", t.servers.toastTitles.serverSetup);
     }
-  }, [serverId, setupStream, showToast]);
+  }, [serverId, setupStream, showToast, t]);
 
   const removeComponentAction = useCallback((component: ComponentStatus) => {
     const modalId = showModal({
-      title: `Remove ${component.label}`,
+      title: interpolate(t.servers.detail.removeComponentTitle, { label: component.label }),
       message:
         component.name === "openresty"
-          ? "This removes OpenResty and its managed Lua/config files from the server. Use Reinstall when you only need to refresh analytics scripts or settings."
-          : `This removes ${component.label} from the server. This is destructive and may disable related deployment features until you install it again.`,
+          ? t.servers.detail.removeOpenrestyMessage
+          : interpolate(t.servers.detail.removeComponentMessage, { label: component.label }),
       icon: "warning",
       width: "100%",
       maxWidth: "32rem",
       buttons: [
         {
-          label: "Cancel",
+          label: t.servers.detail.cancel,
           variant: "secondary",
           onClick: () => hideModal(modalId),
         },
         {
-          label: "Remove",
+          label: t.servers.detail.remove,
           variant: "danger",
           onClick: async () => {
             hideModal(modalId);
             if (!serverId) {
-              showToast("Server is missing", "error", "Server Setup");
+              showToast(t.servers.detail.toastServerMissing, "error", t.servers.toastTitles.serverSetup);
               return;
             }
 
@@ -279,12 +280,12 @@ export default function ServerDetailPage({
                     name: component.name,
                     label: component.label,
                     status: "failed",
-                    error: result.error || `Failed to remove ${component.label}`,
+                    error: result.error || interpolate(t.servers.detail.toastFailedRemove, { label: component.label }),
                   },
                 ]);
                 setManualActionDone(true);
                 setManualActionFinalStatus("failed");
-                throw new Error(result.error || `Failed to remove ${component.label}`);
+                throw new Error(result.error || interpolate(t.servers.detail.toastFailedRemove, { label: component.label }));
               }
 
               setInstallLogs((result.logs ?? []).map((message) => ({
@@ -306,7 +307,7 @@ export default function ServerDetailPage({
 
               const next = await systemApi.checkServer(serverId);
               setComponents(next.components);
-              showToast(`${component.label} removed`, "success", "Server Setup");
+              showToast(interpolate(t.servers.detail.toastComponentRemoved, { label: component.label }), "success", t.servers.toastTitles.serverSetup);
             } catch (err) {
               if (isAbortError(err)) {
                 // Request timed out but removal may still be running server-side
@@ -314,16 +315,16 @@ export default function ServerDetailPage({
                   name: component.name,
                   label: component.label,
                   status: "failed",
-                  error: `Removal is taking longer than expected. Check the server status.`,
+                  error: t.servers.detail.removalTakingLonger,
                 }]);
                 setManualActionDone(true);
                 setManualActionFinalStatus("failed");
-                setCheckError("Removal timed out - re-check the server to see the current status.");
-                showToast("Removal timed out - re-check server status", "error", "Server Setup");
+                setCheckError(t.servers.detail.removalTimedOutError);
+                showToast(t.servers.detail.toastRemovalTimedOut, "error", t.servers.toastTitles.serverSetup);
               } else {
-                const message = getApiErrorMessage(err, `Failed to remove ${component.label}`);
+                const message = getApiErrorMessage(err, interpolate(t.servers.detail.toastFailedRemove, { label: component.label }));
                 setCheckError(message);
-                showToast(message, "error", "Server Setup");
+                showToast(message, "error", t.servers.toastTitles.serverSetup);
               }
             } finally {
               setActiveActionComponent(null);
@@ -333,7 +334,7 @@ export default function ServerDetailPage({
         },
       ],
     });
-  }, [hideModal, serverId, showModal, showToast]);
+  }, [hideModal, serverId, showModal, showToast, t]);
 
   useEffect(() => {
     if (!serverId) return;
@@ -361,37 +362,36 @@ export default function ServerDetailPage({
 
   const handleDelete = useCallback(() => {
     const modalId = showModal({
-      title: "Remove Server",
-      message:
-        "Are you sure? This will clear all SSH credentials and connection settings.",
+      title: t.servers.detail.removeServer,
+      message: t.servers.detail.removeServerMessage,
       icon: "warning",
       buttons: [
         {
-          label: "Cancel",
+          label: t.servers.detail.cancel,
           variant: "secondary",
           onClick: () => hideModal(modalId),
         },
         {
-          label: "Remove",
+          label: t.servers.detail.remove,
           variant: "danger",
           onClick: async () => {
             try {
               await systemApi.deleteServerEntry(serverId);
               hideModal(modalId);
-              showToast("Server removed", "success", "Server");
+              showToast(t.servers.detail.toastServerRemoved, "success", t.servers.toastTitles.server);
               router.push("/servers");
             } catch (err) {
               showToast(
-                getApiErrorMessage(err, "Failed to remove server"),
+                getApiErrorMessage(err, t.servers.detail.toastFailedRemoveServer),
                 "error",
-                "Server",
+                t.servers.toastTitles.server,
               );
             }
           },
         },
       ],
     });
-  }, [serverId, router, showToast, showModal, hideModal]);
+  }, [serverId, router, showToast, showModal, hideModal, t]);
 
   if (loading) {
     return (
@@ -409,14 +409,14 @@ export default function ServerDetailPage({
               onClick={() => router.push("/servers")}
               className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
             >
-              <ArrowLeft className="size-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground rtl:rotate-180" />
             </button>
             <h1 className="text-2xl font-medium text-foreground/80">
-              Server not found
+              {t.servers.detail.serverNotFound}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            No server configured with id &ldquo;{serverId}&rdquo;.
+            {interpolate(t.servers.detail.noServerConfigured, { id: serverId })}
           </p>
       </PageContainer>
     );
@@ -432,17 +432,17 @@ export default function ServerDetailPage({
               onClick={() => router.push(`/servers/${serverId}`)}
               className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
             >
-              <ArrowLeft className="size-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground rtl:rotate-180" />
             </button>
             <div>
               <h1
                 className="text-2xl font-medium text-foreground/80"
                 style={{ letterSpacing: "-0.2px" }}
               >
-                Edit Server
+                {t.servers.detail.editServer}
               </h1>
               <p className="text-sm text-muted-foreground/70 mt-0.5">
-                Update connection details for {server.name || server.sshHost}
+                {interpolate(t.servers.detail.editSubtitle, { name: server.name || server.sshHost })}
               </p>
             </div>
           </div>
@@ -451,7 +451,7 @@ export default function ServerDetailPage({
             <ServerForm
               key={server.id}
               server={server}
-              submitLabel="Save Changes"
+              submitLabel={t.servers.detail.saveChanges}
               onSaved={({ server: updated }) => {
                 setServer(updated);
                 router.push(`/servers/${serverId}`);
@@ -486,7 +486,7 @@ export default function ServerDetailPage({
             onClick={() => router.push("/servers")}
             className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
           >
-            <ArrowLeft className="size-4 text-muted-foreground" />
+            <ArrowLeft className="size-4 text-muted-foreground rtl:rotate-180" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -499,12 +499,12 @@ export default function ServerDetailPage({
               {allHealthy ? (
                 <div className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full">
                   <CheckCircle2 className="size-3" />
-                  Healthy
+                  {t.servers.detail.healthy}
                 </div>
               ) : components.length > 0 ? (
                 <div className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium rounded-full">
                   <XCircle className="size-3" />
-                  Issues
+                  {t.servers.detail.issues}
                 </div>
               ) : null}
             </div>
@@ -518,7 +518,7 @@ export default function ServerDetailPage({
               className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 text-foreground text-sm font-medium rounded-xl hover:bg-muted transition-colors"
             >
               <Settings2 className="size-4" />
-              Edit
+              {t.servers.detail.edit}
             </button>
             <div className="relative">
               <button
@@ -533,7 +533,7 @@ export default function ServerDetailPage({
                     className="fixed inset-0 z-40"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-popover border border-border rounded-xl shadow-lg py-1">
+                  <div className="absolute end-0 top-full mt-1 z-50 w-48 bg-popover border border-border rounded-xl shadow-lg py-1">
                     <button
                       onClick={() => {
                         setShowMenu(false);
@@ -542,7 +542,7 @@ export default function ServerDetailPage({
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-500/5 transition-colors"
                     >
                       <Trash2 className="size-3.5" />
-                      Remove Server
+                      {t.servers.detail.removeServer}
                     </button>
                   </div>
                 </>
@@ -572,7 +572,7 @@ export default function ServerDetailPage({
           <div className="min-w-0">
             {/* Tabs */}
             <div className="flex items-center gap-1 mb-6 border-b border-border/50">
-              {TABS.filter((t) => !t.desktopOnly || isDesktop).map(({ key, label, icon: Icon }) => (
+              {TABS.filter((tab) => !tab.desktopOnly || isDesktop).map(({ key, icon: Icon }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
@@ -583,9 +583,9 @@ export default function ServerDetailPage({
                   }`}
                 >
                   <Icon className="size-4" />
-                  {label}
+                  {t.servers.detail.tabs[key]}
                   {activeTab === key && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                    <span className="absolute bottom-0 start-0 end-0 h-0.5 bg-primary rounded-full" />
                   )}
                 </button>
               ))}
@@ -655,7 +655,7 @@ export default function ServerDetailPage({
               <div className="flex items-center gap-2 mb-4">
                 <Server className="size-4 text-muted-foreground" />
                 <h3 className="font-semibold text-foreground text-sm">
-                  Connection
+                  {t.servers.detail.connection}
                 </h3>
               </div>
               <div className="space-y-3">
@@ -664,9 +664,9 @@ export default function ServerDetailPage({
                     <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
                       <Globe className="size-4 text-muted-foreground" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Host</span>
+                    <span className="text-sm text-muted-foreground">{t.servers.detail.host}</span>
                   </div>
-                  <span className="text-sm font-medium text-foreground font-mono truncate ml-3 max-w-[140px]">
+                  <span className="text-sm font-medium text-foreground font-mono truncate ms-3 max-w-[140px]">
                     {server.sshHost}
                   </span>
                 </div>
@@ -675,7 +675,7 @@ export default function ServerDetailPage({
                     <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
                       <User className="size-4 text-muted-foreground" />
                     </div>
-                    <span className="text-sm text-muted-foreground">User</span>
+                    <span className="text-sm text-muted-foreground">{t.servers.detail.user}</span>
                   </div>
                   <span className="text-sm font-medium text-foreground font-mono">
                     {server.sshUser ?? "root"}
@@ -689,10 +689,10 @@ export default function ServerDetailPage({
                     <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center">
                       <KeyRound className="size-4 text-muted-foreground" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Auth</span>
+                    <span className="text-sm text-muted-foreground">{t.servers.detail.auth}</span>
                   </div>
                   <span className="text-sm font-medium text-foreground">
-                    {server.sshAuthMethod === "key" ? "SSH Key" : "Password"}
+                    {server.sshAuthMethod === "key" ? t.servers.detail.authSshKey : t.servers.detail.authPassword}
                   </span>
                 </div>
               </div>

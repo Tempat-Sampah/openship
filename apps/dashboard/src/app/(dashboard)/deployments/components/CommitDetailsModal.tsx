@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Github, GitCommit, ExternalLink, User, Calendar } from "lucide-react";
 import { formatDate } from "@/utils/date";
 import FileIcon from "@/components/ui/FileIcon";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { Deployment } from "../types";
 
 interface CommitDetailsModalProps {
@@ -17,9 +18,29 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { t } = useI18n();
   const [expandedSection, setExpandedSection] = useState<'added' | 'modified' | 'removed' | null>('modified');
 
   if (!isOpen) return null;
+
+  const modalStatusMap: Record<string, string> = {
+    success: t.deployments.modal.statusName.success,
+    failed: t.deployments.modal.statusName.failed,
+    building: t.deployments.modal.statusName.building,
+    deploying: t.deployments.modal.statusName.deploying,
+    canceled: t.deployments.modal.statusName.canceled,
+    cancelled: t.deployments.modal.statusName.canceled,
+    pending: t.deployments.modal.statusName.pending,
+  };
+  const statusName =
+    modalStatusMap[deployment.status] ??
+    deployment.status.charAt(0).toUpperCase() + deployment.status.slice(1);
+
+  const fileTypeLabels: Record<string, string> = {
+    added: t.deployments.modal.fileTypes.added,
+    modified: t.deployments.modal.fileTypes.modified,
+    removed: t.deployments.modal.fileTypes.removed,
+  };
 
   const hasCommitData = deployment.commit && deployment.commit.hash && deployment.commit.hash !== 'N/A';
   const commitUrl = deployment.owner && deployment.repo && deployment.commit?.hash
@@ -49,7 +70,7 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                 <GitCommit className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">Commit Details</h2>
+                <h2 className="text-xl font-bold text-foreground">{t.deployments.modal.title}</h2>
                 {hasCommitData && (
                   <p className="text-sm text-muted-foreground font-mono">{deployment.commit.hash}</p>
                 )}
@@ -96,23 +117,23 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-muted/40 border border-border/50 rounded-xl p-4">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                      Project
+                      {t.deployments.modal.project}
                     </p>
                     <p className="text-base font-medium text-foreground">
-                      {deployment.projectName || 'Unknown Project'}
+                      {deployment.projectName || t.deployments.modal.unknownProject}
                     </p>
                   </div>
                   <div className="bg-muted/40 border border-border/50 rounded-xl p-4">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                      Domain
+                      {t.deployments.modal.domain}
                     </p>
                     <p className="text-base font-medium text-foreground truncate">
-                      {deployment.domain || 'No domain'}
+                      {deployment.domain || t.deployments.modal.noDomain}
                     </p>
                   </div>
                   <div className="bg-muted/40 border border-border/50 rounded-xl p-4">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                      Status
+                      {t.deployments.modal.status}
                     </p>
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
                       deployment.status === 'success' ? 'bg-emerald-500/10 text-emerald-600' :
@@ -120,12 +141,12 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                       deployment.status === 'building' ? 'bg-blue-500/10 text-blue-600' :
                       'bg-muted text-muted-foreground'
                     }`}>
-                      {deployment.status.charAt(0).toUpperCase() + deployment.status.slice(1)}
+                      {statusName}
                     </span>
                   </div>
                   <div className="bg-muted/40 border border-border/50 rounded-xl p-4">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                      Environment
+                      {t.deployments.modal.environment}
                     </p>
                     <p className="text-base font-medium text-foreground">
                       {deployment.environment || 'production'}
@@ -137,15 +158,15 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                 {changedFiles && changedFiles.length > 0 && (
                   <div>
                     <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
-                      Changed Files ({changedFiles.length})
+                      {interpolate(t.deployments.modal.changedFiles, { count: String(changedFiles.length) })}
                     </h3>
                     <div className="bg-muted/40 rounded-xl border border-border/50 p-4">
                       <div className="space-y-2">
                         {changedFiles.map((file: any, idx: number) => {
                           const fileTypeConfig: Record<string, { bg: string; text: string; label: string }> = {
-                            added: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', label: '+ Added' },
-                            modified: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: '~ Modified' },
-                            removed: { bg: 'bg-red-500/10', text: 'text-red-600', label: '- Removed' },
+                            added: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', label: fileTypeLabels.added },
+                            modified: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: fileTypeLabels.modified },
+                            removed: { bg: 'bg-red-500/10', text: 'text-red-600', label: fileTypeLabels.removed },
                           };
                           const typeConfig = fileTypeConfig[file.type] || fileTypeConfig.modified;
 
@@ -179,7 +200,7 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                       className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-foreground text-background rounded-xl font-medium text-sm hover:opacity-90 transition-all"
                     >
                       <Github className="w-4 h-4" />
-                      View on GitHub
+                      {t.deployments.modal.viewOnGithub}
                     </a>
                   )}
                   {deployment.domain && deployment.status === 'success' && (
@@ -190,7 +211,7 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                       className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:opacity-90 transition-all"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      Visit Site
+                      {t.deployments.modal.visitSite}
                     </a>
                   )}
                 </div>
@@ -202,30 +223,30 @@ export const CommitDetailsModal: React.FC<CommitDetailsModalProps> = ({
                   <GitCommit className="w-8 h-8 text-muted-foreground/50" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Manual Deployment
+                  {t.deployments.modal.manual.title}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                  This deployment was triggered manually and doesn't have commit information.
+                  {t.deployments.modal.manual.description}
                 </p>
                 <div className="bg-muted/40 rounded-xl border border-border/50 p-4 max-w-md mx-auto">
-                  <div className="space-y-3 text-left">
+                  <div className="space-y-3 text-start">
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                        Deployment ID
+                        {t.deployments.modal.manual.deploymentId}
                       </p>
                       <code className="text-sm text-foreground font-mono">{deployment.id}</code>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                        Created
+                        {t.deployments.modal.manual.created}
                       </p>
                       <p className="text-sm text-foreground">{formatDate(deployment.createdAt)}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                        Type
+                        {t.deployments.modal.manual.type}
                       </p>
-                      <p className="text-sm text-foreground capitalize">{deployment.type || 'Manual'}</p>
+                      <p className="text-sm text-foreground capitalize">{deployment.type || t.deployments.modal.manual.typeManual}</p>
                     </div>
                   </div>
                 </div>

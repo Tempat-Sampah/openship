@@ -306,8 +306,11 @@ export class DockerRuntime implements RuntimeAdapter {
   /** Docker honors every extended compose key we currently support. */
   readonly unsupportedComposeKeys: ReadonlySet<keyof ComposeAdvanced> = new Set();
 
+  private _docker!: Dockerode;
   /** Underlying dockerode instance - exposed for advanced usage */
-  readonly docker: Dockerode;
+  get docker(): Dockerode {
+    return this._docker;
+  }
   /** Connection config this runtime was created with */
   readonly connectionOptions?: DockerConnectionOptions;
   /** Resolved transport - single switch point for socket / ssh / tcp */
@@ -315,16 +318,30 @@ export class DockerRuntime implements RuntimeAdapter {
   private readonly systemManager: DockerSystemManager | null;
   private readonly provisionLock?: ProvisionLock;
 
-  constructor(
+  private constructor(
     opts?: DockerConnectionOptions,
     systemManager?: DockerSystemManager | null,
     provisionLock?: ProvisionLock,
   ) {
     this.connectionOptions = opts;
     this.transport = resolveDockerTransport(opts);
-    this.docker = new Dockerode(this.transport.dockerodeOptions);
     this.systemManager = systemManager ?? null;
     this.provisionLock = provisionLock;
+  }
+
+  /**
+   * Build a runtime and stand up its transport. Async because the SSH
+   * transport binds a loopback bridge whose port is only known after listen();
+   * socket/TCP transports resolve their options synchronously.
+   */
+  static async create(
+    opts?: DockerConnectionOptions,
+    systemManager?: DockerSystemManager | null,
+    provisionLock?: ProvisionLock,
+  ): Promise<DockerRuntime> {
+    const runtime = new DockerRuntime(opts, systemManager, provisionLock);
+    runtime._docker = new Dockerode(await runtime.transport.establish());
+    return runtime;
   }
 
   supports(cap: RuntimeCapability): boolean {
@@ -332,7 +349,8 @@ export class DockerRuntime implements RuntimeAdapter {
   }
 
   async dispose(): Promise<void> {
-    // dockerode handles connection cleanup internally via ssh2 / modem
+    // Tear down the SSH transport's loopback bridge (no-op for socket/TCP).
+    await this.transport.close();
   }
 
   // ─── Health check ──────────────────────────────────────────────────
@@ -952,8 +970,8 @@ export class DockerRuntime implements RuntimeAdapter {
 
         try {
           await this.docker.getImage(tag).inspect();
-        } catch {
-          throw new Error(`Docker build finished but the image ${tag} was not created`);
+        } catch (cause) {
+          throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
         }
         log.log(`Image ${tag} is ready.\n`);
         log.step("build", "completed", `Finalizing image ${tag}`);
@@ -1025,8 +1043,8 @@ export class DockerRuntime implements RuntimeAdapter {
 
       try {
         await this.docker.getImage(tag).inspect();
-      } catch {
-        throw new Error(`Docker build finished but the image ${tag} was not created`);
+      } catch (cause) {
+        throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
       }
 
       log.log(`Image ${tag} is ready.\n`);
@@ -1206,8 +1224,8 @@ export class DockerRuntime implements RuntimeAdapter {
 
           try {
             await this.docker.getImage(tag).inspect();
-          } catch {
-            throw new Error(`Docker build finished but the image ${tag} was not created`);
+          } catch (cause) {
+            throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
           }
 
           spec.logger.log(`Image ${tag} is ready.\n`);
@@ -2015,8 +2033,17 @@ export class DockerRuntime implements RuntimeAdapter {
       // Does not exist - fine
     }
 
-    // Environment variables
-    const env = Object.entries(config.environment).map(([k, v]) => `${k}=${v}`);
+    // Environment variables. Inject PORT=<service port> (like the single-app
+    // deploy path) so an app that binds `process.env.PORT` listens on the port
+    // the route proxies to — otherwise a monorepo/compose backend (e.g. Express
+    // `PORT || 5000`) binds a default that doesn't match its route → 502. Never
+    // override a PORT the service already sets.
+    const env = [
+      ...(config.publicPort && config.environment.PORT === undefined
+        ? [`PORT=${config.publicPort}`]
+        : []),
+      ...Object.entries(config.environment).map(([k, v]) => `${k}=${v}`),
+    ];
 
     // Command
     const cmd = config.command

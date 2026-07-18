@@ -24,7 +24,7 @@
  */
 
 import type { Deployment } from "@repo/db";
-import type { Platform } from "@repo/adapters";
+import type { Platform, RouteProxyLocation, RouteRedirect, RouteHeaderRule } from "@repo/adapters";
 import { safeErrorMessage } from "@repo/core";
 import { platform } from "./controller-helpers";
 import { resolveDeploymentRuntime } from "./deployment-runtime";
@@ -53,6 +53,14 @@ export interface RouteRegister {
    * updated yet at call time.
    */
   webhook?: boolean;
+  /**
+   * Composite single-domain routing compiled from the project's vercel.json
+   * (`compileVercelRouting`): extra path-proxy locations (e.g. `/api/` → backend),
+   * redirects, and response headers. Passed straight to `registerRoute`.
+   */
+  proxyLocations?: RouteProxyLocation[];
+  redirects?: RouteRedirect[];
+  headerRules?: RouteHeaderRule[];
 }
 
 export interface RouteRemove {
@@ -144,6 +152,9 @@ export async function reconcileProjectRoutes(
         tls: true,
         targetUrl: r.targetUrl,
         ...(isWebhook ? { webhookProxy: webhookProxyTarget } : {}),
+        ...(r.proxyLocations?.length ? { proxyLocations: r.proxyLocations } : {}),
+        ...(r.redirects?.length ? { redirects: r.redirects } : {}),
+        ...(r.headerRules?.length ? { headerRules: r.headerRules } : {}),
       })
       .catch((err) =>
         console.warn(`[route-apply] registerRoute ${r.hostname} failed (non-fatal): ${safeErrorMessage(err)}`),

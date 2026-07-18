@@ -56,6 +56,7 @@ import {
 } from "@/lib/api";
 import { getMarketingOrigin } from "@/lib/api/urls";
 import { Skeleton } from "./_shared/skeleton";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface OverviewTabProps {
   status: MailSetupStatus;
@@ -107,6 +108,7 @@ function MailServerCard({
   serverId: string;
   webmail?: MailWebmailSummary;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -127,7 +129,7 @@ function MailServerCard({
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Inbox className="size-4 text-muted-foreground" strokeWidth={2} />
-          <h3 className="font-semibold text-foreground text-sm">Mail server</h3>
+          <h3 className="font-semibold text-foreground text-sm">{t.emailsAdmin.overview.mailServer}</h3>
         </div>
         <Link
           href="?tab=advanced"
@@ -135,14 +137,14 @@ function MailServerCard({
           scroll={false}
           className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          Protocol details →
+          {t.emailsAdmin.overview.protocolDetails}
         </Link>
       </div>
 
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground mb-1.5">
-            Hostname
+            {t.emailsAdmin.overview.hostname}
           </p>
           <button
             type="button"
@@ -164,7 +166,7 @@ function MailServerCard({
           </button>
           {isInstalled && webmail && (
             <p className="text-xs text-muted-foreground mt-1.5 break-all">
-              Webmail at{" "}
+              {t.emailsAdmin.overview.webmailAt}{" "}
               <a
                 href={webmail.url}
                 target="_blank"
@@ -184,7 +186,7 @@ function MailServerCard({
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
           >
-            Open webmail
+            {t.emailsAdmin.overview.openWebmail}
             <ArrowUpRight className="size-3.5" strokeWidth={2.25} />
           </a>
         ) : (
@@ -193,7 +195,7 @@ function MailServerCard({
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
           >
             <Upload className="size-3.5" strokeWidth={2.25} />
-            Deploy webmail
+            {t.emailsAdmin.overview.deployWebmail}
           </Link>
         )}
       </div>
@@ -204,6 +206,7 @@ function MailServerCard({
 // ─── Setup guides banner ─────────────────────────────────────────────────────
 
 function SetupGuidesBanner() {
+  const { t } = useI18n();
   const guideHref = (client: string) =>
     `${getMarketingOrigin()}/mail/setup-guide/${client}`;
 
@@ -211,37 +214,36 @@ function SetupGuidesBanner() {
     <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent rounded-2xl border border-primary/15 p-5">
       <div className="flex items-center gap-2 mb-1">
         <Sparkles className="size-4 text-primary" strokeWidth={2} />
-        <h3 className="font-semibold text-foreground text-sm">Setup guides</h3>
+        <h3 className="font-semibold text-foreground text-sm">{t.emailsAdmin.overview.setupGuides}</h3>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-        Step-by-step walkthroughs for every common way to use this mailbox -
-        from your phone to your codebase. Opens in a new tab.
+        {t.emailsAdmin.overview.setupGuidesDesc}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <GuideCard
           href={guideHref("ios")}
           icon={Apple}
-          title="iOS & macOS Mail"
-          subtitle="Add as IMAP on iPhone / iPad / Mac"
+          title={t.emailsAdmin.overview.guides.iosTitle}
+          subtitle={t.emailsAdmin.overview.guides.iosSubtitle}
         />
         <GuideCard
           href={guideHref("android")}
           icon={Smartphone}
-          title="Android Gmail app"
-          subtitle="Add as a third-party IMAP account"
+          title={t.emailsAdmin.overview.guides.androidTitle}
+          subtitle={t.emailsAdmin.overview.guides.androidSubtitle}
         />
         <GuideCard
           href={guideHref("desktop")}
           icon={Mail}
-          title="Desktop clients"
-          subtitle="Thunderbird, Outlook, Spark, K-9"
+          title={t.emailsAdmin.overview.guides.desktopTitle}
+          subtitle={t.emailsAdmin.overview.guides.desktopSubtitle}
         />
         <GuideCard
           href={guideHref("nodemailer")}
           icon={Code2}
-          title="Send via code"
-          subtitle="Node.js, Python, anywhere SMTP works"
+          title={t.emailsAdmin.overview.guides.codeTitle}
+          subtitle={t.emailsAdmin.overview.guides.codeSubtitle}
         />
       </div>
     </div>
@@ -281,6 +283,7 @@ function GuideCard({
 // ─── Right sidebar ───────────────────────────────────────────────────────────
 
 function MailStatsCard({ serverId }: { serverId: string }) {
+  const { t } = useI18n();
   const [stats, setStats] = useState<MailServerStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -297,7 +300,7 @@ function MailStatsCard({ serverId }: { serverId: string }) {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Stats failed");
+        setError(err instanceof Error ? err.message : t.emailsAdmin.overview.statsFailed);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -311,7 +314,7 @@ function MailStatsCard({ serverId }: { serverId: string }) {
     <div className="bg-card rounded-2xl border border-border/50 p-5">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="size-4 text-muted-foreground" strokeWidth={2} />
-        <h3 className="font-semibold text-foreground text-sm">Mail stats</h3>
+        <h3 className="font-semibold text-foreground text-sm">{t.emailsAdmin.overview.mailStats}</h3>
       </div>
 
       {loading ? (
@@ -324,23 +327,23 @@ function MailStatsCard({ serverId }: { serverId: string }) {
             icon={Globe}
             iconBg="bg-primary/10"
             iconColor="text-primary"
-            label="Domains"
+            label={t.emailsAdmin.overview.domains}
             value={stats.domains.active}
-            sub={stats.domains.total !== stats.domains.active ? `${stats.domains.total} total` : undefined}
+            sub={stats.domains.total !== stats.domains.active ? interpolate(t.emailsAdmin.overview.totalSuffix, { count: String(stats.domains.total) }) : undefined}
           />
           <StatRow
             icon={UserRound}
             iconBg="bg-orange-500/10"
             iconColor="text-orange-500"
-            label="Mailboxes"
+            label={t.emailsAdmin.overview.mailboxes}
             value={stats.mailboxes.active}
-            sub={stats.mailboxes.total !== stats.mailboxes.active ? `${stats.mailboxes.total} total` : undefined}
+            sub={stats.mailboxes.total !== stats.mailboxes.active ? interpolate(t.emailsAdmin.overview.totalSuffix, { count: String(stats.mailboxes.total) }) : undefined}
           />
           <StatRow
             icon={ArrowRight}
             iconBg="bg-muted"
             iconColor="text-muted-foreground"
-            label="Aliases"
+            label={t.emailsAdmin.overview.aliases}
             value={stats.aliases.total}
           />
 
@@ -350,14 +353,14 @@ function MailStatsCard({ serverId }: { serverId: string }) {
             icon={HardDrive}
             iconBg="bg-muted"
             iconColor="text-muted-foreground"
-            label="Storage"
+            label={t.emailsAdmin.overview.storage}
             value={formatBytes(stats.storageBytes)}
           />
           <StatRow
             icon={Inbox}
             iconBg="bg-muted"
             iconColor="text-muted-foreground"
-            label="Messages"
+            label={t.emailsAdmin.overview.messages}
             value={stats.messages.toLocaleString()}
           />
         </div>
@@ -409,7 +412,7 @@ function StatRow({
         </div>
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <div className="text-right">
+      <div className="text-end">
         <p className="text-lg font-semibold text-foreground tabular-nums leading-none">
           {stringValue}
         </p>
@@ -424,27 +427,28 @@ function StatRow({
 }
 
 function QuickActionsCard() {
+  const { t } = useI18n();
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-5">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="size-4 text-muted-foreground" strokeWidth={2} />
-        <h3 className="font-semibold text-foreground text-sm">Quick actions</h3>
+        <h3 className="font-semibold text-foreground text-sm">{t.emailsAdmin.overview.quickActions}</h3>
       </div>
       <div className="space-y-2">
         <QuickActionLink
           href="?tab=mailboxes"
           icon={UserPlus}
-          label="Add a mailbox"
+          label={t.emailsAdmin.overview.addMailbox}
         />
         <QuickActionLink
           href="?tab=domains"
           icon={Globe}
-          label="Add a domain"
+          label={t.emailsAdmin.overview.addDomain}
         />
         <QuickActionLink
           href="?tab=dns"
           icon={Mail}
-          label="Review DNS records"
+          label={t.emailsAdmin.overview.reviewDns}
         />
       </div>
     </div>
@@ -471,7 +475,7 @@ function QuickActionLink({
         <Icon className="size-4 text-muted-foreground" strokeWidth={2} />
       </div>
       <span className="text-sm text-foreground flex-1">{label}</span>
-      <ArrowRight className="size-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+      <ArrowRight className="size-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors rtl:rotate-180" />
     </Link>
   );
 }

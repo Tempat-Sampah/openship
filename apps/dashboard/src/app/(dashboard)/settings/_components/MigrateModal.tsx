@@ -39,6 +39,7 @@ import type {
 import type { ServerInfo } from "@/lib/api/system";
 import { useToast } from "@/context/ToastContext";
 import { useCloud } from "@/context/CloudContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type PathKind = "server" | "cloud" | "tunnel";
 type Step = "choose" | "form" | "result";
@@ -52,6 +53,7 @@ interface MigrateModalProps {
 
 export function MigrateModal({ open, onClose, onMigrated }: MigrateModalProps) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const { connected: cloudConnected } = useCloud();
   const [step, setStep] = useState<Step>("choose");
   const [path, setPath] = useState<PathKind | null>(null);
@@ -123,7 +125,7 @@ export function MigrateModal({ open, onClose, onMigrated }: MigrateModalProps) {
               onSuccess={(res) =>
                 handleSuccess(
                   res.migrationTargetUrl,
-                  `openship is now running on your server. Project id ${res.projectId}.`,
+                  interpolate(t.settings.migrate.server.successDetail, { projectId: res.projectId }),
                 )
               }
               showToast={showToast}
@@ -139,7 +141,11 @@ export function MigrateModal({ open, onClose, onMigrated }: MigrateModalProps) {
               onSuccess={(res) =>
                 handleSuccess(
                   res.publicUrl,
-                  `Imported ${res.imported.projects} projects, ${res.imported.deployments} deployments, ${res.imported.services} services.`,
+                  interpolate(t.settings.migrate.cloud.successDetail, {
+                    projects: String(res.imported.projects),
+                    deployments: String(res.imported.deployments),
+                    services: String(res.imported.services),
+                  }),
                 )
               }
               showToast={showToast}
@@ -155,7 +161,7 @@ export function MigrateModal({ open, onClose, onMigrated }: MigrateModalProps) {
               onSuccess={(res) =>
                 handleSuccess(
                   res.migrationTargetUrl,
-                  `Tunnel "${res.slug}" is publishing your local dashboard.`,
+                  interpolate(t.settings.migrate.tunnel.successDetail, { slug: res.slug }),
                 )
               }
               showToast={showToast}
@@ -190,16 +196,17 @@ function ModalHeader({
   onClose: () => void;
   submitting: boolean;
 }) {
+  const { t } = useI18n();
   const title =
     step === "choose"
-      ? "Move to multi-user mode"
+      ? t.settings.migrate.chooseTitle
       : step === "form"
         ? path === "server"
-          ? "Migrate to your server"
+          ? t.settings.migrate.serverTitle
           : path === "cloud"
-            ? "Migrate to Openship Cloud"
-            : "Expose via tunnel"
-        : "Migration complete";
+            ? t.settings.migrate.cloudTitle
+            : t.settings.migrate.tunnelTitle
+        : t.settings.migrate.completeTitle;
   return (
     <div className="flex items-center gap-3 border-b border-border/50 px-6 py-4">
       {step === "form" && !submitting && (
@@ -207,9 +214,9 @@ function ModalHeader({
           type="button"
           onClick={onBack}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          title="Back"
+          title={t.settings.migrate.back}
         >
-          <ChevronLeft className="size-4" />
+          <ChevronLeft className="size-4 rtl:rotate-180" />
         </button>
       )}
       <h2 className="text-base font-semibold text-foreground flex-1">{title}</h2>
@@ -218,7 +225,7 @@ function ModalHeader({
         onClick={onClose}
         disabled={submitting}
         className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-50"
-        title="Close"
+        title={t.settings.common.close}
       >
         <X className="size-4" />
       </button>
@@ -235,36 +242,36 @@ function ChooseStep({
   cloudConnected: boolean;
   onPick: (p: PathKind) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Right now this instance is single-user. Pick how you want your
-        teammates to reach it.
+        {t.settings.migrate.chooseIntro}
       </p>
 
       <PathCard
         icon={Server}
-        title="Migrate to your server"
-        body="SSH-deploy openship on a VPS you own. Data moves there. Best for teams that already have infrastructure."
-        meta="No external dependency"
+        title={t.settings.migrate.cards.serverTitle}
+        body={t.settings.migrate.cards.serverBody}
+        meta={t.settings.migrate.cards.serverMeta}
         onClick={() => onPick("server")}
       />
 
       <PathCard
         icon={Cloud}
-        title="Migrate to Openship Cloud"
-        body="Push your data to api.openship.io. We host everything. Best for teams that want zero infrastructure."
-        meta={cloudConnected ? "Cloud account connected" : "Requires cloud account"}
-        warn={!cloudConnected ? "Connect to Openship Cloud first." : undefined}
+        title={t.settings.migrate.cards.cloudTitle}
+        body={t.settings.migrate.cards.cloudBody}
+        meta={cloudConnected ? t.settings.migrate.cards.cloudMetaConnected : t.settings.migrate.cards.metaRequiresCloud}
+        warn={!cloudConnected ? t.settings.migrate.cards.cloudWarn : undefined}
         onClick={() => onPick("cloud")}
       />
 
       <PathCard
         icon={Network}
-        title="Keep local, expose via tunnel"
-        body="Your data stays on this machine. We provision an Oblien edge tunnel so teammates can reach you over the public internet — your machine has to be online."
-        meta={cloudConnected ? "Tunnel via Oblien" : "Requires cloud account"}
-        warn={!cloudConnected ? "Tunnels are provisioned through your cloud account." : undefined}
+        title={t.settings.migrate.cards.tunnelTitle}
+        body={t.settings.migrate.cards.tunnelBody}
+        meta={cloudConnected ? t.settings.migrate.cards.tunnelMetaConnected : t.settings.migrate.cards.metaRequiresCloud}
+        warn={!cloudConnected ? t.settings.migrate.cards.tunnelWarn : undefined}
         onClick={() => onPick("tunnel")}
       />
     </div>
@@ -290,7 +297,7 @@ function PathCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-border/50 bg-muted/[0.05] hover:bg-muted/15 hover:border-border p-4 flex items-start gap-4 transition-all"
+      className="w-full text-start rounded-xl border border-border/50 bg-muted/[0.05] hover:bg-muted/15 hover:border-border p-4 flex items-start gap-4 transition-all"
     >
       <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
         <Icon className="size-4" />
@@ -307,7 +314,7 @@ function PathCard({
           </p>
         )}
       </div>
-      <ChevronRight className="size-4 text-muted-foreground/70 mt-1" />
+      <ChevronRight className="size-4 text-muted-foreground/70 mt-1 rtl:rotate-180" />
     </button>
   );
 }
@@ -327,6 +334,7 @@ function ServerForm({
   onSuccess: (res: StartServerResult) => void;
   showToast: (msg: string, kind: "success" | "error", topic?: string) => void;
 }) {
+  const { t } = useI18n();
   const [servers, setServers] = useState<ServerInfo[]>([]);
   const [loadingServers, setLoadingServers] = useState(true);
   const [serverId, setServerId] = useState("");
@@ -347,7 +355,7 @@ function ServerForm({
         if (list.length === 1) setServerId(list[0].id);
       })
       .catch((err) =>
-        showToast(getApiErrorMessage(err, "Failed to load servers"), "error", "Migration"),
+        showToast(getApiErrorMessage(err, t.settings.migrate.server.toastLoadFailed), "error", t.settings.common.toast.migration),
       )
       .finally(() => {
         if (alive) setLoadingServers(false);
@@ -355,7 +363,7 @@ function ServerForm({
     return () => {
       alive = false;
     };
-  }, [showToast]);
+  }, [showToast, t]);
 
   const domain: DomainChoice =
     domainKind === "custom"
@@ -376,7 +384,7 @@ function ServerForm({
       const res = await migrationApi.preflight({ serverId, domain });
       setPreflight(res);
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Preflight failed"), "error", "Migration");
+      showToast(getApiErrorMessage(err, t.settings.migrate.server.toastPreflightFailed), "error", t.settings.common.toast.migration);
     } finally {
       setRunning(false);
     }
@@ -389,7 +397,7 @@ function ServerForm({
       const res = await migrationApi.startServer({ serverId, domain });
       onSuccess(res);
     } catch (err) {
-      showToast(getApiErrorMessage(err, "Migration failed"), "error", "Migration");
+      showToast(getApiErrorMessage(err, t.settings.migrate.server.toastMigrationFailed), "error", t.settings.common.toast.migration);
     } finally {
       onSubmitEnd();
     }
@@ -399,14 +407,14 @@ function ServerForm({
     <div className="space-y-5">
       {/* Server picker */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground block">Target server</label>
+        <label className="text-sm font-medium text-foreground block">{t.settings.migrate.server.targetServer}</label>
         {loadingServers ? (
           <div className="rounded-xl border border-border/50 px-3 py-3 text-xs text-muted-foreground">
-            Loading servers...
+            {t.settings.migrate.server.loadingServers}
           </div>
         ) : servers.length === 0 ? (
           <div className="rounded-xl border border-border/50 px-3 py-3 text-xs text-muted-foreground">
-            No servers configured. Add one in <span className="font-mono">/system/servers</span>.
+            {t.settings.migrate.server.noServersPrefix} <span className="font-mono">/system/servers</span>.
           </div>
         ) : (
           <select
@@ -418,7 +426,7 @@ function ServerForm({
             disabled={submitting}
             className="w-full px-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground"
           >
-            <option value="">Pick a server</option>
+            <option value="">{t.settings.migrate.server.pickServer}</option>
             {servers.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name || s.sshHost} ({s.sshUser}@{s.sshHost})
@@ -430,7 +438,7 @@ function ServerForm({
 
       {/* Domain choice */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground block">Domain</label>
+        <label className="text-sm font-medium text-foreground block">{t.settings.migrate.server.domain}</label>
         <div className="grid grid-cols-2 gap-2">
           <ToggleButton
             selected={domainKind === "free"}
@@ -440,8 +448,8 @@ function ServerForm({
               setPreflight(null);
             }}
           >
-            <span className="text-sm font-medium">Free subdomain</span>
-            <span className="text-[11px] text-muted-foreground">name.opsh.io</span>
+            <span className="text-sm font-medium">{t.settings.migrate.server.freeSubdomain}</span>
+            <span className="text-[11px] text-muted-foreground">{t.settings.migrate.server.freeSubdomainHint}</span>
           </ToggleButton>
           <ToggleButton
             selected={domainKind === "custom"}
@@ -451,8 +459,8 @@ function ServerForm({
               setPreflight(null);
             }}
           >
-            <span className="text-sm font-medium">Custom domain</span>
-            <span className="text-[11px] text-muted-foreground">DNS pointed at server</span>
+            <span className="text-sm font-medium">{t.settings.migrate.server.customDomain}</span>
+            <span className="text-[11px] text-muted-foreground">{t.settings.migrate.server.customDomainHint}</span>
           </ToggleButton>
         </div>
         {domainKind === "free" ? (
@@ -463,11 +471,11 @@ function ServerForm({
                 setFreeSlug(e.target.value.toLowerCase());
                 setPreflight(null);
               }}
-              placeholder="myteam"
+              placeholder={t.settings.migrate.server.freeSlugPlaceholder}
               disabled={submitting}
-              className="w-full pl-3 pr-24 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground font-mono"
+              className="w-full ps-3 pe-24 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground font-mono"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
+            <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
               .opsh.io
             </span>
           </div>
@@ -478,7 +486,7 @@ function ServerForm({
               setCustomHost(e.target.value.toLowerCase());
               setPreflight(null);
             }}
-            placeholder="team.acme.com"
+            placeholder={t.settings.migrate.server.customHostPlaceholder}
             disabled={submitting}
             className="w-full px-3 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground font-mono"
           />
@@ -489,15 +497,15 @@ function ServerForm({
       {preflight && (
         <div className="rounded-xl border border-border/50 p-4 space-y-2">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Preflight
+            {t.settings.migrate.server.preflight}
           </p>
-          <CheckRow ok={preflight.checks.ssh.ok} label="SSH reachable">
+          <CheckRow ok={preflight.checks.ssh.ok} label={t.settings.migrate.server.sshReachable}>
             {preflight.checks.ssh.detail}
           </CheckRow>
-          <CheckRow ok={preflight.checks.releaseDist.ok} label="Openship release available">
+          <CheckRow ok={preflight.checks.releaseDist.ok} label={t.settings.migrate.server.releaseAvailable}>
             {preflight.checks.releaseDist.detail}
           </CheckRow>
-          <CheckRow ok={preflight.checks.domain.ok} label="Domain ready">
+          <CheckRow ok={preflight.checks.domain.ok} label={t.settings.migrate.server.domainReady}>
             {preflight.checks.domain.detail}
           </CheckRow>
         </div>
@@ -513,7 +521,7 @@ function ServerForm({
             className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 hover:bg-muted text-foreground rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
           >
             {running && <Loader2 className="size-4 animate-spin" />}
-            Run preflight
+            {t.settings.migrate.server.runPreflight}
           </button>
         )}
         {preflight && (
@@ -524,7 +532,7 @@ function ServerForm({
               disabled={running || submitting}
               className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              Re-check
+              {t.settings.migrate.server.recheck}
             </button>
             <button
               type="button"
@@ -533,7 +541,7 @@ function ServerForm({
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
             >
               {submitting && <Loader2 className="size-4 animate-spin" />}
-              {submitting ? "Deploying..." : "Start migration"}
+              {submitting ? t.settings.migrate.server.deploying : t.settings.migrate.server.startMigration}
             </button>
           </>
         )}
@@ -559,6 +567,7 @@ function CloudForm({
   onSuccess: (res: StartCloudResult) => void;
   showToast: (msg: string, kind: "success" | "error", topic?: string) => void;
 }) {
+  const { t } = useI18n();
   const [allowNonEmptyTarget, setAllowNonEmptyTarget] = useState(false);
 
   const handleStart = async () => {
@@ -570,12 +579,12 @@ function CloudForm({
       const apiErr = err as { status?: number; body?: { projectCount?: number } };
       if (apiErr.status === 409 && !allowNonEmptyTarget) {
         showToast(
-          `Your cloud org already has ${apiErr.body?.projectCount ?? "some"} projects. Tick the box to proceed and include this instance's data alongside what's already there.`,
+          interpolate(t.settings.migrate.cloud.toastConflict, { count: String(apiErr.body?.projectCount ?? "some") }),
           "error",
-          "Migration",
+          t.settings.common.toast.migration,
         );
       } else {
-        showToast(getApiErrorMessage(err, "Cloud migration failed"), "error", "Migration");
+        showToast(getApiErrorMessage(err, t.settings.migrate.cloud.toastFailed), "error", t.settings.common.toast.migration);
       }
     } finally {
       onSubmitEnd();
@@ -587,10 +596,10 @@ function CloudForm({
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-4 space-y-2">
         <div className="flex items-center gap-2 text-amber-500">
           <AlertCircle className="size-4" />
-          <p className="text-sm font-medium">Connect your cloud account first</p>
+          <p className="text-sm font-medium">{t.settings.migrate.cloud.connectFirstTitle}</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Open Settings → Cloud and sign in to api.openship.io. Then come back here to migrate.
+          {t.settings.migrate.cloud.connectFirstBody}
         </p>
       </div>
     );
@@ -599,12 +608,12 @@ function CloudForm({
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-border/50 p-4 space-y-2">
-        <p className="text-sm text-foreground">What happens when you click migrate</p>
+        <p className="text-sm text-foreground">{t.settings.migrate.cloud.whatHappens}</p>
         <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside">
-          <li>Your local DB is dumped (encrypted fields stripped — credentials don't leave this machine).</li>
-          <li>The dump is uploaded to api.openship.io under your active org.</li>
-          <li>Local instance becomes a launcher pointing at app.openship.io.</li>
-          <li>You can switch back any time — your local data stays on disk.</li>
+          <li>{t.settings.migrate.cloud.bullet1}</li>
+          <li>{t.settings.migrate.cloud.bullet2}</li>
+          <li>{t.settings.migrate.cloud.bullet3}</li>
+          <li>{t.settings.migrate.cloud.bullet4}</li>
         </ul>
       </div>
 
@@ -616,7 +625,7 @@ function CloudForm({
           disabled={submitting}
         />
         <span className="text-sm text-foreground">
-          Proceed even if my cloud org already has projects (I'll handle conflicts)
+          {t.settings.migrate.cloud.proceedNonEmpty}
         </span>
       </label>
 
@@ -628,7 +637,7 @@ function CloudForm({
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
         >
           {submitting && <Loader2 className="size-4 animate-spin" />}
-          {submitting ? "Pushing data..." : "Start migration"}
+          {submitting ? t.settings.migrate.cloud.pushingData : t.settings.migrate.cloud.startMigration}
         </button>
       </div>
     </div>
@@ -652,6 +661,7 @@ function TunnelForm({
   onSuccess: (res: StartTunnelResult) => void;
   showToast: (msg: string, kind: "success" | "error", topic?: string) => void;
 }) {
+  const { t } = useI18n();
   const [slug, setSlug] = useState("");
 
   const handleStart = async () => {
@@ -663,15 +673,15 @@ function TunnelForm({
     } catch (err: unknown) {
       const apiErr = err as { status?: number };
       if (apiErr.status === 409) {
-        showToast(`Slug "${slug}" is taken. Pick another.`, "error", "Migration");
+        showToast(interpolate(t.settings.migrate.tunnel.toastSlugTaken, { slug }), "error", t.settings.common.toast.migration);
       } else if (apiErr.status === 412) {
         showToast(
-          "Tunnels need your cloud account connected. Open Settings → Cloud first.",
+          t.settings.migrate.tunnel.toastNeedsCloud,
           "error",
-          "Migration",
+          t.settings.common.toast.migration,
         );
       } else {
-        showToast(getApiErrorMessage(err, "Tunnel provision failed"), "error", "Migration");
+        showToast(getApiErrorMessage(err, t.settings.migrate.tunnel.toastFailed), "error", t.settings.common.toast.migration);
       }
     } finally {
       onSubmitEnd();
@@ -683,11 +693,10 @@ function TunnelForm({
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-4 space-y-2">
         <div className="flex items-center gap-2 text-amber-500">
           <AlertCircle className="size-4" />
-          <p className="text-sm font-medium">Connect your cloud account first</p>
+          <p className="text-sm font-medium">{t.settings.migrate.tunnel.connectFirstTitle}</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Tunnels are provisioned through Openship Cloud. Open Settings → Cloud and sign in,
-          then come back here.
+          {t.settings.migrate.tunnel.connectFirstBody}
         </p>
       </div>
     );
@@ -698,30 +707,30 @@ function TunnelForm({
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-border/50 p-4 space-y-2">
-        <p className="text-sm text-foreground">Heads up</p>
+        <p className="text-sm text-foreground">{t.settings.migrate.tunnel.headsUp}</p>
         <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside">
-          <li>Your data stays on this machine. Nothing moves.</li>
-          <li>Teammates can reach you only when this machine is online.</li>
-          <li>The tunnel agent runs inside the API process — no extra service to babysit.</li>
+          <li>{t.settings.migrate.tunnel.bullet1}</li>
+          <li>{t.settings.migrate.tunnel.bullet2}</li>
+          <li>{t.settings.migrate.tunnel.bullet3}</li>
         </ul>
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground block">Tunnel slug</label>
+        <label className="text-sm font-medium text-foreground block">{t.settings.migrate.tunnel.tunnelSlug}</label>
         <div className="relative">
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value.toLowerCase())}
-            placeholder="myteam"
+            placeholder={t.settings.migrate.tunnel.slugPlaceholder}
             disabled={submitting}
-            className="w-full pl-3 pr-32 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground font-mono"
+            className="w-full ps-3 pe-32 py-2 bg-muted/30 border border-border/50 rounded-xl text-sm text-foreground font-mono"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
             .preview.oblien.com
           </span>
         </div>
         <p className="text-[11px] text-muted-foreground">
-          3-32 chars, lowercase letters, digits, dashes. Must start and end with a letter or digit.
+          {t.settings.migrate.tunnel.slugHint}
         </p>
       </div>
 
@@ -733,7 +742,7 @@ function TunnelForm({
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
         >
           {submitting && <Loader2 className="size-4 animate-spin" />}
-          {submitting ? "Provisioning..." : "Provision tunnel"}
+          {submitting ? t.settings.migrate.tunnel.provisioning : t.settings.migrate.tunnel.provisionTunnel}
         </button>
       </div>
     </div>
@@ -751,18 +760,19 @@ function ResultStep({
   detail: string;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.05] p-4">
         <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-foreground">Migration complete</p>
+          <p className="text-sm font-medium text-foreground">{t.settings.migrate.result.complete}</p>
           <p className="text-xs text-muted-foreground mt-1">{detail}</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-border/50 px-4 py-3 space-y-1">
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">New location</p>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t.settings.migrate.result.newLocation}</p>
         <p className="text-sm font-mono text-foreground break-all">{url}</p>
       </div>
 
@@ -774,14 +784,14 @@ function ResultStep({
           className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 hover:bg-muted text-foreground rounded-xl text-sm font-medium transition-colors"
         >
           <ExternalLink className="size-4" />
-          Open
+          {t.settings.migrate.result.open}
         </a>
         <button
           type="button"
           onClick={onDone}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90"
         >
-          Done
+          {t.settings.migrate.result.done}
         </button>
       </div>
     </div>

@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     "docker deploy",
     "self host",
     "VPS deploy",
-    "AGPL",
+    "Apache 2.0",
     "open source PaaS",
     "developer tools",
   ],
@@ -131,7 +131,7 @@ const organizationLd = {
   foundingDate: "2024",
   sameAs: [
     "https://github.com/oblien/openship",
-    "https://x.com/openship",
+    "https://x.com/openshipio",
     "https://discord.gg/openship",
   ],
   contactPoint: [

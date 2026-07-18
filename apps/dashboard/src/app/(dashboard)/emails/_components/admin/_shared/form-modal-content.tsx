@@ -14,6 +14,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 interface FormModalContentProps {
   title: string;
@@ -43,6 +44,7 @@ export function FormModalContent({
   initialError,
   disabled,
 }: FormModalContentProps) {
+  const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
 
@@ -54,7 +56,7 @@ export function FormModalContent({
     try {
       await onSubmit();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+      setError(err instanceof Error ? err.message : t.emailsAdmin.shared.actionFailed);
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +93,7 @@ export function FormModalContent({
           disabled={submitting}
           className="px-4 py-2.5 text-sm font-semibold rounded-xl bg-muted text-foreground hover:bg-muted/80 border border-border transition-colors disabled:opacity-50"
         >
-          Cancel
+          {t.emailsAdmin.shared.cancel}
         </button>
         <button
           type="submit"

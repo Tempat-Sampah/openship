@@ -9,5 +9,7 @@ export * from "./service-status";
 export * from "./runtime-config";
 export * from "./workspaces";
 export * from "./languages";
+export * from "./metadata";
 export * from "./mail-server";
 export * from "./app-templates";
+export * from "./updates";

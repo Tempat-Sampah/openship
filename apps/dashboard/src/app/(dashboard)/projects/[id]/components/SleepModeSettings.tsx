@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { generateIcon } from '@/utils/icons';
 import { useToast } from '@/context/ToastContext';
+import { useI18n } from "@/components/i18n-provider";
 import { projectsApi } from "@/lib/api";
 
 interface SleepModeSettingsProps {
@@ -13,20 +14,21 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
   currentMode 
 }) => {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [selectedMode, setSelectedMode] = useState(currentMode || 'auto_sleep');
 
   const handleModeChange = async (mode: 'always_on' | 'auto_sleep') => {
     if (loading || selectedMode === mode) return;
-    
+
     setLoading(true);
     const response = await projectsApi.setSleepMode(projectId, mode);
 
     if (response.success) {
       setSelectedMode(mode);
-      showToast('Sleep mode updated successfully', 'success');
+      showToast(t.projectSettings.sleep.toast.updated, 'success');
     } else {
-      showToast(response.error || 'Failed to update sleep mode', 'error');
+      showToast(response.error || t.projectSettings.sleep.toast.updateFailed, 'error');
     }
     setLoading(false);
   };
@@ -38,8 +40,8 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
           {generateIcon('preferences-95-1658432731.png', 24, 'hsl(var(--primary))')}
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Machine Mode</h3>
-          <p className="text-xs text-muted-foreground">Control availability and cost efficiency</p>
+          <h3 className="text-lg font-semibold text-foreground">{t.projectSettings.sleep.title}</h3>
+          <p className="text-xs text-muted-foreground">{t.projectSettings.sleep.description}</p>
         </div>
       </div>
 
@@ -55,7 +57,7 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
           }`}
         >
           {selectedMode === 'auto_sleep' && (
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-2 end-2">
               <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
                 {generateIcon('checkmark-7-1662452248.png', 12, 'white')}
               </div>
@@ -64,20 +66,20 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedMode === 'auto_sleep' ? 'bg-primary' : 'bg-muted'}`}>
             {generateIcon('auto%20flash-91-1689918656.png', 24, selectedMode === 'auto_sleep' ? 'white' : 'rgb(0, 0, 0, 0.5)')}
           </div>
-          <div className="flex-1 text-left pr-4">
+          <div className="flex-1 text-start pe-4">
             <div className="flex items-center gap-2 mb-0.5">
               <p className={`text-sm font-semibold ${selectedMode === 'auto_sleep' ? 'text-foreground' : 'text-foreground'}`}>
-                Auto Sleep
+                {t.projectSettings.sleep.autoSleep}
               </p>
               <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold rounded-full">
-                RECOMMENDED
+                {t.projectSettings.sleep.recommended}
               </span>
             </div>
             <p className={`text-xs ${selectedMode === 'auto_sleep' ? 'text-primary' : 'text-muted-foreground'}`}>
-              Stops when idle, wakes instantly
+              {t.projectSettings.sleep.autoSleepDesc}
             </p>
             <p className={`text-xs ${selectedMode === 'auto_sleep' ? 'text-primary/70' : 'text-muted-foreground/70'}`}>
-              Cost-efficient • No cold start
+              {t.projectSettings.sleep.autoSleepMeta}
             </p>
           </div>
         </button>
@@ -93,7 +95,7 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
           }`}
         >
           {selectedMode === 'always_on' && (
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-2 end-2">
               <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
                 {generateIcon('checkmark-7-1662452248.png', 12, 'white')}
               </div>
@@ -102,15 +104,15 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedMode === 'always_on' ? 'bg-primary' : 'bg-muted'}`}>
             {generateIcon('connected%20cable-99-1689918656.png', 24, selectedMode === 'always_on' ? 'white' : 'rgb(0, 0, 0, 0.5)')}
           </div>
-          <div className="flex-1 text-left pr-4">
+          <div className="flex-1 text-start pe-4">
             <p className={`text-sm font-semibold mb-0.5 ${selectedMode === 'always_on' ? 'text-foreground' : 'text-foreground'}`}>
-              Always On
+              {t.projectSettings.sleep.alwaysOn}
             </p>
             <p className={`text-xs ${selectedMode === 'always_on' ? 'text-primary' : 'text-muted-foreground'}`}>
-              Container never stops
+              {t.projectSettings.sleep.alwaysOnDesc}
             </p>
             <p className={`text-xs ${selectedMode === 'always_on' ? 'text-primary/70' : 'text-muted-foreground/70'}`}>
-              Maximum availability • Higher cost
+              {t.projectSettings.sleep.alwaysOnMeta}
             </p>
           </div>
         </button>
@@ -121,10 +123,11 @@ export const SleepModeSettings: React.FC<SleepModeSettingsProps> = ({
         <div className="flex items-start gap-2">
           {generateIcon('info%20circle-16-1662452248.png', 16, 'hsl(var(--primary))')}
           <div>
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-0.5">How Auto Sleep works</p>
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-0.5">{t.projectSettings.sleep.infoTitle}</p>
             <p className="text-sm text-amber-700/80 dark:text-amber-300/80 leading-relaxed">
-              When there are requests, your container stays running. After inactivity, it sleeps to save costs. 
-              On the next request, it wakes up <span className="font-semibold">instantly</span> - no cold start delays.
+              {t.projectSettings.sleep.infoBefore}
+              <span className="font-semibold">{t.projectSettings.sleep.infoEmphasis}</span>
+              {t.projectSettings.sleep.infoAfter}
             </p>
           </div>
         </div>

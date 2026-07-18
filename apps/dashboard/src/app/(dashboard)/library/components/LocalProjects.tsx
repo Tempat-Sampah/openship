@@ -20,6 +20,7 @@ import {
 import { projectsApi, type ScanProjectResponse } from "@/lib/api/projects";
 import { systemApi } from "@/lib/api/system";
 import { encodeLocalSlug } from "@/utils/repoSlug";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -38,6 +39,7 @@ interface LocalProject {
 /* ── Component ────────────────────────────────────────────────────── */
 
 export function LocalProjects() {
+  const { t } = useI18n();
   const router = useRouter();
   const [projects, setProjects] = useState<LocalProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,9 +94,11 @@ export function LocalProjects() {
               <FolderOpen className="size-[18px] text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-foreground text-[15px]">Local Projects</h2>
+              <h2 className="font-semibold text-foreground text-[15px]">{t.library.localProjects.title}</h2>
               <p className="text-xs text-muted-foreground">
-                {loading ? "Loading..." : `${projects.length} project${projects.length !== 1 ? "s" : ""}`}
+                {loading
+                  ? t.library.localProjects.loading
+                  : interpolate(projects.length !== 1 ? t.library.localProjects.projectCountPlural : t.library.localProjects.projectCountSingular, { count: String(projects.length) })}
               </p>
             </div>
           </div>
@@ -103,7 +107,7 @@ export function LocalProjects() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <Plus className="size-3.5" />
-            Import
+            {t.library.localProjects.import}
           </button>
         </div>
       )}
@@ -172,7 +176,7 @@ export function LocalProjects() {
                   onClick={() => project.localPath && handleDeploy(project.localPath)}
                   className="p-1.5 rounded-lg text-muted-foreground/40 group-hover:text-muted-foreground transition-colors"
                 >
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 rtl:rotate-180" />
                 </button>
               </div>
             </div>
@@ -186,6 +190,7 @@ export function LocalProjects() {
 /* ── Empty State ──────────────────────────────────────────────────── */
 
 function EmptyState({ onImport }: { onImport: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="py-16 text-center">
       {/* SVG Illustration - folder + import theme */}
@@ -233,10 +238,10 @@ function EmptyState({ onImport }: { onImport: () => void }) {
       </div>
 
       <h3 className="text-2xl font-medium text-foreground/80 mb-2" style={{ letterSpacing: "-0.2px" }}>
-        No local projects yet
+        {t.library.localProjects.empty.title}
       </h3>
       <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto mb-8 leading-relaxed">
-        Import a project folder from your machine to scan, build, and deploy it locally
+        {t.library.localProjects.empty.description}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
@@ -245,36 +250,36 @@ function EmptyState({ onImport }: { onImport: () => void }) {
           className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
         >
           <Plus className="size-4" />
-          Import Project
+          {t.library.localProjects.empty.importProject}
         </button>
       </div>
 
       {/* Feature highlights */}
       <div className="max-w-xl mx-auto">
         <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-4">
-          How it works
+          {t.library.localProjects.empty.howItWorks}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <FolderInput className="size-4 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-foreground">Drop or browse</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Select any project folder</p>
+            <p className="text-sm font-medium text-foreground">{t.library.localProjects.empty.dropTitle}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t.library.localProjects.empty.dropDesc}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <Zap className="size-4 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-foreground">Auto-detect</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Framework & config found</p>
+            <p className="text-sm font-medium text-foreground">{t.library.localProjects.empty.autoDetectTitle}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t.library.localProjects.empty.autoDetectDesc}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-left sm:col-span-1 col-span-2">
+          <div className="bg-card border border-border/50 rounded-xl p-4 text-start sm:col-span-1 col-span-2">
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
               <HardDrive className="size-4 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-foreground">Deploy locally</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Build & run on your machine</p>
+            <p className="text-sm font-medium text-foreground">{t.library.localProjects.empty.deployTitle}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t.library.localProjects.empty.deployDesc}</p>
           </div>
         </div>
       </div>
@@ -290,6 +295,7 @@ interface ImportFormProps {
 }
 
 function ImportForm({ onClose, onImported }: ImportFormProps) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [path, setPath] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -312,7 +318,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
       setScanResult(result);
       setName(result.name);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to scan directory";
+      const message = err instanceof Error ? err.message : t.library.localProjects.form.scanErrorDefault;
       setScanError(message);
     } finally {
       setScanning(false);
@@ -332,7 +338,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
         // We only get the folder name, not the full path.
         // Set it as the path and let user confirm/edit before scanning.
         setPath(rootFolder);
-        setScanError("Folder selected via browser - please enter the full absolute path and press Scan");
+        setScanError(t.library.localProjects.form.folderViaBrowser);
         return;
       }
     }
@@ -353,7 +359,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
       if (entry) {
         // In standard web context we only get the name, not full path
         setPath(entry.name);
-        setScanError("Folder dropped - please enter the full absolute path and press Scan");
+        setScanError(t.library.localProjects.form.folderDropped);
         return;
       }
     }
@@ -389,7 +395,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
       });
       onImported();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to import project";
+      const message = err instanceof Error ? err.message : t.library.localProjects.form.importError;
       setScanError(message);
       setImporting(false);
     }
@@ -398,7 +404,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
   return (
     <div className="px-5 py-4 border-b border-border/50">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-foreground">Import from folder</h3>
+        <h3 className="text-sm font-medium text-foreground">{t.library.localProjects.form.title}</h3>
         <button onClick={onClose} className="p-1 rounded-md hover:bg-muted transition-colors">
           <X className="size-4 text-muted-foreground" />
         </button>
@@ -430,10 +436,10 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
             <Upload className="size-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium text-foreground mb-0.5">
-            Drop a folder here or click to browse
+            {t.library.localProjects.form.dropTitle}
           </p>
           <p className="text-xs text-muted-foreground">
-            Select your project folder to auto-detect the framework
+            {t.library.localProjects.form.dropSubtitle}
           </p>
         </div>
       )}
@@ -445,33 +451,51 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
           value={path}
           onChange={(e) => { setPath(e.target.value); setScanError(""); }}
           onKeyDown={(e) => e.key === "Enter" && handleScan()}
-          placeholder="/path/to/your/project"
+          placeholder={t.library.localProjects.form.pathPlaceholder}
           className="flex-1 px-3 py-2 bg-background border border-border/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
         />
+        {systemApi.hasNativePicker() && (
+          <button
+            type="button"
+            onClick={async () => {
+              const picked = await systemApi.pickFolder();
+              if (picked) { setPath(picked); setScanError(""); }
+            }}
+            className="px-3 py-2 rounded-lg text-sm font-medium bg-muted hover:bg-muted/80 text-foreground transition-colors"
+          >
+            {t.library.localProjects.form.browse}
+          </button>
+        )}
         <button
           onClick={() => handleScan()}
           disabled={!path.trim() || scanning}
           className="px-3 py-2 rounded-lg text-sm font-medium bg-muted hover:bg-muted/80 text-foreground transition-colors disabled:opacity-50"
         >
-          {scanning ? <Loader2 className="size-4 animate-spin" /> : "Scan"}
+          {scanning ? <Loader2 className="size-4 animate-spin" /> : t.library.localProjects.form.scan}
         </button>
       </div>
 
       {/* Error */}
-      {scanError && (
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 ${
-          scanError.includes("please enter")
-            ? "bg-amber-500/10 border border-amber-500/20"
-            : "bg-red-500/10 border border-red-500/20"
-        }`}>
-          <AlertCircle className={`size-4 shrink-0 ${
-            scanError.includes("please enter") ? "text-amber-500" : "text-red-500"
-          }`} />
-          <p className={`text-xs ${
-            scanError.includes("please enter") ? "text-amber-600 dark:text-amber-400" : "text-red-500"
-          }`}>{scanError}</p>
-        </div>
-      )}
+      {scanError && (() => {
+        // Path-hint warnings (locale-independent) render amber; real errors render red.
+        const isPathHint =
+          scanError === t.library.localProjects.form.folderViaBrowser ||
+          scanError === t.library.localProjects.form.folderDropped;
+        return (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 ${
+            isPathHint
+              ? "bg-amber-500/10 border border-amber-500/20"
+              : "bg-red-500/10 border border-red-500/20"
+          }`}>
+            <AlertCircle className={`size-4 shrink-0 ${
+              isPathHint ? "text-amber-500" : "text-red-500"
+            }`} />
+            <p className={`text-xs ${
+              isPathHint ? "text-amber-600 dark:text-amber-400" : "text-red-500"
+            }`}>{scanError}</p>
+          </div>
+        );
+      })()}
 
       {/* Scan result */}
       {scanResult && (
@@ -479,7 +503,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
             <CheckCircle2 className="size-4 text-green-500 shrink-0" />
             <p className="text-xs text-green-600 dark:text-green-400">
-              Detected <span className="font-medium capitalize">{scanResult.stack}</span>
+              {t.library.localProjects.form.detected}{" "}<span className="font-medium capitalize">{scanResult.stack}</span>
               {scanResult.stack !== "unknown" && (
                 <> · {scanResult.packageManager} · {scanResult.category}</>
               )}
@@ -488,7 +512,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
 
           {/* Editable name */}
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Project name</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t.library.localProjects.form.projectName}</label>
             <input
               type="text"
               value={name}
@@ -501,25 +525,25 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
           <div className="grid grid-cols-2 gap-2 text-xs">
             {scanResult.buildCommand && (
               <div className="px-2.5 py-1.5 rounded-md bg-muted/50">
-                <span className="text-muted-foreground">Build:</span>{" "}
+                <span className="text-muted-foreground">{t.library.localProjects.form.build}</span>{" "}
                 <span className="text-foreground font-mono">{scanResult.buildCommand}</span>
               </div>
             )}
             {scanResult.installCommand && (
               <div className="px-2.5 py-1.5 rounded-md bg-muted/50">
-                <span className="text-muted-foreground">Install:</span>{" "}
+                <span className="text-muted-foreground">{t.library.localProjects.form.install}</span>{" "}
                 <span className="text-foreground font-mono">{scanResult.installCommand}</span>
               </div>
             )}
             {scanResult.outputDirectory && (
               <div className="px-2.5 py-1.5 rounded-md bg-muted/50">
-                <span className="text-muted-foreground">Output:</span>{" "}
+                <span className="text-muted-foreground">{t.library.localProjects.form.output}</span>{" "}
                 <span className="text-foreground font-mono">{scanResult.outputDirectory}</span>
               </div>
             )}
             {scanResult.startCommand && (
               <div className="px-2.5 py-1.5 rounded-md bg-muted/50">
-                <span className="text-muted-foreground">Start:</span>{" "}
+                <span className="text-muted-foreground">{t.library.localProjects.form.start}</span>{" "}
                 <span className="text-foreground font-mono">{scanResult.startCommand}</span>
               </div>
             )}
@@ -536,7 +560,7 @@ function ImportForm({ onClose, onImported }: ImportFormProps) {
             ) : (
               <Plus className="size-4" />
             )}
-            {importing ? "Importing..." : "Import Project"}
+            {importing ? t.library.localProjects.form.importing : t.library.localProjects.form.importProject}
           </button>
         </div>
       )}

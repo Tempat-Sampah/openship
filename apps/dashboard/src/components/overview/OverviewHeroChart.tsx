@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'chart.js';
 import { DailyMetric, TimePeriod } from './types';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -45,6 +46,7 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
   period = 7,
   onPeriodChange,
 }) => {
+  const { t } = useI18n();
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -175,7 +177,7 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
 
   // Chart.js doughnut for agents
   const doughnutData = {
-    labels: ['Production', 'Testing'],
+    labels: [t.overview.hero.production, t.overview.hero.testing],
     datasets: [
       {
         data: [productionAgents, testingAgents],
@@ -226,8 +228,8 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
                 <Activity className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-black">Platform Activity</h3>
-                <p className="text-xs text-black/40">Token usage & API requests</p>
+                <h3 className="font-semibold text-black">{t.overview.hero.title}</h3>
+                <p className="text-xs text-black/40">{t.overview.hero.subtitle}</p>
               </div>
             </div>
             
@@ -264,7 +266,7 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-purple-500" />
-                <span className="text-xs text-black/50">Tokens</span>
+                <span className="text-xs text-black/50">{t.overview.hero.tokens}</span>
                 <span className="text-sm font-semibold text-black">{formatNumber(totalTokens)}</span>
                 {tokenTrend !== 0 && (
                   <span className={`flex items-center text-xs font-medium ${tokenTrend > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
@@ -276,7 +278,7 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
               
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                <span className="text-xs text-black/50">Requests</span>
+                <span className="text-xs text-black/50">{t.overview.hero.requests}</span>
                 <span className="text-sm font-semibold text-black">{formatNumber(totalRequests)}</span>
                 {requestTrend !== 0 && (
                   <span className={`flex items-center text-xs font-medium ${requestTrend > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
@@ -287,7 +289,7 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
               </div>
             </div>
             
-            <span className="text-xs text-black/30">Last {period} days</span>
+            <span className="text-xs text-black/30">{interpolate(t.overview.hero.lastNDays, { period: String(period) })}</span>
           </div>
         </div>
       </div>
@@ -301,13 +303,13 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
               <Bot className="w-4 h-4 text-cyan-600" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-black">Agents</h4>
-              <p className="text-xs text-black/40">Environments</p>
+              <h4 className="text-sm font-semibold text-black">{t.overview.hero.agents}</h4>
+              <p className="text-xs text-black/40">{t.overview.hero.environments}</p>
             </div>
           </div>
           {agentTrend !== 0 && (
             <span className={`flex items-center text-xs font-medium px-2 py-1 rounded-full ${agentTrend > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'}`}>
-              {agentTrend > 0 ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
+              {agentTrend > 0 ? <TrendingUp className="w-3 h-3 me-0.5" /> : <TrendingDown className="w-3 h-3 me-0.5" />}
               {Math.abs(agentTrend)}%
             </span>
           )}
@@ -321,7 +323,7 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
           {/* Center label */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-2xl font-bold text-black">{totalAgents}</span>
-            <span className="text-[10px] text-black/40 uppercase tracking-wide">Total</span>
+            <span className="text-[10px] text-black/40 uppercase tracking-wide">{t.overview.hero.total}</span>
           </div>
         </div>
 
@@ -329,11 +331,11 @@ const OverviewHeroChart: React.FC<OverviewHeroChartProps> = ({
         <div className="flex items-center justify-center gap-4 pt-3 border-t border-black/5">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-cyan-500" />
-            <span className="text-xs text-black/60">{productionAgents} prod</span>
+            <span className="text-xs text-black/60">{interpolate(t.overview.hero.prodCount, { count: String(productionAgents) })}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-purple-500" />
-            <span className="text-xs text-black/60">{testingAgents} test</span>
+            <span className="text-xs text-black/60">{interpolate(t.overview.hero.testCount, { count: String(testingAgents) })}</span>
           </div>
         </div>
       </div>

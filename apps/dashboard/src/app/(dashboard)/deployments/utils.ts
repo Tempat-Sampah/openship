@@ -1,4 +1,5 @@
 import type { Deployment } from "./types";
+import type { Dictionary } from "@/i18n";
 
 export const mapRowToDeployment = (row: any): Deployment => {
   const statusMap: Record<string, Deployment["status"]> = {
@@ -40,18 +41,24 @@ export const mapRowToDeployment = (row: any): Deployment => {
 };
 
 /**
- * Formats a date to a human-readable "time ago" string
+ * Formats a date to a human-readable "time ago" string. Labels are threaded
+ * in from the active dictionary (`t.deployments.time`) so the caller controls
+ * localization — this module stays hook-free.
  */
-export const formatDistanceToNow = (date: Date): string => {
+export const formatDistanceToNow = (
+  date: Date,
+  labels: Dictionary["deployments"]["time"],
+): string => {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const fmt = (tmpl: string, n: number) => tmpl.replace("{n}", String(n));
 
-  if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
-  return `${Math.floor(diffInSeconds / 31536000)}y ago`;
+  if (diffInSeconds < 60) return fmt(labels.secondsAgo, diffInSeconds);
+  if (diffInSeconds < 3600) return fmt(labels.minutesAgo, Math.floor(diffInSeconds / 60));
+  if (diffInSeconds < 86400) return fmt(labels.hoursAgo, Math.floor(diffInSeconds / 3600));
+  if (diffInSeconds < 2592000) return fmt(labels.daysAgo, Math.floor(diffInSeconds / 86400));
+  if (diffInSeconds < 31536000) return fmt(labels.monthsAgo, Math.floor(diffInSeconds / 2592000));
+  return fmt(labels.yearsAgo, Math.floor(diffInSeconds / 31536000));
 };
 
 /**

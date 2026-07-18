@@ -1,13 +1,13 @@
 <h1 align="center">Openship</h1>
 
 <p align="center">
-  Source-available, self-hostable deployment platform with built-in CI/CD.<br>
+  Open-source, self-hostable deployment platform with built-in CI/CD.<br>
   Push code, ship containers, manage infrastructure — from a desktop app, web dashboard, or CLI.
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/openship"><img src="https://img.shields.io/npm/v/openship?color=0b7285&label=npm" alt="npm version" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0%20%2B%20Commons%20Clause-blue" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License" /></a>
   <a href="https://openship.io"><img src="https://img.shields.io/badge/website-openship.io-0b7285" alt="Website" /></a>
 </p>
 
@@ -20,6 +20,16 @@
 </p>
 
 <p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/lang-English-0b7285" alt="English" /></a>
+  <a href="docs/i18n/README.ar.md"><img src="https://img.shields.io/badge/lang-العربية-555" alt="العربية" /></a>
+  <a href="docs/i18n/README.zh.md"><img src="https://img.shields.io/badge/lang-简体中文-555" alt="简体中文" /></a>
+  <a href="docs/i18n/README.es.md"><img src="https://img.shields.io/badge/lang-Español-555" alt="Español" /></a>
+  <a href="docs/i18n/README.fr.md"><img src="https://img.shields.io/badge/lang-Français-555" alt="Français" /></a>
+  <a href="docs/i18n/README.ja.md"><img src="https://img.shields.io/badge/lang-日本語-555" alt="日本語" /></a>
+  <a href="docs/i18n/README.pt.md"><img src="https://img.shields.io/badge/lang-Português-555" alt="Português" /></a>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/screen.png" alt="Openship dashboard" width="800" />
 </p>
 
@@ -28,11 +38,19 @@
 ## Quick Start
 
 ```bash
-npm i -g openship
-openship init
+npm i -g openship     # or: curl -fsSL https://get.openship.io | sh
+openship up           # runs Openship locally (API + dashboard); prints the URL
 ```
 
-That's it. Or, if you prefer Docker:
+That's it — `openship open` opens the dashboard. To deploy a project:
+
+```bash
+cd your-project
+openship init         # link this directory to a project
+openship deploy
+```
+
+Prefer Docker? Clone the repo and use the compose stack:
 
 ```bash
 git clone https://github.com/oblien/openship.git && cd openship
@@ -40,7 +58,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Or download the desktop app from [openship.io](https://openship.io).
+Or grab the desktop app (`openship install`, or download from [openship.io](https://openship.io)).
 
 ---
 
@@ -112,10 +130,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Openship is **source-available** software: [AGPL-3.0 with the Commons Clause](LICENSE).
+Openship is **open-source** software, licensed under the [Apache License 2.0](LICENSE).
 
-You may run, modify, and self-host it — including for internal commercial or
-company use — under the AGPL-3.0 terms. Offering Openship to third parties as a
-hosted, managed, or **SaaS** service is reserved to **Openship and Oblien LLC**;
-any other party needs a separate commercial license from Oblien LLC. Because of
-the Commons Clause, this is **not** an OSI-approved open-source license.
+You may use, run, modify, self-host, and distribute it — including in commercial
+and closed-source products — under the terms of the Apache 2.0 license. See
+[LICENSE](LICENSE) for the full text.

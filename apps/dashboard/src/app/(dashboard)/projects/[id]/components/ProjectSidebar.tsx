@@ -3,9 +3,10 @@
 import { useMemo } from "react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { usePlatform } from "@/context/PlatformContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { DomainSwitcher } from "@/components/routing/DomainSwitcher";
 import { formatDate } from "@/utils/date";
-import { getProjectStatus, PROJECT_STATUS_META } from "@/utils/project-status";
+import { getProjectStatus, PROJECT_STATUS_META, projectStatusLabel } from "@/utils/project-status";
 import {
   LayoutDashboard,
   Activity,
@@ -50,6 +51,7 @@ export const ProjectSidebar = () => {
     selectedDomain,
     setSelectedDomain,
   } = useProjectSettings();
+  const { t } = useI18n();
   const { selfHosted, baseDomain } = usePlatform();
   const status = getProjectStatus(projectData);
   const meta = PROJECT_STATUS_META[status];
@@ -89,17 +91,19 @@ export const ProjectSidebar = () => {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70">
-              Project
+              {t.projects.sidebar.project}
             </p>
             <div className="mt-2 flex items-center gap-2">
               <h3 className="truncate text-base font-semibold text-foreground">
-                {projectData.name || "Untitled Project"}
+                {projectData.name || t.projects.sidebar.untitledProject}
               </h3>
               <a
                 href={siteHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Open ${projectData.name || "project"}`}
+                aria-label={interpolate(t.projects.sidebar.openAria, {
+                  name: projectData.name || t.projects.sidebar.openProjectFallback,
+                })}
                 className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
               >
                 <ExternalLink className="size-3.5" />
@@ -110,14 +114,14 @@ export const ProjectSidebar = () => {
             className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${meta.badge}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-            {meta.label}
+            {projectStatusLabel(status, t)}
           </span>
         </div>
 
         <div className="mt-4 space-y-3">
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm text-muted-foreground">
-              {isLocal ? "Local" : "Production"}
+              {isLocal ? t.projects.sidebar.local : t.projects.sidebar.production}
             </span>
             <div className="flex min-w-0 items-center gap-1.5">
               {domains.length > 1 ? (
@@ -129,7 +133,7 @@ export const ProjectSidebar = () => {
                 href={siteHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open"
+                aria-label={t.projects.sidebar.open}
                 className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
               >
                 <ExternalLink className="size-3 shrink-0" />
@@ -138,7 +142,7 @@ export const ProjectSidebar = () => {
           </div>
           {projectData.last_deployed && (
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-muted-foreground">Last Deploy</span>
+              <span className="text-sm text-muted-foreground">{t.projects.sidebar.lastDeploy}</span>
               <p className="truncate text-sm font-medium text-foreground">
                 {formatDate(projectData.last_deployed)}
               </p>

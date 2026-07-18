@@ -241,7 +241,7 @@ export function DeployCredentialModal({
             type="button"
             disabled={busy !== null}
             onClick={handleInstallApp}
-            className="w-full rounded-xl border border-border/50 bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.03] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-border/50 bg-card p-4 text-start transition-colors hover:border-primary/40 hover:bg-primary/[0.03] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -275,7 +275,7 @@ export function DeployCredentialModal({
             type="button"
             disabled={busy !== null}
             onClick={handleAddToken}
-            className="w-full rounded-xl border border-border/50 bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.03] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-border/50 bg-card p-4 text-start transition-colors hover:border-primary/40 hover:bg-primary/[0.03] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
@@ -306,7 +306,7 @@ export function DeployCredentialModal({
             type="button"
             disabled={busy !== null}
             onClick={handleBuildLocal}
-            className="w-full rounded-xl border border-border/50 bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/[0.03] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-border/50 bg-card p-4 text-start transition-colors hover:border-primary/40 hover:bg-primary/[0.03] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">

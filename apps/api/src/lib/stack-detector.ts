@@ -21,16 +21,19 @@
 
 import {
   STACKS,
+  STACK_IDS,
   OUTPUT_DIRECTORIES,
   getProjectType,
   getBuildImage,
   LANGUAGE_MANIFEST_FILES,
   collectDependencies,
   detectPort as detectPortFromLanguages,
+  parseDeploymentMetadata,
   type StackId,
   type ProjectType,
   type StackDefinition,
   type StackDetection,
+  type DeploymentMetadata,
 } from "@repo/core";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -436,7 +439,17 @@ export function detectStack(
     }
   }
 
-  return {
+  // Elixir/Phoenix: the mix release is named after the `app` in mix.exs, not a
+  // literal "app". Derive it so the start command runs the real release binary.
+  // productionPaths stays `_build/prod/rel` (the whole release tree is copied).
+  if (stackDef.language === "elixir" && startCommand) {
+    const release = parseMixReleaseName(fc["mix.exs"]);
+    if (release) {
+      startCommand = `_build/prod/rel/${release}/bin/${release} start`;
+    }
+  }
+
+  const result: StackResult = {
     stack: matched,
     projectType: getProjectType(matched),
     category: stackDef.category,
@@ -449,6 +462,132 @@ export function detectStack(
     outputDirectory: OUTPUT_DIRECTORIES[matched] ?? "dist",
     productionPaths,
     port: detectPortFromLanguages({ packageJson, fileContents: fc }) ?? stackDef.defaultPort,
+  };
+
+  // Fold metadata (vercel.json / render.yaml / …) over heuristic detection so a
+  // repo that already tells a PaaS how to build/run it deploys the same way here.
+  return applyMetadataOverrides(result, parseDeploymentMetadata(fc));
+}
+
+// ─── Metadata overrides (vercel.json / render.yaml / …) ──────────────────────
+
+/** Non-empty string guard for command/dir fields. */
+function isSet(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+/**
+ * Fold normalized deployment metadata over a detected StackResult.
+ *
+ * Precedence, per source, field by field:
+ *   - authoritative source (vercel): its value overrides the detected default;
+ *   - `fillOnly` source (render): its value applies only where detection was empty;
+ *   - `nonLocal` source (a root vercel.json that `cd`s into a subdir): its
+ *     build-shaping fields are skipped entirely - they describe another
+ *     directory's build, not this one's.
+ *
+ * A `framework` hint reclassifies the stack (category/projectType/image/output/
+ * port/productionPaths) from the registry while preserving detected commands
+ * unless the metadata overrides them.
+ */
+export function applyMetadataOverrides(
+  result: StackResult,
+  metadataList: DeploymentMetadata[],
+): StackResult {
+  let out = result;
+
+  for (const meta of metadataList) {
+    // A nonLocal file's build/install/output/framework all pertain to a
+    // different directory - ignore them here (rewrites are handled elsewhere).
+    if (meta.nonLocal) continue;
+
+    const takeOver = (current: string, next: string | undefined): string => {
+      if (!isSet(next)) return current;
+      if (meta.fillOnly && isSet(current)) return current;
+      return next;
+    };
+
+    if (isSet(meta.framework) && STACK_IDS.includes(meta.framework as StackId)) {
+      out = applyFrameworkOverride(out, meta.framework as StackId);
+    }
+
+    out = {
+      ...out,
+      installCommand: takeOver(out.installCommand, meta.installCommand),
+      buildCommand: takeOver(out.buildCommand, meta.buildCommand),
+      outputDirectory: takeOver(out.outputDirectory, meta.outputDirectory),
+      startCommand: takeOver(out.startCommand, meta.startCommand),
+    };
+  }
+
+  // Vercel "Output Directory" semantics: an explicit outputDirectory on a
+  // non-server project means "build, then serve that folder as static" - exactly
+  // like Vercel's default (Other framework) preset. A dev `start` script
+  // (webpack-dev-server, `vite`) is irrelevant to production static serving, so
+  // we drop it → the deploy runs the build and serves the output as static.
+  // Genuine server frameworks (Next SSR, Express, …) keep their server shape.
+  const declaresOutputDir = metadataList.some((m) => !m.nonLocal && isSet(m.outputDirectory));
+  if (declaresOutputDir && !isTrueServerStack(out)) {
+    out = classifyAsStaticOutput(out);
+  }
+
+  return out;
+}
+
+/**
+ * A stack that inherently needs a long-running process to serve (SSR frameworks,
+ * backends). Generic `node`/`unknown` are NOT true servers - an ambiguous repo
+ * with a dev `start` script but an explicit build output is static (the output
+ * directory is the authoritative signal). Frontend/static stacks are never servers.
+ */
+function isTrueServerStack(result: StackResult): boolean {
+  if (result.stack === "node" || result.stack === "unknown") return false;
+  return result.category === "backend" || result.category === "fullstack";
+}
+
+/**
+ * Force a static build+serve shape: keep a frontend framework as-is (just ensure
+ * no server command), otherwise fall back to the generic `static` stack. The
+ * caller's metadata buildCommand/outputDirectory have already been applied and
+ * are preserved; we only clear the (dev) start command so the project deploys as
+ * static output rather than a long-running server.
+ */
+function classifyAsStaticOutput(result: StackResult): StackResult {
+  if (result.category === "frontend" || result.category === "static") {
+    return { ...result, startCommand: "" };
+  }
+  return {
+    ...result,
+    stack: "static",
+    category: "static",
+    projectType: getProjectType("static"),
+    startCommand: "",
+    buildImage: getBuildImage("static", result.packageManager),
+    productionPaths: [],
+  };
+}
+
+/**
+ * Reclassify a StackResult to an explicitly-declared framework. Adopts the
+ * framework's registry classification (category/projectType/image/output/
+ * productionPaths) and its default port when the current port is still the old
+ * stack's default. Commands are left to the detector / other metadata fields.
+ */
+function applyFrameworkOverride(result: StackResult, framework: StackId): StackResult {
+  if (framework === result.stack) return result;
+
+  const oldDef = STACKS[result.stack] as StackDefinition;
+  const newDef = STACKS[framework] as StackDefinition;
+
+  return {
+    ...result,
+    stack: framework,
+    projectType: getProjectType(framework),
+    category: newDef.category,
+    buildImage: getBuildImage(framework, result.packageManager),
+    outputDirectory: OUTPUT_DIRECTORIES[framework] ?? result.outputDirectory,
+    productionPaths: newDef.productionPaths ? [...newDef.productionPaths] : result.productionPaths,
+    port: result.port === oldDef.defaultPort ? newDef.defaultPort : result.port,
   };
 }
 
@@ -546,6 +685,17 @@ function parseDotnetAssemblyName(files: RepoFile[]): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Derive the Elixir mix release name from `mix.exs`: the `app: :name` atom in the
+ * `project` block, which the default `mix release` names the release after.
+ * Returns null when absent, so the caller keeps the registry's literal "app".
+ */
+function parseMixReleaseName(content?: string): string | null {
+  if (!content) return null;
+  const app = content.match(/\bapp:\s*:([a-zA-Z_][a-zA-Z0-9_]*)/);
+  return app ? app[1] : null;
 }
 
 /** Build command - prefers project scripts, then falls back to registry defaults */

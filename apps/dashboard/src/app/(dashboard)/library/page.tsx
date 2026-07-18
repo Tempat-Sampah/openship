@@ -14,6 +14,7 @@ import { LibrarySidebar } from "./components/LibrarySidebar";
 import { UrlImport } from "./components/UrlImport";
 import { TemplateGrid } from "./components/TemplateGrid";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { useI18n } from "@/components/i18n-provider";
 
 type Tab = "folder" | "repositories" | "url" | "template";
 
@@ -24,6 +25,7 @@ interface TabItem {
 }
 
 export default function LibraryPage() {
+  const { t } = useI18n();
   const {
     state,
     connected,
@@ -56,10 +58,10 @@ export default function LibraryPage() {
   //   - SaaS → upload the folder to a cloud build workspace (stack picked up
   //     front so we know which image to provision).
   const tabs: TabItem[] = [
-    { key: "folder", label: "Folder", icon: FolderUp },
-    { key: "repositories", label: "GitHub", icon: Github },
-    { key: "url", label: "Git URL", icon: Link2 },
-    { key: "template", label: "Template", icon: Sparkles },
+    { key: "folder", label: t.library.page.tabs.folder, icon: FolderUp },
+    { key: "repositories", label: t.library.page.tabs.github, icon: Github },
+    { key: "url", label: t.library.page.tabs.url, icon: Link2 },
+    { key: "template", label: t.library.page.tabs.template, icon: Sparkles },
   ];
 
   return (
@@ -68,10 +70,10 @@ export default function LibraryPage() {
         {/* ── Header ───────────────────────────────────────────── */}
         <div className="mb-6">
           <h1 className="text-2xl font-medium text-foreground/80" style={{ letterSpacing: "-0.2px" }}>
-            New Project
+            {t.library.page.title}
           </h1>
           <p className="text-sm text-muted-foreground/70 mt-1">
-            Import a repository, paste a URL, or start from a template
+            {t.library.page.subtitle}
           </p>
         </div>
 
@@ -139,7 +141,6 @@ export default function LibraryPage() {
           <LibrarySidebar
             selectedOwner={selectedOwner}
             repos={repos}
-            onSwitchTab={setActiveTab}
             selfHosted={selfHosted}
             state={state}
             cloudConnected={cloudConnected}

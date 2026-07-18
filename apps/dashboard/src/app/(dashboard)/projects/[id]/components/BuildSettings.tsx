@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Inbox, Layers, ArrowRight, Pencil, KeyRound, Cpu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { encodeLocalSlug, encodeRepoSlug } from "@/utils/repoSlug";
 import { EnvVarsEditor } from "./EnvVarsEditor";
 
@@ -73,7 +74,7 @@ function Row({
     <div className="flex items-center justify-between gap-3 px-4 py-2.5">
       <span className="shrink-0 text-[12px] text-muted-foreground">{label}</span>
       <span
-        className={`min-w-0 break-all text-right text-[13px] font-medium text-foreground ${mono ? "font-mono tabular-nums" : ""}`}
+        className={`min-w-0 break-all text-end text-[13px] font-medium text-foreground ${mono ? "font-mono tabular-nums" : ""}`}
       >
         {empty ? <span className="text-muted-foreground/40">—</span> : value}
       </span>
@@ -83,6 +84,7 @@ function Row({
 
 export const BuildSettings = () => {
   const { buildData, projectData, servicesData, id } = useProjectSettings();
+  const { t } = useI18n();
   const router = useRouter();
   const [envOpen, setEnvOpen] = useState(false);
 
@@ -114,7 +116,7 @@ export const BuildSettings = () => {
         className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
       >
         <Pencil className="size-3.5" />
-        Edit
+        {t.projectSettings.build.edit}
       </button>
     ) : null;
 
@@ -125,8 +127,8 @@ export const BuildSettings = () => {
         <SectionCard
           icon={Inbox}
           iconTone="muted"
-          title="Managed by openship"
-          description="Webmail uses a fixed build and start pipeline — install, build, and run commands are not configurable. Redeploy from the mail overview to pick up upstream changes."
+          title={t.projectSettings.build.webmail.title}
+          description={t.projectSettings.build.webmail.description}
         />
       </div>
     );
@@ -134,26 +136,34 @@ export const BuildSettings = () => {
 
   // ── Service-based project: config lives per-service in the Services tab. ──
   if (hasServices) {
+    const subAppsLabel = interpolate(
+      monorepoCount === 1 ? t.projectSettings.build.services.subAppOne : t.projectSettings.build.services.subAppOther,
+      { count: String(monorepoCount) },
+    );
+    const composeLabel = interpolate(
+      composeCount === 1 ? t.projectSettings.build.services.composeOne : t.projectSettings.build.services.composeOther,
+      { count: String(composeCount) },
+    );
     const serviceLabel =
       monorepoCount && composeCount
-        ? `${monorepoCount} sub-app${monorepoCount === 1 ? "" : "s"} and ${composeCount} compose service${composeCount === 1 ? "" : "s"}`
+        ? interpolate(t.projectSettings.build.services.both, { subApps: subAppsLabel, composeServices: composeLabel })
         : monorepoCount
-          ? `${monorepoCount} sub-app${monorepoCount === 1 ? "" : "s"}`
-          : `${composeCount} compose service${composeCount === 1 ? "" : "s"}`;
+          ? subAppsLabel
+          : composeLabel;
     return (
       <div className="space-y-5">
         <SectionCard
           icon={Layers}
           iconTone="primary"
-          title="Per-service settings"
-          description={`This project has ${serviceLabel}. Build commands, framework, ports, and run commands live on each service row — view and edit them in the Services tab.`}
+          title={t.projectSettings.build.services.title}
+          description={interpolate(t.projectSettings.build.services.descriptionTemplate, { serviceLabel })}
           actions={
             <button
               type="button"
               onClick={() => router.push(`/projects/${id}/services`)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Open Services
+              {t.projectSettings.build.services.open}
               <ArrowRight className="size-3.5" />
             </button>
           }
@@ -165,10 +175,10 @@ export const BuildSettings = () => {
   // ── Single-app: read-only configuration summary. ──────────────────────
   const runtimeModeLabel =
     projectData?.runtimeMode === "docker"
-      ? "Sandboxed (container)"
+      ? t.projectSettings.build.runtime.modeSandboxed
       : projectData?.runtimeMode === "bare"
-        ? "Direct (host process)"
-        : "Default (resolved at deploy)";
+        ? t.projectSettings.build.runtime.modeDirect
+        : t.projectSettings.build.runtime.modeDefault;
 
   const cpuCores = projectData?.resources?.production?.cpuCores;
   const memoryMb = projectData?.resources?.production?.memoryMb;
@@ -178,32 +188,32 @@ export const BuildSettings = () => {
       <SectionCard
         icon={Cpu}
         iconTone="orange"
-        title="Runtime configuration"
-        description="Read-only. Edit through the deploy wizard so each change ships as a new version."
+        title={t.projectSettings.build.runtime.title}
+        description={t.projectSettings.build.runtime.description}
         actions={<EditButton />}
       >
         <div className="overflow-hidden rounded-xl border border-border/40 divide-y divide-border/30">
-          <Row label="Framework" value={projectData?.framework} />
-          <Row label="Package manager" value={projectData?.packageManager} />
-          <Row label="Runtime isolation" value={runtimeModeLabel} />
+          <Row label={t.projectSettings.build.runtime.framework} value={projectData?.framework} />
+          <Row label={t.projectSettings.build.runtime.packageManager} value={projectData?.packageManager} />
+          <Row label={t.projectSettings.build.runtime.runtimeIsolation} value={runtimeModeLabel} />
           {isCloud && (
             <Row
-              label="Resources"
-              value={cpuCores || memoryMb ? `${cpuCores ?? "?"} vCPU · ${memoryMb ?? "?"} MB` : undefined}
+              label={t.projectSettings.build.runtime.resources}
+              value={cpuCores || memoryMb ? interpolate(t.projectSettings.build.runtime.resourcesValue, { cpu: String(cpuCores ?? "?"), memory: String(memoryMb ?? "?") }) : undefined}
             />
           )}
-          <Row label="Runtime port" value={buildData.productionPort} mono />
-          <Row label="Install command" value={buildData.installCommand} mono />
+          <Row label={t.projectSettings.build.runtime.runtimePort} value={buildData.productionPort} mono />
+          <Row label={t.projectSettings.build.runtime.installCommand} value={buildData.installCommand} mono />
           <Row
-            label="Build command"
-            value={buildData.hasBuild ? buildData.buildCommand : "No build step"}
+            label={t.projectSettings.build.runtime.buildCommand}
+            value={buildData.hasBuild ? buildData.buildCommand : t.projectSettings.build.runtime.noBuildStep}
             mono={buildData.hasBuild}
           />
-          <Row label="Output directory" value={buildData.outputDirectory} mono />
-          <Row label="Root directory" value={buildData.rootDirectory || "."} mono />
+          <Row label={t.projectSettings.build.runtime.outputDirectory} value={buildData.outputDirectory} mono />
+          <Row label={t.projectSettings.build.runtime.rootDirectory} value={buildData.rootDirectory || "."} mono />
           <Row
-            label="Start command"
-            value={buildData.hasServer ? buildData.startCommand : "Static (no server)"}
+            label={t.projectSettings.build.runtime.startCommand}
+            value={buildData.hasServer ? buildData.startCommand : t.projectSettings.build.runtime.staticNoServer}
             mono={buildData.hasServer}
           />
         </div>
@@ -214,8 +224,8 @@ export const BuildSettings = () => {
       <SectionCard
         icon={KeyRound}
         iconTone="muted"
-        title="Environment variables"
-        description="Encrypted at rest. Secrets stay masked — only the values you change are written."
+        title={t.projectSettings.build.env.title}
+        description={t.projectSettings.build.env.description}
         actions={
           <button
             type="button"
@@ -223,7 +233,7 @@ export const BuildSettings = () => {
             className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
           >
             <Pencil className="size-3.5" />
-            Edit
+            {t.projectSettings.build.env.edit}
           </button>
         }
       />

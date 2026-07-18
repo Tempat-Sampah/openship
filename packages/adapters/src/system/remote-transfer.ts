@@ -248,7 +248,13 @@ export async function uploadFileWithRsync(
   const retries = Math.max(1, opts?.retries ?? 3);
   const host = deps.config.host.includes(":") ? `[${deps.config.host}]` : deps.config.host;
   const user = deps.config.username ?? "root";
-  const target = `${user}@${host}:${sq(remoteFile)}`;
+  // The path is a single rsync argv element (runRsync spawns rsync directly, no
+  // shell), so it must NOT be shell-quoted. rsync 3.2.4+ defaults to
+  // protected-args and sends the arg to the remote WITHOUT shell splitting —
+  // wrapping it in `sq()` would send literal quotes, breaking as
+  // `change_dir "/root/'/tmp…"`. openship remote paths are generated (no spaces/
+  // metachars), so the raw path is correct on both modern and legacy rsync.
+  const target = `${user}@${host}:${remoteFile}`;
 
   await withTemporaryPrivateKey(deps.config, async (keyPath) => {
     let lastCode = 1;

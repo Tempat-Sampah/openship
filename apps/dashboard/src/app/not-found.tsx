@@ -1,9 +1,8 @@
-import { Home, Rocket } from "lucide-react";
 import { getSession, getDeploymentInfo } from "@/lib/server/session";
 import { serverApi } from "@/lib/server/api";
 import { AuthShell } from "@/components/auth-shell";
 import { Sidebar } from "@/components/sidebar";
-import { NotFoundView } from "@/components/not-found-view";
+import { NotFoundContent } from "@/components/not-found-content";
 import { DashboardProviders } from "./(dashboard)/providers";
 
 /**
@@ -17,16 +16,7 @@ import { DashboardProviders } from "./(dashboard)/providers";
  * branded AuthShell — the sidebar needs the session-scoped providers.
  */
 export default async function NotFound() {
-  const body = (
-    <NotFoundView
-      title="Page not found"
-      description="The page you're looking for doesn't exist or has moved."
-      actions={[
-        { href: "/", label: "Back to dashboard", icon: <Home className="size-4" /> },
-        { href: "/deployments", label: "View deployments", icon: <Rocket className="size-4" />, variant: "secondary" },
-      ]}
-    />
-  );
+  const body = <NotFoundContent variant="global" />;
 
   const session = await getSession().catch(() => null);
   if (!session) {

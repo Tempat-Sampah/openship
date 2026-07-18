@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Box, ArrowUpRight, Play, Square, AlertCircle } from 'lucide-react';
 import { SandboxData } from './types';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface SandboxesCardProps {
   data: SandboxData;
@@ -11,6 +12,7 @@ interface SandboxesCardProps {
 }
 
 const SandboxesCard: React.FC<SandboxesCardProps> = ({ data, isLoading = false }) => {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <div className="bg-white rounded-[20px] border border-black/5 p-6 h-full">
@@ -75,8 +77,8 @@ const SandboxesCard: React.FC<SandboxesCardProps> = ({ data, isLoading = false }
             <Box className="w-5 h-5 text-cyan-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-black">Sandboxes</h3>
-            <p className="text-xs text-black/40">Development environments</p>
+            <h3 className="font-semibold text-black">{t.overview.sandboxes.title}</h3>
+            <p className="text-xs text-black/40">{t.overview.sandboxes.developmentEnvironments}</p>
           </div>
         </div>
         
@@ -92,7 +94,7 @@ const SandboxesCard: React.FC<SandboxesCardProps> = ({ data, isLoading = false }
       <div className="flex items-center gap-4 mb-4">
         <div className="flex-1">
           <p className="text-3xl font-bold text-cyan-600">{data.total}</p>
-          <p className="text-xs text-black/40">Total sandboxes</p>
+          <p className="text-xs text-black/40">{t.overview.sandboxes.totalSandboxes}</p>
         </div>
         
         {/* Active indicator */}
@@ -124,7 +126,7 @@ const SandboxesCard: React.FC<SandboxesCardProps> = ({ data, isLoading = false }
           </div>
           <div>
             <p className="text-sm font-semibold text-black">{activePercent}%</p>
-            <p className="text-xs text-black/40">Active</p>
+            <p className="text-xs text-black/40">{t.overview.sandboxes.active}</p>
           </div>
         </div>
       </div>
@@ -134,11 +136,11 @@ const SandboxesCard: React.FC<SandboxesCardProps> = ({ data, isLoading = false }
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-black/60">{data.active} running</span>
+            <span className="text-xs text-black/60">{interpolate(t.overview.sandboxes.runningCount, { count: String(data.active) })}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-gray-300" />
-            <span className="text-xs text-black/60">{data.inactive} stopped</span>
+            <span className="text-xs text-black/60">{interpolate(t.overview.sandboxes.stoppedCount, { count: String(data.inactive) })}</span>
           </div>
         </div>
       </div>

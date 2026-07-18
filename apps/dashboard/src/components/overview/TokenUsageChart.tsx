@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { SlidingToggle } from '@/components/ui/SlidingToggle';
 import { TokenUsageData, ChartType, TimePeriod } from './types';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface TokenUsageChartProps {
   data: TokenUsageData;
@@ -18,6 +19,7 @@ const TokenUsageChart: React.FC<TokenUsageChartProps> = ({
   period = 7,
   onPeriodChange,
 }) => {
+  const { t, locale } = useI18n();
   const [chartType, setChartType] = useState<ChartType>('area');
 
   if (isLoading) {
@@ -46,7 +48,7 @@ const TokenUsageChart: React.FC<TokenUsageChartProps> = ({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
+    return date.toLocaleDateString(locale, { weekday: 'short' });
   };
 
   const renderAreaChart = () => {
@@ -96,7 +98,7 @@ const TokenUsageChart: React.FC<TokenUsageChartProps> = ({
               <div className="w-full relative h-36 flex items-end">
                 {day.value > 0 && (
                   <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    {formatNumber(day.value)} tokens
+                    {interpolate(t.overview.tokenUsage.tokensTooltip, { count: formatNumber(day.value) })}
                   </div>
                 )}
                 
@@ -130,10 +132,10 @@ const TokenUsageChart: React.FC<TokenUsageChartProps> = ({
       <div className="px-6 py-4 border-b border-black/5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-black">Token Usage</h3>
+            <h3 className="font-semibold text-black">{t.overview.tokenUsage.title}</h3>
             <div className="flex items-baseline gap-2 mt-0.5">
               <p className="text-xl font-bold text-blue-600">{formatNumber(data.total)}</p>
-              <span className="text-xs text-black/40">last {period} days</span>
+              <span className="text-xs text-black/40">{interpolate(t.overview.tokenUsage.lastNDays, { period: String(period) })}</span>
               {data.trend !== 0 && (
                 <span className={`text-xs font-medium ${data.trend > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                   {data.trend > 0 ? '+' : ''}{data.trend}%

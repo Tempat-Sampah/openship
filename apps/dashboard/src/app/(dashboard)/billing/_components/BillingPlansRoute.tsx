@@ -5,6 +5,7 @@ import { PricingCards, type ApiPlan } from "@/components/billing/PricingCards";
 import { api } from "@/lib/api/client";
 import type { PlanTierId } from "@repo/core";
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 
 interface PlansResponse {
   data: { plans: ApiPlan[] };
@@ -15,6 +16,7 @@ interface CheckoutResponse {
 }
 
 export function BillingPlansRoute({ currentPlan }: { currentPlan: PlanTierId }) {
+  const { t } = useI18n();
   const [plans, setPlans] = useState<ApiPlan[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function BillingPlansRoute({ currentPlan }: { currentPlan: PlanTierId }) 
         const res = await api.get<PlansResponse>("billing/plans");
         if (!cancelled) setPlans(res.data.plans);
       } catch {
-        if (!cancelled) setError("Failed to load plans");
+        if (!cancelled) setError(t.billing.plansRoute.loadError);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -48,7 +50,7 @@ export function BillingPlansRoute({ currentPlan }: { currentPlan: PlanTierId }) 
       });
       window.location.href = res.data.checkoutUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start checkout");
+      setError(err instanceof Error ? err.message : t.billing.plansRoute.checkoutError);
       setSubscribing(null);
     }
   };
@@ -64,12 +66,12 @@ export function BillingPlansRoute({ currentPlan }: { currentPlan: PlanTierId }) 
   if (error || !plans) {
     return (
       <div className="rounded-2xl border border-border/50 bg-card p-8 text-center">
-        <p className="text-sm text-muted-foreground">{error || "Something went wrong"}</p>
+        <p className="text-sm text-muted-foreground">{error || t.billing.plansRoute.genericError}</p>
         <button
           onClick={() => window.location.reload()}
           className="mt-4 text-sm font-medium text-primary hover:underline"
         >
-          Try again
+          {t.billing.plansRoute.tryAgain}
         </button>
       </div>
     );

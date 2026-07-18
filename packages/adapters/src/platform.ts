@@ -264,7 +264,7 @@ async function createSelfHostedPlatform(config: PlatformConfig): Promise<Platfor
     runtime = new BareRuntime({ ...config.bare, executor, systemManager: system });
   } else {
     const { DockerRuntime } = await import("./runtime/docker");
-    runtime = new DockerRuntime(config.docker, system, config.provisionLock);
+    runtime = await DockerRuntime.create(config.docker, system, config.provisionLock);
   }
 
   // Infrastructure - runtime implies the reverse proxy

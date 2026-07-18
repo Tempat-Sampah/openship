@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Plus, ExternalLink, Receipt } from "lucide-react";
 import { api } from "@/lib/api/client";
+import { useI18n } from "@/components/i18n-provider";
 import type { BillingState } from "@/lib/api/billing";
 
 export type { BillingState };
@@ -60,6 +61,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
   // fetches for the overview card.
   void _state;
 
+  const { t } = useI18n();
   const [packs, setPacks] = useState<TopupPack[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
           setPacks(sorted);
         }
       } catch {
-        if (!cancelled) setError("Failed to load top-up packs");
+        if (!cancelled) setError(t.billing.topups.loadError);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -94,7 +96,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
       const res = await api.post<CheckoutResponse>("billing/topup", { packId });
       window.location.href = res.data.checkoutUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start checkout");
+      setError(err instanceof Error ? err.message : t.billing.topups.checkoutError);
       setBuyingPackId(null);
     }
   };
@@ -106,7 +108,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
       const res = await api.post<PortalResponse>("billing/portal");
       window.location.href = res.data.portalUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to open billing portal");
+      setError(err instanceof Error ? err.message : t.billing.topups.portalError);
       setOpeningPortal(false);
     }
   };
@@ -116,9 +118,9 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
       {/* ── Catalog ───────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border/50 bg-card p-6">
         <div className="mb-5">
-          <h2 className="text-base font-semibold text-foreground">Top up credits</h2>
+          <h2 className="text-base font-semibold text-foreground">{t.billing.topups.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            One-time credit packs charged via Stripe. Credits never expire and stack on top of your monthly allowance.
+            {t.billing.topups.description}
           </p>
         </div>
 
@@ -133,7 +135,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
               onClick={() => window.location.reload()}
               className="mt-3 text-sm font-medium text-primary hover:underline"
             >
-              Try again
+              {t.billing.topups.tryAgain}
             </button>
           </div>
         ) : packs && packs.length > 0 ? (
@@ -152,7 +154,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
                     <span className="text-3xl font-semibold tabular-nums text-foreground">
                       {formatCredits(pack.credits_milli)}
                     </span>
-                    <span className="text-sm text-muted-foreground">credits</span>
+                    <span className="text-sm text-muted-foreground">{t.billing.topups.credits}</span>
                   </div>
 
                   <p className="mt-3 text-2xl font-medium tabular-nums text-foreground">
@@ -167,10 +169,10 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
                     {isBuying ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        Redirecting…
+                        {t.billing.topups.redirecting}
                       </>
                     ) : (
-                      <>Buy</>
+                      <>{t.billing.topups.buy}</>
                     )}
                   </button>
                 </div>
@@ -179,7 +181,7 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
           </div>
         ) : (
           <div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-6 text-center">
-            <p className="text-sm text-muted-foreground">No top-up packs available right now.</p>
+            <p className="text-sm text-muted-foreground">{t.billing.topups.empty}</p>
           </div>
         )}
 
@@ -198,9 +200,9 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
               <Receipt className="size-5 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-foreground">Recent top-ups</h3>
+              <h3 className="text-base font-semibold text-foreground">{t.billing.topups.receiptsTitle}</h3>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                Receipts are managed in Stripe — open the billing portal to view your invoice history and download receipts.
+                {t.billing.topups.receiptsDescription}
               </p>
             </div>
           </div>
@@ -213,11 +215,11 @@ export const BillingTopups: React.FC<BillingTopupsProps> = ({ state: _state }) =
             {openingPortal ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Opening…
+                {t.billing.topups.opening}
               </>
             ) : (
               <>
-                Open Stripe Portal
+                {t.billing.topups.openPortal}
                 <ExternalLink className="size-3.5" />
               </>
             )}

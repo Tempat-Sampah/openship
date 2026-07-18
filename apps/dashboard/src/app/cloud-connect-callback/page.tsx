@@ -30,11 +30,14 @@ import { cloudApi } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { CONNECT_PKCE_STORAGE_PREFIX } from "@/lib/cloud-auth";
 import { AuthShell } from "@/components/auth-shell";
+import { useI18n } from "@/components/i18n-provider";
 
 type CallbackStatus = "loading" | "success" | "error";
 
 function CloudConnectCallbackInner() {
   const searchParams = useSearchParams();
+  const { t } = useI18n();
+  const m = t.misc.cloudConnect;
   const [status, setStatus] = useState<CallbackStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
@@ -44,7 +47,7 @@ function CloudConnectCallbackInner() {
 
     if (!code) {
       setStatus("error");
-      setErrorMessage("The authentication code was not provided. Please try again.");
+      setErrorMessage(m.noCode);
       return;
     }
 
@@ -65,7 +68,7 @@ function CloudConnectCallbackInner() {
 
     if (state && !verifier) {
       setStatus("error");
-      setErrorMessage("Connection state expired. Please try again.");
+      setErrorMessage(m.stateExpired);
       return;
     }
 
@@ -95,17 +98,17 @@ function CloudConnectCallbackInner() {
       })
       .catch((err) => {
         setStatus("error");
-        setErrorMessage(getApiErrorMessage(err, "Could not verify with Openship Cloud."));
+        setErrorMessage(getApiErrorMessage(err, m.verifyError));
       });
-  }, [searchParams]);
+  }, [searchParams, m]);
 
   if (status === "loading") {
     return (
       <AuthShell>
         <div className="flex flex-col items-center justify-center py-4 text-center">
           <Loader2 className="mb-4 size-8 animate-spin text-muted-foreground" />
-          <h1 className="text-lg font-semibold">Finalizing connection…</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Just a moment.</p>
+          <h1 className="text-lg font-semibold">{m.finalizingTitle}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{m.finalizingSubtitle}</p>
         </div>
       </AuthShell>
     );
@@ -118,9 +121,9 @@ function CloudConnectCallbackInner() {
           <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/80 to-emerald-600 shadow-sm">
             <Check className="size-7 text-white" />
           </div>
-          <h1 className="text-lg font-semibold">Connected to Openship Cloud</h1>
+          <h1 className="text-lg font-semibold">{m.successTitle}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your instance is now linked. You can close this window.
+            {m.successDescription}
           </p>
         </div>
       </AuthShell>
@@ -133,7 +136,7 @@ function CloudConnectCallbackInner() {
         <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/80 to-red-600 shadow-sm">
           <AlertCircle className="size-7 text-white" />
         </div>
-        <h1 className="text-lg font-semibold">Connection Failed</h1>
+        <h1 className="text-lg font-semibold">{m.failedTitle}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{errorMessage}</p>
       </div>
     </AuthShell>

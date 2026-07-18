@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import type { RoutingConfig } from "@repo/core";
 import { organization } from "./organization";
 import { service } from "./service";
 
@@ -230,6 +231,14 @@ export const project = pgTable(
      * `service.alwaysRebuildGlobs`.
      */
     alwaysRebuildPaths: jsonb("always_rebuild_paths").$type<string[] | null>(),
+    /**
+     * Routing config parsed from the repo's `vercel.json` (rewrites / redirects
+     * / headers / cleanUrls / trailingSlash). Compiled to OpenResty at deploy
+     * time (see `compileVercelRouting`) so the single-domain composition and
+     * redirects/headers match what the repo declares. Null when the repo has no
+     * routing config. Widening the shape needs no migration (jsonb).
+     */
+    routingConfig: jsonb("routing_config").$type<RoutingConfig | null>(),
     /**
      * How Cloud deployments preserve their rollback artifact:
      *   - "inplace"  → Oblien `snapshots.createArchive` + `workspace.stop`.

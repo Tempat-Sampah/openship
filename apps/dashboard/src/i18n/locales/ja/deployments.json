@@ -1,0 +1,173 @@
+{
+  "time": {
+    "secondsAgo": "{n}秒前",
+    "minutesAgo": "{n}分前",
+    "hoursAgo": "{n}時間前",
+    "daysAgo": "{n}日前",
+    "monthsAgo": "{n}か月前",
+    "yearsAgo": "{n}年前"
+  },
+  "header": {
+    "title": "デプロイ",
+    "loading": "読み込み中…",
+    "countProjectOne": "{count}件のデプロイ",
+    "countProjectOther": "{count}件のデプロイ",
+    "countAllOne": "{projects}件のプロジェクトで合計{deployments}件",
+    "countAllOther": "{projects}件のプロジェクトで合計{deployments}件"
+  },
+  "filters": {
+    "searchPlaceholder": "デプロイを検索...",
+    "all": "すべて",
+    "success": "成功",
+    "failed": "失敗",
+    "building": "ビルド中",
+    "canceled": "キャンセル済み"
+  },
+  "projectFilter": {
+    "allProjects": "すべてのプロジェクト"
+  },
+  "sidebar": {
+    "overview": {
+      "title": "概要",
+      "total": "合計",
+      "successful": "成功",
+      "failed": "失敗",
+      "inProgress": "進行中"
+    },
+    "autoDeploy": {
+      "title": "自動デプロイ",
+      "description": "自動デプロイを有効にすると、mainブランチへのプッシュのたびに自動的にデプロイがトリガーされます。",
+      "cta": "プロジェクト設定に移動"
+    },
+    "getStarted": {
+      "title": "はじめに",
+      "description": "Gitリポジトリをインポートするか、テンプレートを使用して最初のデプロイを作成しましょう。",
+      "cta": "プロジェクトをデプロイ"
+    },
+    "recent": {
+      "title": "最近",
+      "empty": "デプロイはここに表示されます",
+      "unknown": "不明"
+    }
+  },
+  "stats": {
+    "total": "合計",
+    "projectCountOne": "{count}件のプロジェクト",
+    "projectCountOther": "{count}件のプロジェクト",
+    "success": "成功",
+    "failed": "失敗",
+    "inProgress": "進行中",
+    "buildingNow": "現在ビルド中"
+  },
+  "status": {
+    "deployed": "デプロイ済み",
+    "failed": "失敗",
+    "canceled": "キャンセル済み",
+    "building": "ビルド中",
+    "deploying": "デプロイ中",
+    "partial": "一部完了",
+    "rejected": "却下",
+    "verifying": "検証中",
+    "pending": "保留中"
+  },
+  "serviceStatus": {
+    "deployed": "デプロイ済み",
+    "failed": "失敗",
+    "cancelled": "キャンセル済み",
+    "skipped": "スキップ済み",
+    "building": "ビルド中",
+    "deploying": "デプロイ中",
+    "running": "実行中",
+    "removedOnHost": "ホスト上で削除済み",
+    "verifying": "検証中",
+    "pending": "保留中"
+  },
+  "card": {
+    "unknownProject": "不明なプロジェクト",
+    "versionTitle": "バージョン {version}",
+    "active": "アクティブ",
+    "activeTitle": "これは現在プロジェクトを提供しているデプロイです",
+    "pinned": "ピン留め済み",
+    "pinnedTitle": "ピン留め済み — 保持ポリシーのプルーニング対象外です。ロールバック可能な状態が無期限に維持されます。",
+    "snapshotted": "スナップショット済み",
+    "snapshottedTitle": "アーティファクトがアーカイブされました — このバージョンにロールバックできます",
+    "manualDeploy": "手動デプロイ",
+    "serviceTitle": "{name}: {label}",
+    "serviceTitleReason": "{name}: {label} ({reason})"
+  },
+  "empty": {
+    "filtered": {
+      "title": "デプロイが見つかりません",
+      "description": "フィルターを調整するか、検索をクリアしてみてください。"
+    },
+    "none": {
+      "title": "まだデプロイがありません",
+      "description": "最初のプロジェクトをデプロイすると、ビルドステータス、コミットの詳細、パフォーマンス指標とともにここに表示されます。",
+      "deployButton": "プロジェクトをデプロイ",
+      "browseButton": "テンプレートを見る"
+    }
+  },
+  "modal": {
+    "title": "コミットの詳細",
+    "project": "プロジェクト",
+    "unknownProject": "不明なプロジェクト",
+    "domain": "ドメイン",
+    "noDomain": "ドメインなし",
+    "status": "ステータス",
+    "environment": "環境",
+    "statusName": {
+      "success": "成功",
+      "failed": "失敗",
+      "building": "ビルド中",
+      "deploying": "デプロイ中",
+      "canceled": "キャンセル済み",
+      "pending": "保留中"
+    },
+    "changedFiles": "変更されたファイル ({count})",
+    "fileTypes": {
+      "added": "+ 追加",
+      "modified": "~ 変更",
+      "removed": "- 削除"
+    },
+    "viewOnGithub": "GitHubで表示",
+    "visitSite": "サイトにアクセス",
+    "manual": {
+      "title": "手動デプロイ",
+      "description": "このデプロイは手動でトリガーされたため、コミット情報がありません。",
+      "deploymentId": "デプロイID",
+      "created": "作成日時",
+      "type": "種類",
+      "typeManual": "手動"
+    }
+  },
+  "menu": {
+    "openDeployment": "デプロイを開く",
+    "viewRepository": "リポジトリを表示",
+    "copyDomainUrl": "ドメインURLをコピー",
+    "copyBuildId": "ビルドIDをコピー",
+    "cancelDeployment": "デプロイをキャンセル",
+    "rollback": "このバージョンにロールバック",
+    "rollbackTitle": {
+      "enabled": "プロジェクトをこのバージョンに復元します（コードのみ — データは変更されません）",
+      "active": "これはすでにアクティブなバージョンです",
+      "pruned": "ロールバック用アーティファクトはプルーニング済みです。代わりに「このコミットを再デプロイ」でソースから再ビルドしてください。",
+      "notReady": "ロールバックできるのは準備完了のデプロイのみです"
+    },
+    "redeploy": "このコミットを再デプロイ",
+    "redeployTitle": "このコミットをソースから正確に再ビルドします。ロールバックより遅いですが、アーティファクトがプルーニングされた後でも機能します。",
+    "pin": "ピン留め",
+    "unpin": "ピン留めを解除",
+    "pinTitle": {
+      "pin": "このデプロイをロールバック可能な状態で無期限に保持します（上限: プロジェクトあたり10件）",
+      "unpin": "保持数が上限を超えたときにこのデプロイをプルーニング可能にします",
+      "pruned": "ピン留めできません — アーティファクトはすでにプルーニング済みです"
+    },
+    "deleteDeployment": "デプロイを削除",
+    "confirmRollback": "このバージョンにロールバックしますか？\n\nこの操作はアプリケーションコードのみを復元します。データベースとボリュームのデータは変更されません。",
+    "rollbackFailed": "ロールバックに失敗しました",
+    "confirmRedeploy": "コミット {hash} を再デプロイしますか？\n\nこのコミットをソースから正確に再ビルドします。ロールバックより遅い（フルビルドが再実行される）ですが、ロールバック用アーティファクトがプルーニングされた後でも機能します。新しいデプロイが一覧に表示されます。",
+    "redeployFailed": "再デプロイに失敗しました",
+    "pinFailed": "デプロイのピン留めに失敗しました",
+    "unpinFailed": "デプロイのピン留め解除に失敗しました"
+  }
+}

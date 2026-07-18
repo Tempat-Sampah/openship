@@ -20,6 +20,7 @@ import {
   syncProjectRouteState,
   type ProjectRouteState,
 } from "../domains/project-route.service";
+import { applyProjectRouting } from "../domains/routing-apply.service";
 import type {
   TCreateProjectBody,
   TCreateProjectEnvironmentBody,
@@ -54,14 +55,20 @@ function readActiveDeploymentSummary(dep: Deployment | null | undefined): {
   activeVersion: number | null;
   activeDeploymentStatus: string | null;
   awaitingDecision: boolean;
+  routingUnsynced: boolean;
 } {
   const meta = (dep?.meta ?? null) as {
     composeDeployment?: { decision?: string };
+    edgeUnsynced?: boolean;
+    deployWarning?: string;
   } | null;
   return {
     activeVersion: dep?.version ?? null,
     activeDeploymentStatus: dep?.status ?? null,
     awaitingDecision: meta?.composeDeployment?.decision === "pending",
+    // Live, but the free .opsh.io edge route didn't sync — surfaced as
+    // "Action Required" with a Retry routing action (see routing/retry).
+    routingUnsynced: meta?.edgeUnsynced === true || typeof meta?.deployWarning === "string",
   };
 }
 
@@ -251,6 +258,7 @@ function buildProductionProjectInput(
       data.projectType === "monorepo"
         ? data.monorepoWorkspace?.prepareCommand ?? null
         : null,
+    routingConfig: data.routingConfig ?? null,
     rollbackWindow:
       data.rollbackWindow !== undefined ? normalizeRollbackWindow(data.rollbackWindow) : null,
     cloudArchiveStrategy: data.cloudArchiveStrategy ?? undefined,
@@ -435,6 +443,7 @@ export async function ensureProject(
     if (data.projectType === "monorepo" && data.monorepoWorkspace !== undefined) {
       update.workspacePrepareCommand = data.monorepoWorkspace.prepareCommand ?? null;
     }
+    if (data.routingConfig !== undefined) update.routingConfig = data.routingConfig;
     if (data.slug !== undefined && data.slug !== project.slug) {
       const existingProject = await repos.project.findBySlugInOrg(organizationId, data.slug);
       if (existingProject && existingProject.id !== project.id) {
@@ -686,6 +695,14 @@ export async function updateProject(
         ),
       );
     }
+  }
+
+  // Editing the vercel.json routing (rewrites/redirects/headers) re-applies it to
+  // the live deployment without a rebuild — the routing counterpart to the
+  // domain/port re-sync above. Self-hosted → OpenResty, cloud → the Oblien edge;
+  // best-effort internally.
+  if (data.routingConfig !== undefined) {
+    await applyProjectRouting(projectId);
   }
 
   if (p.appId) {

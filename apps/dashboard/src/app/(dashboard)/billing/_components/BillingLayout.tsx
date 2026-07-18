@@ -3,6 +3,7 @@ import { serverApi, ServerApiError } from "@/lib/server/api";
 import { BillingSidebar, type BillingState } from "./billing-shared";
 import { BillingTabBar } from "./BillingTabBar";
 import { BillingContent } from "./BillingContent";
+import { BillingHeader } from "./BillingHeader";
 
 /** Wire shape of `GET /api/billing/state` — the controller wraps in `{ data }`. */
 interface BillingStateEnvelope {
@@ -40,14 +41,7 @@ export async function BillingLayout({ children }: { children: React.ReactNode })
 
   return (
     <PageContainer className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-medium text-foreground/80" style={{ letterSpacing: "-0.2px" }}>
-          Billing
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground/70">
-          Manage your subscription, usage, and payment methods.
-        </p>
-      </div>
+      <BillingHeader />
 
       <BillingTabBar />
 

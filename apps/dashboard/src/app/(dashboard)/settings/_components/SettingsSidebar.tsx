@@ -19,6 +19,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Settings as SettingsIcon, Users, ClipboardList, Cloud, Server, Bell, KeyRound, Boxes } from "lucide-react";
 import { usePlatform } from "@/context/PlatformContext";
 import { useSession, authClient } from "@/lib/auth-client";
+import { useI18n } from "@/components/i18n-provider";
 
 export type SettingsTabId = "general" | "tokens" | "mcp" | "team" | "notifications" | "audit" | "cloud" | "instance";
 
@@ -34,20 +35,23 @@ export interface SettingsTab {
 
 export function useSettingsTabs(): { tabs: SettingsTab[]; activeTab: SettingsTabId } {
   const { selfHosted } = usePlatform();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const raw = (searchParams.get("tab") ?? "general") as SettingsTabId;
   const allowedTabs: SettingsTabId[] = ["general", "tokens", "mcp", "team", "notifications", "audit", "cloud", "instance"];
   const activeTab: SettingsTabId = allowedTabs.includes(raw) ? raw : "general";
 
   const tabs: SettingsTab[] = [
-    { id: "general", label: "General", icon: SettingsIcon, visible: true },
-    { id: "tokens", label: "Tokens", icon: KeyRound, visible: true },
-    { id: "mcp", label: "MCP", icon: Boxes, visible: true },
-    { id: "team", label: "Team", icon: Users, visible: true },
-    { id: "notifications", label: "Notifications", icon: Bell, visible: true },
-    { id: "audit", label: "Audit log", icon: ClipboardList, visible: true, requiresRole: "admin" },
-    { id: "cloud", label: "Cloud", icon: Cloud, visible: selfHosted },
-    { id: "instance", label: "Instance", icon: Server, visible: true },
+    { id: "general", label: t.settings.sidebar.tabs.general, icon: SettingsIcon, visible: true },
+    { id: "tokens", label: t.settings.sidebar.tabs.tokens, icon: KeyRound, visible: true },
+    { id: "mcp", label: t.settings.sidebar.tabs.mcp, icon: Boxes, visible: true },
+    { id: "team", label: t.settings.sidebar.tabs.team, icon: Users, visible: true },
+    { id: "notifications", label: t.settings.sidebar.tabs.notifications, icon: Bell, visible: true },
+    { id: "audit", label: t.settings.sidebar.tabs.audit, icon: ClipboardList, visible: true, requiresRole: "admin" },
+    { id: "cloud", label: t.settings.sidebar.tabs.cloud, icon: Cloud, visible: selfHosted },
+    // Updates live INSIDE the Instance tab (the "this install" home), not as
+    // their own tab — see settings/page.tsx.
+    { id: "instance", label: t.settings.sidebar.tabs.instance, icon: Server, visible: true },
   ];
 
   return { tabs: tabs.filter((t) => t.visible), activeTab };
@@ -56,6 +60,7 @@ export function useSettingsTabs(): { tabs: SettingsTab[]; activeTab: SettingsTab
 export function SettingsSidebar() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useI18n();
   const { tabs, activeTab } = useSettingsTabs();
 
   const handleTabChange = (tabId: SettingsTabId) => {
@@ -80,7 +85,7 @@ export function SettingsSidebar() {
             <SettingsIcon className="size-4 text-foreground" strokeWidth={1.7} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground truncate">Settings</p>
+            <p className="text-sm font-medium text-foreground truncate">{t.settings.sidebar.title}</p>
             {session?.user?.email && (
               <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
             )}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FolderKanban, ArrowUpRight, CheckCircle2, Loader2, XCircle, Pause } from 'lucide-react';
 import { generateIcon } from '@/utils/icons';
 import { ProjectData } from './types';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface ProjectsCardProps {
   data: ProjectData;
@@ -12,6 +13,7 @@ interface ProjectsCardProps {
 }
 
 const ProjectsCard: React.FC<ProjectsCardProps> = ({ data, isLoading = false }) => {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <div className="bg-white rounded-[20px] border border-black/5 p-6 h-full">
@@ -86,8 +88,8 @@ const ProjectsCard: React.FC<ProjectsCardProps> = ({ data, isLoading = false }) 
             <FolderKanban className="w-5 h-5 text-pink-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-black">Projects</h3>
-            <p className="text-xs text-black/40">Active deployments</p>
+            <h3 className="font-semibold text-black">{t.overview.projects.title}</h3>
+            <p className="text-xs text-black/40">{t.overview.projects.activeDeployments}</p>
           </div>
         </div>
         
@@ -103,17 +105,17 @@ const ProjectsCard: React.FC<ProjectsCardProps> = ({ data, isLoading = false }) 
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-pink-100">
         <div className="flex-1 text-center">
           <p className="text-2xl font-bold text-pink-600">{data.total}</p>
-          <p className="text-xs text-black/40">Total</p>
+          <p className="text-xs text-black/40">{t.overview.projects.total}</p>
         </div>
         <div className="w-px h-8 bg-pink-100" />
         <div className="flex-1 text-center">
           <p className="text-2xl font-bold text-emerald-600">{data.live}</p>
-          <p className="text-xs text-black/40">Live</p>
+          <p className="text-xs text-black/40">{t.overview.projects.live}</p>
         </div>
         <div className="w-px h-8 bg-pink-100" />
         <div className="flex-1 text-center">
           <p className="text-2xl font-bold text-blue-600">{data.building}</p>
-          <p className="text-xs text-black/40">Building</p>
+          <p className="text-xs text-black/40">{t.overview.projects.building}</p>
         </div>
       </div>
 
@@ -122,7 +124,12 @@ const ProjectsCard: React.FC<ProjectsCardProps> = ({ data, isLoading = false }) 
         <div className="pt-4 mt-auto border-t border-pink-100">
           <div className="flex items-center gap-2 text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">
             <XCircle className="w-4 h-4" />
-            <span className="text-xs font-medium">{data.failed} project{data.failed > 1 ? 's' : ''} need attention</span>
+            <span className="text-xs font-medium">{interpolate(
+              data.failed === 1
+                ? t.overview.projects.needAttentionSingular
+                : t.overview.projects.needAttentionPlural,
+              { count: String(data.failed) },
+            )}</span>
           </div>
         </div>
       )}

@@ -11,15 +11,18 @@
  */
 
 import { app, net, shell } from "electron";
+import { resolveDesktopUpdate, type GithubReleasePayload } from "@repo/core";
 import { spawn, spawnSync } from "node:child_process";
 import {
   chmodSync,
   createWriteStream,
   existsSync,
   mkdirSync,
+  readdirSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const RELEASES_API = "https://api.github.com/repos/oblien/openship/releases/latest";
 
@@ -36,34 +39,13 @@ export interface UpdateInfo {
 }
 export type UpdateCheck = UpdateInfo | { available: false };
 
-/** Installer asset name published by the release pipeline for this platform. */
-function assetNameForPlatform(): string {
-  if (process.platform === "darwin") {
-    return process.arch === "arm64" ? "Openship-arm64.dmg" : "Openship-x64.dmg";
-  }
-  if (process.platform === "win32") return "Openship-Setup.exe";
-  return "Openship.AppImage";
-}
-
-/** X.Y.Z compare, prerelease suffix ignored (the /latest endpoint is stable). */
-function semverGt(a: string, b: string): boolean {
-  const parse = (v: string) =>
-    v.split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
-  const pa = parse(a);
-  const pb = parse(b);
-  for (let i = 0; i < 3; i++) {
-    const x = pa[i] ?? 0;
-    const y = pb[i] ?? 0;
-    if (x > y) return true;
-    if (x < y) return false;
-  }
-  return false;
-}
-
 /**
  * Ask GitHub for the latest release; return update info if it's newer than
  * the running version and has an installer for this platform. Never throws —
- * a failed check (offline, rate-limited) resolves to "no update".
+ * a failed check (offline, rate-limited) resolves to "no update". The asset
+ * selection + version gate live in @repo/core (`resolveDesktopUpdate`) so they
+ * are unit-tested against synthetic release payloads — that is the single
+ * source of truth for which asset each platform pulls.
  */
 export async function checkForUpdate(): Promise<UpdateCheck> {
   try {
@@ -75,24 +57,13 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return { available: false };
-    const data = (await res.json()) as {
-      tag_name?: string;
-      body?: string;
-      assets?: Array<{ name: string; browser_download_url: string; size: number }>;
-    };
-    const latest = (data.tag_name ?? "").replace(/^v/, "");
-    if (!latest || !semverGt(latest, app.getVersion())) {
-      return { available: false };
-    }
-    const wantName = assetNameForPlatform();
-    const asset = (data.assets ?? []).find((a) => a.name === wantName);
-    if (!asset) return { available: false };
-    return {
-      available: true,
-      version: latest,
-      notes: data.body ?? "",
-      asset: { name: asset.name, url: asset.browser_download_url, size: asset.size },
-    };
+    const data = (await res.json()) as GithubReleasePayload;
+    return resolveDesktopUpdate({
+      releasePayload: data,
+      platform: process.platform,
+      arch: process.arch,
+      currentVersion: app.getVersion(),
+    });
   } catch {
     return { available: false };
   }
@@ -219,10 +190,60 @@ function installMac(dmg: string): void {
   );
 }
 
-function installWindows(setupExe: string): void {
-  // The Squirrel installer handles updating a running app; just launch it.
-  void shell.openPath(setupExe);
-  app.quit();
+/** Find the directory under `root` that actually contains `file` (maker-zip
+ *  nests the app under a top-level folder). Checks root, then one level down. */
+function findDirContaining(root: string, file: string): string | null {
+  if (existsSync(join(root, file))) return root;
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (entry.isDirectory() && existsSync(join(root, entry.name, file))) {
+      return join(root, entry.name);
+    }
+  }
+  return null;
+}
+
+function installWindows(zip: string): void {
+  // The release pipeline ships a plain .zip (forge maker-zip, no Squirrel), so
+  // we self-replace exactly like mac/linux: extract now, then a detached script
+  // waits for us to exit (file locks), mirrors the new build over the install
+  // dir, and relaunches.
+  const installDir = dirname(app.getPath("exe")); // …\Openship-win32-x64\
+  const staging = join(app.getPath("temp"), "openship-update", "win-extract");
+  rmSync(staging, { recursive: true, force: true });
+  mkdirSync(staging, { recursive: true });
+
+  // Expand-Archive ships with Windows PowerShell; extract BEFORE quitting (as
+  // installMac copies the .app out of the dmg first).
+  const unzip = spawnSync(
+    "powershell",
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${staging}'`,
+    ],
+    { encoding: "utf8" },
+  );
+  if (unzip.status !== 0) return fallbackOpen(zip);
+
+  const appRoot = findDirContaining(staging, "openship.exe");
+  if (!appRoot) return fallbackOpen(zip);
+
+  // `robocopy /MIR` requires the target not be locked, so it runs only after we
+  // exit. Exit codes 0-7 are success; the detached script is best-effort (mac/
+  // linux scripts likewise don't gate on the copy result).
+  runDetachedAfterExit(
+    [
+      "@echo off",
+      ":wait",
+      `tasklist /FI "PID eq ${process.pid}" | find "${process.pid}" >nul && (timeout /t 1 /nobreak >nul & goto wait)`,
+      `robocopy "${appRoot}" "${installDir}" /MIR /NJH /NJS /NP /NFL /NDL >nul`,
+      `start "" "${join(installDir, "openship.exe")}"`,
+      `rmdir /s /q "${staging}"`,
+      "",
+    ].join("\r\n"),
+    "cmd",
+  );
 }
 
 function installLinux(appImage: string): void {

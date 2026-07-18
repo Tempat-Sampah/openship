@@ -34,6 +34,7 @@ import { cloudApi } from "@/lib/api";
 import { ApiError, getApiErrorMessage } from "@/lib/api/client";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n-provider";
 
 /** RFC 7636 — code_challenge is 43-128 url-safe chars. We accept the
  *  same 40-128 window the API uses so any URL valid server-side renders. */
@@ -51,35 +52,38 @@ type ValidatedParams =
  * or leaking through to an authorize POST that the server will reject.
  * The server is authoritative on POST.
  */
-function validateParams(searchParams: URLSearchParams): ValidatedParams {
+function validateParams(
+  searchParams: URLSearchParams,
+  msgs: Record<string, string>,
+): ValidatedParams {
   const redirect = searchParams.get("redirect");
   const state = searchParams.get("state");
   const codeChallenge = searchParams.get("code_challenge");
 
-  if (!redirect) return { ok: false, error: "Missing redirect parameter." };
-  if (!state) return { ok: false, error: "Missing state parameter." };
-  if (!codeChallenge) return { ok: false, error: "Missing code_challenge parameter." };
+  if (!redirect) return { ok: false, error: msgs.missingRedirect };
+  if (!state) return { ok: false, error: msgs.missingState };
+  if (!codeChallenge) return { ok: false, error: msgs.missingCodeChallenge };
 
-  if (!STATE_RE.test(state)) return { ok: false, error: "Invalid state parameter." };
+  if (!STATE_RE.test(state)) return { ok: false, error: msgs.invalidState };
   if (!CODE_CHALLENGE_RE.test(codeChallenge)) {
-    return { ok: false, error: "Invalid code_challenge parameter." };
+    return { ok: false, error: msgs.invalidCodeChallenge };
   }
 
   let url: URL;
   try {
     url = new URL(redirect);
   } catch {
-    return { ok: false, error: "Invalid redirect URL." };
+    return { ok: false, error: msgs.invalidRedirectUrl };
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return { ok: false, error: "Redirect must use http or https." };
+    return { ok: false, error: msgs.redirectProtocol };
   }
   const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
   if (!isLocalhost && url.protocol !== "https:") {
-    return { ok: false, error: "Non-localhost redirects must use HTTPS." };
+    return { ok: false, error: msgs.redirectHttps };
   }
   if (url.username || url.password) {
-    return { ok: false, error: "Redirect URL must not contain userinfo." };
+    return { ok: false, error: msgs.redirectUserinfo };
   }
 
   return {
@@ -103,8 +107,10 @@ function CloudAuthorizeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, isPending } = useSession();
+  const { t } = useI18n();
+  const m = t.misc.cloudAuthorize;
 
-  const validated = useMemo(() => validateParams(new URLSearchParams(searchParams.toString())), [searchParams]);
+  const validated = useMemo(() => validateParams(new URLSearchParams(searchParams.toString()), m), [searchParams, m]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -130,10 +136,10 @@ function CloudAuthorizeInner() {
         router.replace(`/login?returnTo=${encodeURIComponent(buildReturnTo(new URLSearchParams(searchParams.toString())))}`);
         return;
       }
-      setSubmitError(getApiErrorMessage(err, "Could not authorize this connection."));
+      setSubmitError(getApiErrorMessage(err, m.authorizeError));
       setSubmitting(false);
     }
-  }, [validated, router, searchParams]);
+  }, [validated, router, searchParams, m]);
 
   const handleCancel = useCallback(() => {
     if (typeof window !== "undefined" && window.opener) {
@@ -167,7 +173,7 @@ function CloudAuthorizeInner() {
           <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/80 to-red-600 shadow-sm">
             <AlertCircle className="size-7 text-white" />
           </div>
-          <h1 className="text-lg font-semibold">Invalid authorization request</h1>
+          <h1 className="text-lg font-semibold">{m.invalidTitle}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{validated.error}</p>
         </div>
       </AuthShell>
@@ -190,16 +196,16 @@ function CloudAuthorizeInner() {
         <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/80 to-primary shadow-sm">
           <ServerIcon className="size-7 text-primary-foreground" />
         </div>
-        <h1 className="text-xl font-semibold">Authorize device</h1>
+        <h1 className="text-xl font-semibold">{m.title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          An Openship instance at{" "}
-          <span className="font-medium text-foreground">{validated.redirectHost}</span>{" "}
-          wants to connect to your Openship Cloud account.
+          {m.instancePre}
+          <span className="font-medium text-foreground">{validated.redirectHost}</span>
+          {m.instancePost}
         </p>
       </div>
 
       <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
-        <p className="text-sm font-medium text-foreground">Signed in as</p>
+        <p className="text-sm font-medium text-foreground">{m.signedInAs}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">{session.user.email}</p>
       </div>
 
@@ -218,8 +224,8 @@ function CloudAuthorizeInner() {
             void handleAuthorize();
           }}
         >
-          {submitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-          {submitting ? "Authorizing…" : "Authorize"}
+          {submitting && <Loader2 className="me-2 size-4 animate-spin" />}
+          {submitting ? m.authorizing : m.authorize}
         </Button>
         <Button
           variant="outline"
@@ -227,7 +233,7 @@ function CloudAuthorizeInner() {
           disabled={submitting}
           onClick={handleCancel}
         >
-          Cancel
+          {m.cancel}
         </Button>
       </div>
     </AuthShell>

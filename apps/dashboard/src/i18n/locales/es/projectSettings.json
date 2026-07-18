@@ -1,0 +1,595 @@
+{
+  "settingSection": {
+    "edit": "Editar",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "advanced": {
+    "projectInfo": {
+      "title": "Información del proyecto",
+      "description": "Resumen de la configuración actual"
+    },
+    "metric": {
+      "status": "Estado",
+      "project": "Proyecto",
+      "hostedOn": "Alojado en"
+    },
+    "statusActive": "Activo",
+    "statusDisabled": "Deshabilitado",
+    "hostedCloud": "Openship Cloud",
+    "hostedServer": "Servidor",
+    "hostedLocal": "Local",
+    "projectStatus": {
+      "title": "Estado del proyecto",
+      "description": "Controla si el proyecto está activo o en pausa",
+      "active": "Proyecto activo",
+      "disabled": "Proyecto deshabilitado",
+      "liveAccessible": "En vivo y accesible",
+      "pausedInaccessible": "En pausa y no accesible",
+      "disable": "Deshabilitar",
+      "enable": "Habilitar"
+    },
+    "cache": {
+      "title": "Caché",
+      "description": "Borra los artefactos de compilación y las instalaciones de dependencias en caché",
+      "clearInstall": "Borrar caché de instalación",
+      "clearInstallDesc": "Eliminar node_modules en caché",
+      "clearBuild": "Borrar caché de compilación",
+      "clearBuildDesc": "Eliminar la salida de compilación en caché"
+    },
+    "transfer": {
+      "title": "Transferir y clonar",
+      "description": "Mueve o duplica este proyecto en un entorno diferente",
+      "current": "Actual",
+      "transfer": "Transferir",
+      "clone": "Clonar",
+      "anotherServer": "Otro servidor",
+      "targetLocal": "Máquina local",
+      "targetServer": "Servidor autoalojado",
+      "targetCloud": "Openship Cloud"
+    },
+    "danger": {
+      "title": "Zona de peligro",
+      "description": "Acciones irreversibles para este proyecto",
+      "body": "Eliminar este proyecto quitará permanentemente todos los despliegues, dominios personalizados, variables de entorno y datos de analíticas.",
+      "delete": "Eliminar proyecto"
+    },
+    "toast": {
+      "toggleFailed": "No se pudo cambiar el estado del proyecto",
+      "clearInstallFailed": "No se pudo borrar la caché de instalación",
+      "clearBuildFailed": "No se pudo borrar la caché de compilación"
+    }
+  },
+  "backup": {
+    "live": {
+      "title": "Copia de seguridad en vivo",
+      "description": "Progreso en tiempo real de la ejecución que acabas de iniciar. Se mantiene al recargar la página.",
+      "dismiss": "Descartar"
+    },
+    "destinations": {
+      "title": "Destinos de copia de seguridad",
+      "description": "Destinos de almacenamiento por usuario. Añade buckets compatibles con S3, servidores SFTP o discos locales.",
+      "manage": "Administrar",
+      "loading": "Cargando…",
+      "emptyPrefix": "Aún no hay destinos. ",
+      "emptyLink": "Crea uno",
+      "emptySuffix": " para empezar a hacer copias de seguridad.",
+      "verified": "Verificado",
+      "failed": "Fallido"
+    },
+    "services": {
+      "title": "Servicios y políticas",
+      "description": "Cada servicio puede tener su propia política de copia de seguridad (programación + destino). Los valores predeterminados a nivel de proyecto llegan en el Chunk 2.",
+      "refresh": "Actualizar",
+      "empty": "Este proyecto aún no tiene servicios. Las copias de seguridad a nivel de servicio aparecerán aquí una vez que añadas algunos.",
+      "policyLabel": "Política:",
+      "manualOnly": "solo manual",
+      "preDeploy": "pre-despliegue",
+      "webhook": "webhook",
+      "noPolicy": "Sin política",
+      "backupNow": "Hacer copia ahora",
+      "editPolicy": "Editar política",
+      "addDestinationFirst": "Añade primero un destino",
+      "createPolicyHint": "Crea una política de copia de seguridad para este servicio",
+      "createPolicy": "Crear política"
+    },
+    "recent": {
+      "title": "Copias de seguridad recientes",
+      "description": "Las 25 ejecuciones más recientes de todos los servicios de este proyecto.",
+      "loading": "Cargando…",
+      "empty": "Aún no hay copias de seguridad.",
+      "protectedTitle": "Protegido de la limpieza por retención",
+      "protected": "Protegido",
+      "restoreTitle": "Restaurar desde esta copia de seguridad",
+      "allowPrune": "Permitir que la retención la limpie",
+      "protectFrom": "Proteger de la retención"
+    },
+    "toast": {
+      "runFailed": "La ejecución de la copia de seguridad falló",
+      "toggleProtectionFailed": "No se pudo cambiar la protección"
+    }
+  },
+  "build": {
+    "edit": "Editar",
+    "webmail": {
+      "title": "Gestionado por openship",
+      "description": "El webmail usa una canalización fija de compilación e inicio: los comandos de instalación, compilación y ejecución no son configurables. Vuelve a desplegar desde el resumen de correo para incorporar los cambios de origen."
+    },
+    "services": {
+      "title": "Configuración por servicio",
+      "descriptionTemplate": "Este proyecto tiene {serviceLabel}. Los comandos de compilación, el framework, los puertos y los comandos de ejecución están en la fila de cada servicio: puedes verlos y editarlos en la pestaña Servicios.",
+      "open": "Abrir Servicios",
+      "subAppOne": "{count} subaplicación",
+      "subAppOther": "{count} subaplicaciones",
+      "composeOne": "{count} servicio de compose",
+      "composeOther": "{count} servicios de compose",
+      "both": "{subApps} y {composeServices}"
+    },
+    "runtime": {
+      "title": "Configuración de tiempo de ejecución",
+      "description": "Solo lectura. Edítalo mediante el asistente de despliegue para que cada cambio se publique como una nueva versión.",
+      "framework": "Framework",
+      "packageManager": "Gestor de paquetes",
+      "runtimeIsolation": "Aislamiento del tiempo de ejecución",
+      "resources": "Recursos",
+      "resourcesValue": "{cpu} vCPU · {memory} MB",
+      "runtimePort": "Puerto del tiempo de ejecución",
+      "installCommand": "Comando de instalación",
+      "buildCommand": "Comando de compilación",
+      "noBuildStep": "Sin paso de compilación",
+      "outputDirectory": "Directorio de salida",
+      "rootDirectory": "Directorio raíz",
+      "startCommand": "Comando de inicio",
+      "staticNoServer": "Estático (sin servidor)",
+      "modeSandboxed": "En sandbox (contenedor)",
+      "modeDirect": "Directo (proceso del host)",
+      "modeDefault": "Predeterminado (resuelto en el despliegue)"
+    },
+    "env": {
+      "title": "Variables de entorno",
+      "description": "Cifradas en reposo. Los secretos permanecen enmascarados: solo se escriben los valores que cambies.",
+      "edit": "Editar"
+    }
+  },
+  "envVars": {
+    "cancel": "Cancelar",
+    "saveChanges": "Guardar cambios",
+    "title": "Variables de entorno",
+    "description": "Producción. Cifradas en reposo. Los secretos se muestran como establecidos: escribe para reemplazarlos; déjalos en blanco para conservarlos.",
+    "empty": "Aún no hay variables de entorno.",
+    "keyPlaceholder": "CLAVE",
+    "secretPlaceholder": "•••••••• (establecido — escribe para reemplazar)",
+    "valuePlaceholder": "valor",
+    "hideValue": "Ocultar valor",
+    "showValue": "Mostrar valor",
+    "markedSecret": "Marcado como secreto",
+    "markSecret": "Marcar como secreto",
+    "removeVariable": "Eliminar variable",
+    "addVariable": "Añadir variable",
+    "toast": {
+      "loadFailed": "No se pudieron cargar las variables de entorno",
+      "loadFailedTitle": "Error",
+      "validationTitle": "Validación",
+      "saved": "Variables de entorno guardadas",
+      "savedTitle": "Guardado",
+      "saveFailed": "No se pudieron guardar las variables de entorno",
+      "saveFailedTitle": "Error al guardar"
+    }
+  },
+  "gitInfo": {
+    "repository": "Repositorio",
+    "autoDeploy": "Despliegue automático",
+    "deploysOnPush": "Despliega en cada push",
+    "manualOnly": "Solo despliegues manuales",
+    "branchToDeploy": "Rama a desplegar",
+    "chooseBranch": "Elige desde qué rama de tu repositorio desplegar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "viewOnGithub": "Ver en GitHub",
+    "recentCommits": "Commits recientes",
+    "totalCommits": "{count} en total",
+    "noCommits": "Aún no hay commits",
+    "toast": {
+      "fetchBranchesFailed": "No se pudieron obtener las ramas",
+      "errorTitle": "Error",
+      "branchUpdated": "Rama actualizada correctamente",
+      "updatedTitle": "Actualizado",
+      "branchUpdateFailed": "No se pudo actualizar la rama",
+      "autoDeployEnabled": "Despliegue automático habilitado",
+      "autoDeployDisabled": "Despliegue automático deshabilitado",
+      "autoDeployFailed": "No se pudo actualizar el despliegue automático"
+    }
+  },
+  "git": {
+    "connectFirst": {
+      "title": "Conecta primero GitHub",
+      "description": "Vincula tu cuenta de GitHub para conectar un repositorio a este proyecto.",
+      "connecting": "Conectando…",
+      "connect": "Conectar GitHub"
+    },
+    "link": {
+      "title": "Vincular un repositorio",
+      "description": "Conecta un repositorio de GitHub para habilitar despliegues activados por webhook.",
+      "select": "Seleccionar repositorio"
+    },
+    "picker": {
+      "title": "Selecciona un repositorio",
+      "description": "Elige un repositorio para vincular a este proyecto",
+      "linking": "Vinculando repositorio…"
+    },
+    "appBanner": {
+      "title": "La app de GitHub no está instalada",
+      "description": "Instala la app de GitHub de Openship en tu cuenta u organización para habilitar el despliegue automático y los despliegues activados por webhook para proyectos en la nube.",
+      "install": "Instalar app de GitHub"
+    },
+    "webhookBanner": {
+      "title": "Habilitar despliegue automático",
+      "description": "El despliegue automático necesita un endpoint de webhook directo. Expón esta API de Openship en una URL pública o configura un dominio de webhook verificado para la entrega directa."
+    },
+    "source": {
+      "title": "Repositorio de origen",
+      "description": "Integración con Git, activadores de despliegue y estado del repositorio",
+      "repository": "Repositorio",
+      "open": "Abrir"
+    },
+    "webhookEndpoint": {
+      "title": "Endpoint de webhook",
+      "descriptionSet": "GitHub entrega los eventos de push directamente a este dominio",
+      "descriptionUnset": "Elige un dominio para la entrega directa de webhooks",
+      "updating": "Actualizando...",
+      "select": "Seleccionar dominio...",
+      "clear": "Borrar selección"
+    },
+    "autoDeployCard": {
+      "title": "Despliegue automático",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "descDelivers": "Los push se entregan a {domain}",
+      "descAuto": "Los push activan despliegues automáticamente",
+      "descManual": "Los despliegues deben iniciarse manualmente"
+    },
+    "webhookCard": {
+      "title": "Webhook",
+      "direct": "Directo",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "descDirect": "Los eventos se entregan directamente vía {domain}",
+      "descActive": "Los eventos del repositorio están llegando a Openship",
+      "descInactive": "El webhook no se ha configurado o no responde"
+    },
+    "rollbackStrategy": {
+      "title": "Estrategia de reversión",
+      "rebuild": "Reconstruir (git)",
+      "instant": "Instantáneo (snapshot)",
+      "descRebuild": "La reversión vuelve a clonar y reconstruir el commit antiguo: más económico, pero más lento y puede fallar si ese commit ya no compila.",
+      "descInstant": "Mantiene en disco el artefacto de compilación de cada versión para revertir en segundos. Usa disco adicional, limitado por el máximo del historial.",
+      "toggleAria": "Alternar retención de snapshots"
+    },
+    "rollbackHistory": {
+      "title": "Historial de reversiones",
+      "valueOne": "{count} versión",
+      "valueOther": "{count} versiones",
+      "descSnapshot": "Cuántas versiones recientes conservan su artefacto de compilación para la reversión. Las más antiguas se limpian para recuperar disco.",
+      "descGit": "Solo se aplica al modo Instantáneo (snapshot): el modo Git no conserva artefactos que retener.",
+      "decreaseAria": "Reducir historial de reversiones",
+      "increaseAria": "Aumentar historial de reversiones"
+    },
+    "commits": {
+      "title": "Commits recientes",
+      "subtitle": "Últimos commits en {branch}",
+      "empty": "No se encontraron commits",
+      "emptyDesc": "Haz push a tu repositorio y la actividad de commits reciente aparecerá aquí.",
+      "viewAll": "Ver todos los commits en GitHub"
+    },
+    "cloneToken": {
+      "title": "Anulación del token de clonación",
+      "description": "Token con alcance de proyecto que usa el módulo de clonación antes de recurrir a tu token global o a la app de GitHub",
+      "loading": "Cargando…",
+      "explainer": "Pega aquí un PAT de GitHub para usarlo SOLO en este proyecto. Máxima prioridad en la cadena de clonación: anula tu token a nivel de configuración y la app de GitHub.",
+      "hide": "Ocultar token",
+      "show": "Mostrar token",
+      "saveToken": "Guardar token",
+      "cancel": "Cancelar",
+      "savedTitle": "Token guardado para este proyecto",
+      "lastUpdated": "Última actualización {when}",
+      "justNow": "ahora mismo",
+      "replace": "Reemplazar",
+      "clear": "Borrar"
+    },
+    "toast": {
+      "pasteToken": "Pega un token antes de guardar",
+      "cloneTokenTitle": "Token de clonación",
+      "tokenSaved": "Token de clonación del proyecto guardado",
+      "tokenSaveFailed": "No se pudo guardar el token",
+      "tokenCleared": "Token de clonación del proyecto borrado",
+      "tokenClearFailed": "No se pudo borrar el token",
+      "autoDeployEnabled": "Despliegue automático habilitado",
+      "autoDeployDisabled": "Despliegue automático deshabilitado",
+      "autoDeployFailed": "No se pudo cambiar el despliegue automático",
+      "rollbackGit": "Estrategia de reversión: basada en Git (sin snapshots)",
+      "rollbackSnapshot": "Estrategia de reversión: Snapshot (artefactos retenidos)",
+      "rollbackStrategyFailed": "No se pudo actualizar la estrategia de reversión",
+      "rollbackWindowOne": "Conservando la última {count} versión para la reversión",
+      "rollbackWindowOther": "Conservando las últimas {count} versiones para la reversión",
+      "rollbackHistoryFailed": "No se pudo actualizar el historial de reversiones",
+      "webhookDomainSet": "Dominio de webhook establecido en {domain}",
+      "webhookDomainCleared": "Dominio de webhook borrado",
+      "webhookDomainFailed": "No se pudo establecer el dominio de webhook",
+      "linked": "Vinculado a {repo}",
+      "appNotInstalled": "La app de GitHub no está instalada para esta cuenta",
+      "linkFailed": "No se pudo vincular el repositorio"
+    }
+  },
+  "logs": {
+    "noRuntime": "Sin registros de tiempo de ejecución",
+    "noRuntimeDesc": "Este proyecto se despliega como una aplicación estática, por lo que no hay un proceso de servidor en ejecución del que transmitir registros.",
+    "terminal": "Terminal",
+    "server": "Servidor",
+    "requests": "Solicitudes",
+    "target": "Destino de los registros de tiempo de ejecución",
+    "targetDescProject": "Cambia entre el tiempo de ejecución del proyecto y los de los servicios.",
+    "targetDescService": "Cambia entre los tiempos de ejecución de los servicios.",
+    "projectRuntime": "Tiempo de ejecución del proyecto",
+    "selectService": "Selecciona un servicio para ver sus registros de tiempo de ejecución.",
+    "projectFallback": "Proyecto"
+  },
+  "resources": {
+    "title": "Potencia de la máquina",
+    "description": "Configura la potencia de la máquina para tu proyecto.",
+    "tiers": {
+      "lightweight": { "name": "Ligero", "description": "Aplicaciones pequeñas y sitios estáticos" },
+      "standard": { "name": "Estándar", "description": "La mayoría de las aplicaciones web" },
+      "performance": { "name": "Rendimiento", "description": "Aplicaciones de alto tráfico" },
+      "enterprise": { "name": "Empresa", "description": "Aplicaciones de producción a gran escala" },
+      "autoscale": { "name": "Escalado automático", "description": "Escala según la demanda" }
+    },
+    "dynamic": "Dinámico",
+    "custom": {
+      "name": "Personalizado",
+      "description": "Define tus propios recursos",
+      "clickToConfigure": "Haz clic para configurar"
+    },
+    "cpuValue": "{cpu} vCPU",
+    "customPanel": {
+      "title": "Configurar recursos personalizados",
+      "cpuCores": "Núcleos de CPU",
+      "cpuRange": "Rango: 0.25 - 4.00",
+      "memory": "Memoria (MB)",
+      "memoryRange": "Rango: 128 - 8192",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "save": "Guardar configuración"
+    },
+    "toast": {
+      "updated": "Recursos actualizados correctamente",
+      "updateFailed": "No se pudieron actualizar los recursos",
+      "cpuRange": "La CPU debe estar entre 0.25 y 4.00 núcleos",
+      "memoryRange": "La memoria debe estar entre 128 MB y 8192 MB",
+      "customSaved": "Recursos personalizados guardados correctamente",
+      "customSaveFailed": "No se pudieron guardar los recursos personalizados"
+    }
+  },
+  "sleep": {
+    "title": "Modo de la máquina",
+    "description": "Controla la disponibilidad y la eficiencia de costes",
+    "autoSleep": "Suspensión automática",
+    "recommended": "RECOMENDADO",
+    "autoSleepDesc": "Se detiene al estar inactiva, se reactiva al instante",
+    "autoSleepMeta": "Eficiente en costes • Sin arranque en frío",
+    "alwaysOn": "Siempre activa",
+    "alwaysOnDesc": "El contenedor nunca se detiene",
+    "alwaysOnMeta": "Máxima disponibilidad • Mayor coste",
+    "infoTitle": "Cómo funciona la suspensión automática",
+    "infoBefore": "Cuando hay solicitudes, tu contenedor permanece en ejecución. Tras un periodo de inactividad, se suspende para ahorrar costes. En la siguiente solicitud, se reactiva ",
+    "infoEmphasis": "al instante",
+    "infoAfter": " - sin retrasos por arranque en frío.",
+    "toast": {
+      "updated": "Modo de suspensión actualizado correctamente",
+      "updateFailed": "No se pudo actualizar el modo de suspensión"
+    }
+  },
+  "deleteDialog": {
+    "title": "Eliminar proyecto",
+    "bodyPrefix": "¿Seguro que quieres eliminar ",
+    "bodySuffix": "? Esta acción no se puede deshacer y eliminará permanentemente todos los datos del proyecto, los despliegues y la configuración.",
+    "cancel": "Cancelar",
+    "delete": "Eliminar proyecto"
+  },
+  "deletion": {
+    "title": "Eliminar proyecto",
+    "cannotUndo": "Esta acción no se puede deshacer.",
+    "aboutToPrefix": "Estás a punto de eliminar ",
+    "aboutToSuffix": ".",
+    "deleteAllAria": "Eliminar todos los entornos",
+    "deleteAll": "Eliminar todos los entornos",
+    "deleteAllOn": "Elimina la aplicación del proyecto y todos los entornos de rama que dependen de ella.",
+    "deleteAllOff": "Elimina solo este entorno. Las demás ramas se mantienen.",
+    "scanning": "Analizando servicios y volúmenes adjuntos…",
+    "wipeAria": "Borrar también los datos del servicio",
+    "wipeLabelOne": "Borrar también los datos del servicio ({count} volumen)",
+    "wipeLabelOther": "Borrar también los datos del servicio ({count} volúmenes)",
+    "wipeOn": "Los volúmenes se eliminarán permanentemente: el contenido de las bases de datos, las cachés, las cargas y todo lo almacenado por estos servicios desaparecerá.",
+    "wipeOff": "Desactivado: los contenedores se eliminan pero sus volúmenes con nombre permanecen en disco. Vuelve a adjuntarlos más tarde por su nombre.",
+    "appData": "Datos de la app",
+    "volOne": "{count} vol",
+    "volOther": "{count} vols",
+    "amberWipe": "Todos los despliegues, dominios, variables de entorno y datos persistentes de servicio se eliminarán permanentemente.",
+    "amberNoWipe": "Todos los despliegues, dominios, variables de entorno y analíticas se eliminarán permanentemente.",
+    "typePrefix": "Escribe ",
+    "typeSuffix": " para confirmar.",
+    "cancel": "Cancelar",
+    "confirmDeleteWipe": "Eliminar + borrar datos",
+    "confirmDeleteEnvWipe": "Eliminar entorno + borrar datos",
+    "confirmDelete": "Eliminar proyecto",
+    "confirmDeleteEnv": "Eliminar entorno"
+  },
+  "routing": {
+    "title": "Enrutamiento",
+    "description": "Reescrituras, redirecciones y encabezados. Se aplican al guardar, sin recompilar.",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "summaryNone": "Ninguno configurado",
+    "summaryActive": "Configurado",
+    "toast": {
+      "title": "Enrutamiento",
+      "updated": "Enrutamiento actualizado — aplicado al despliegue en vivo.",
+      "failed": "No se pudo actualizar el enrutamiento"
+    }
+  },
+  "domains": {
+    "status": {
+      "verified": "Verificado",
+      "active": "Activo",
+      "failed": "Fallido",
+      "removing": "Eliminando",
+      "pending": "Pendiente"
+    },
+    "ssl": {
+      "includedByHost": "Incluido por el host",
+      "active": "Activo",
+      "provisioning": "Aprovisionando",
+      "expired": "Caducado",
+      "error": "Error",
+      "inactive": "Inactivo"
+    },
+    "typeCustom": "Dominio personalizado",
+    "typeFree": "Subdominio gratuito",
+    "primaryDomainTitle": "Dominio principal",
+    "domainNTitle": "Dominio {n}",
+    "portLabel": "Puerto {port}",
+    "noPortSelected": "Ningún puerto seleccionado",
+    "meta": {
+      "accessTitle": "URL de acceso",
+      "accessSubtitle": "Endpoint de desarrollo local",
+      "local": "Local",
+      "availableOnMachine": "Disponible en esta máquina",
+      "primaryTitle": "Dominio principal",
+      "primaryAcross": "Ruta principal en {count} dominios",
+      "hostManaged": "URL de producción gestionada por el host",
+      "customProduction": "Dominio de producción personalizado"
+    },
+    "route": {
+      "disabled": "Deshabilitado",
+      "routePaused": "Ruta en pausa",
+      "serviceDisabled": "Servicio deshabilitado",
+      "internal": "Interno",
+      "notExposed": "No expuesto",
+      "public": "Público"
+    },
+    "actions": {
+      "visit": "Visitar",
+      "editDomains": "Editar dominios",
+      "hideSetup": "Ocultar configuración",
+      "addDomain": "Añadir dominio"
+    },
+    "add": {
+      "title": "Añadir dominio",
+      "description": "Añade una ruta: elige un dominio gratuito o personalizado y el puerto al que se asigna.",
+      "free": "Subdominio gratuito",
+      "custom": "Dominio personalizado",
+      "domainName": "Nombre de dominio",
+      "subdomain": "Subdominio",
+      "customPlaceholder": "tudominio.com",
+      "defaultAppName": "mi-app",
+      "mapsToPort": "Se asigna al puerto",
+      "includeWww": "Incluir www",
+      "includeWwwDesc": "También generar registros para www.{domain}",
+      "includeWwwFallback": "tudominio.com",
+      "adding": "Añadiendo...",
+      "submit": "Añadir dominio"
+    },
+    "dns": {
+      "title": "Registros DNS",
+      "descPreview": "Añade estos registros en tu proveedor de DNS y luego haz clic en Añadir dominio para adjuntarlo",
+      "descApply": "Aplica estos registros en tu proveedor de DNS y luego espera a la propagación",
+      "infoPreview": "Añade estos registros primero: no cambian después de añadir el dominio, así que la propagación empieza ya. Después pulsa Añadir dominio para adjuntarlo y, por último, Verificar una vez que el DNS se resuelva.",
+      "infoApply": "Los cambios de DNS pueden tardar hasta 48 horas en propagarse globalmente. Una vez que los registros se resuelvan, haz clic en Verificar abajo: comprobaremos el DNS, marcaremos el dominio como activo y aprovisionaremos SSL en segundo plano.",
+      "verifying": "Verificando...",
+      "verify": "Verificar {hostname}",
+      "copy": "Copiar"
+    },
+    "overview": {
+      "primary": "Principal",
+      "mappedTo": "Asignado a",
+      "status": "Estado",
+      "ssl": "SSL",
+      "visit": "Visitar"
+    },
+    "cold": {
+      "localUrl": "URL local",
+      "type": "Tipo",
+      "status": "Estado"
+    },
+    "edit": {
+      "title": "Editar dominios",
+      "descServer": "Edita a qué puerto interno debe enrutar cada dominio.",
+      "descStatic": "Edita qué ruta estática debe servir cada dominio.",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "save": "Guardar cambios"
+    },
+    "addRoute": {
+      "cancel": "Cancelar",
+      "add": "Añadir ruta",
+      "free": "Subdominio gratuito",
+      "custom": "Dominio personalizado",
+      "customPlaceholder": "app.ejemplo.com",
+      "defaultServiceName": "mi-servicio",
+      "port": "Puerto",
+      "portPlaceholder": "8080",
+      "submit": "Añadir",
+      "loading": "Cargando rutas...",
+      "emptyPrefix": "Aún no hay dominios. Haz clic en ",
+      "emptyAction": "Añadir ruta",
+      "emptySuffix": " para apuntar un dominio al puerto de un servicio."
+    },
+    "editRoute": {
+      "title": "Editar ruta",
+      "internalOnly": "Solo interno",
+      "close": "Cerrar",
+      "disabledWarning": "El servicio está deshabilitado: las rutas están inactivas hasta que se vuelva a habilitar el servicio."
+    },
+    "menu": {
+      "editRoute": "Editar ruta",
+      "settingPrimary": "Estableciendo como principal...",
+      "setPrimary": "Establecer como principal",
+      "verifying": "Verificando...",
+      "verify": "Verificar",
+      "renewing": "Renovando...",
+      "renewSsl": "Renovar SSL",
+      "rechecking": "Volviendo a comprobar...",
+      "recheckSsl": "Volver a comprobar SSL"
+    },
+    "toast": {
+      "enterPort": "Introduce el puerto al que debe enrutar este dominio (1–65535).",
+      "addDomainTitle": "Añadir dominio",
+      "addDomainFailed": "No se pudo añadir el dominio",
+      "addDomainFailedTitle": "Error al añadir el dominio",
+      "addedCustom": "{label} añadido — aplica los registros DNS y luego Verifica.",
+      "addedFree": "{label} añadido.",
+      "copied": "Copiado al portapapeles",
+      "verifiedSuccess": "{hostname} verificado — SSL se está aprovisionando en segundo plano.",
+      "verifiedTitle": "Dominio verificado",
+      "verifyNotYet": "{hostname} aún no se pudo verificar.",
+      "verifyFailedTitle": "Error de verificación",
+      "verifyFailed": "No se pudo verificar el dominio.",
+      "sslRenewed": "SSL renovado para {hostname}.",
+      "sslRenewFailed": "No se pudo renovar el SSL para {hostname}.",
+      "sslTitle": "SSL",
+      "sslVerified": "SSL verificado para {hostname}.",
+      "sslNoCert": "Aún no se encontró un certificado válido para {hostname}. Si acabas de desplegar, dale un momento a Let's Encrypt y luego vuelve a comprobar.",
+      "sslRecheckFailed": "No se pudo volver a comprobar el SSL para {hostname}.",
+      "completeEndpoints": "Completa cada dominio y su puerto asignado antes de guardar",
+      "domainsTitle": "Dominios",
+      "routingUpdated": "Enrutamiento de dominios actualizado",
+      "routingUpdateFailed": "No se pudo actualizar el enrutamiento de dominios",
+      "primaryUpdated": "Dominio principal actualizado",
+      "setPrimaryFailed": "No se pudo establecer el dominio principal",
+      "routeUpdateFailed": "No se pudo actualizar la ruta del servicio",
+      "enterPortShort": "Introduce el puerto al que debe enrutar este dominio.",
+      "noServicePort": "Ningún servicio publica el puerto {port}. Añade ese puerto a un servicio primero.",
+      "enterCustom": "Introduce un dominio personalizado.",
+      "enterSubdomain": "Introduce un subdominio."
+    }
+  }
+}

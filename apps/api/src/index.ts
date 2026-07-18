@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { setBackupCredentialSecret } from "@repo/adapters";
 import { app } from "./app";
 import { cloudRuntimeTarget, cloudRuntimeTargetId, env, runtimeTargetId } from "./config/env";
 import { getAuthMode } from "./lib/auth-mode";
@@ -7,6 +8,11 @@ import { enforceRouteScanAtBoot } from "./lib/route-scanner";
 import { attachTunnelingLifecycle, type TunnelingLifecycle } from "./modules/tunneling";
 
 const port = env.PORT;
+
+// Hand the adapters' backup-credential decrypt the SAME resolved secret the API
+// encrypts with (env applies the BETTER_AUTH_SECRET default; process.env may
+// not). Single source, no process.env mutation — see backup/common/credentials.
+setBackupCredentialSecret(env.BETTER_AUTH_SECRET);
 
 // Refuse to start if any registered route is mis-tagged or any
 // mutation route was mounted on a raw Hono instance (bypassing
@@ -122,6 +128,16 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
       resolve();
     });
   });
+
+  // Close the DB after the HTTP server and jobs (both use it) have drained.
+  // For embedded PGlite this frees the single-instance lock so the next start
+  // opens the data dir cleanly instead of racing a not-yet-released lock.
+  try {
+    const { closeDb } = await import("@repo/db");
+    await closeDb();
+  } catch (err) {
+    console.warn("[shutdown] db close failed:", err);
+  }
 
   // Last: dispose the pooled SSH connections now that jobs and in-flight HTTP
   // (both of which use them) have drained. This ends() each ssh2 client and

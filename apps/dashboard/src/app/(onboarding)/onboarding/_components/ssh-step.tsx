@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getApiOrigin } from "@/lib/api/urls";
+import { useI18n } from "@/components/i18n-provider";
 import { validateSshPayload } from "@repo/onboarding";
 import type { SshPayload } from "@repo/onboarding";
 import type { StepProps } from "./step-props";
@@ -16,7 +17,7 @@ const ServerIcon = () => (
   </svg>
 );
 const BackIcon = () => (
-  <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+  <svg className="rtl:rotate-180" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
   </svg>
 );
@@ -28,6 +29,7 @@ const InfoIcon = () => (
 );
 
 export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
+  const { t } = useI18n();
   const [serverName, setServerName] = useState(state.ssh?.serverName ?? "");
   const [host, setHost] = useState(state.ssh?.host ?? "");
   const [user, setUser] = useState(state.ssh?.user ?? "root");
@@ -42,6 +44,25 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
   const [jumpHost, setJumpHost] = useState(state.ssh?.jumpHost ?? "");
   const [sshArgs, setSshArgs] = useState(state.ssh?.sshArgs ?? "");
   const [error, setError] = useState<string | null>(null);
+  // Native SSH-key file picker is Electron-only (no filesystem access on web).
+  // Detect the bridge after mount to avoid an SSR/hydration mismatch.
+  const [canBrowseKey, setCanBrowseKey] = useState(false);
+  useEffect(() => {
+    setCanBrowseKey(
+      !!(window as { desktop?: { onboarding?: { browseFile?: () => Promise<string | null> } } })
+        .desktop?.onboarding?.browseFile,
+    );
+  }, []);
+
+  async function handleBrowseKey() {
+    const bridge = (window as { desktop?: { onboarding?: { browseFile?: () => Promise<string | null> } } })
+      .desktop?.onboarding?.browseFile;
+    const picked = await bridge?.();
+    if (picked) {
+      setKeyPath(picked);
+      setError(null);
+    }
+  }
 
   function handleSubmit() {
     const trimmedHost = host.trim();
@@ -81,7 +102,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
     <div className="ob-screen">
       <div className="ob-screen-inner">
         {onBack && (
-          <button className="ob-btn-back" aria-label="Go back" onClick={onBack}>
+          <button className="ob-btn-back" aria-label={t.onboarding.common.goBack} onClick={onBack}>
             <BackIcon />
           </button>
         )}
@@ -90,27 +111,27 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
           <ServerIcon />
         </div>
 
-        <h2>Connect to your server</h2>
+        <h2>{t.onboarding.ssh.title}</h2>
         <p className="ob-subtitle">
-          Enter your server details and choose an auth method.<br/>
-          We&apos;ll install and configure everything automatically.
+          {t.onboarding.ssh.subtitleLine1}<br/>
+          {t.onboarding.ssh.subtitleLine2}
         </p>
 
         <div className="ob-form-group">
-          <label htmlFor="ob-server-name">Server Name</label>
+          <label htmlFor="ob-server-name">{t.onboarding.ssh.serverNameLabel}</label>
           <input
             id="ob-server-name"
             type="text"
             value={serverName}
             onChange={(e) => setServerName(e.target.value)}
-            placeholder="Production, Staging, Dev..."
+            placeholder={t.onboarding.ssh.serverNamePlaceholder}
             spellCheck={false}
             autoComplete="off"
           />
         </div>
 
         <div className="ob-form-group">
-          <label htmlFor="ob-server-ip">Server IP Address</label>
+          <label htmlFor="ob-server-ip">{t.onboarding.ssh.serverIpLabel}</label>
           <input
             id="ob-server-ip"
             type="text"
@@ -124,7 +145,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
         </div>
 
         <div className="ob-form-group">
-          <label htmlFor="ob-server-user">Username</label>
+          <label htmlFor="ob-server-user">{t.onboarding.ssh.usernameLabel}</label>
           <input
             id="ob-server-user"
             type="text"
@@ -143,44 +164,42 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
             className={`ob-auth-tab${method === "password" ? " active" : ""}`}
             onClick={() => { setMethod("password"); setError(null); }}
           >
-            Password
+            {t.onboarding.ssh.methodPassword}
           </button>
           <button
             type="button"
             className={`ob-auth-tab${method === "key" ? " active" : ""}`}
             onClick={() => { setMethod("key"); setError(null); }}
           >
-            SSH Key
+            {t.onboarding.ssh.methodKey}
           </button>
           <button
             type="button"
             className={`ob-auth-tab${method === "agent" ? " active" : ""}`}
             onClick={() => { setMethod("agent"); setError(null); }}
           >
-            Agent
+            {t.onboarding.ssh.methodAgent}
           </button>
         </div>
 
         {/* Agent panel */}
         {method === "agent" && (
           <p className="ob-auth-hint">
-            Connects using this machine&apos;s SSH agent — like VSCode, no
-            password or key needed. The host running Openship must already have
-            access to this server (a key loaded in its ssh-agent).
+            {t.onboarding.ssh.agentHint}
           </p>
         )}
 
         {/* Password panel */}
         {method === "password" && (
           <div className="ob-form-group">
-            <label htmlFor="ob-server-password">Password</label>
+            <label htmlFor="ob-server-password">{t.onboarding.ssh.passwordLabel}</label>
             <input
               id="ob-server-password"
               type="password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(null); }}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="Server password"
+              placeholder={t.onboarding.ssh.passwordPlaceholder}
               autoComplete="off"
             />
           </div>
@@ -190,7 +209,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
         {method === "key" && (
           <>
             <div className="ob-form-group">
-              <label htmlFor="ob-key-path">Key Path</label>
+              <label htmlFor="ob-key-path">{t.onboarding.ssh.keyPathLabel}</label>
               <div className="ob-input-with-btn">
                 <input
                   id="ob-key-path"
@@ -201,19 +220,23 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
                   spellCheck={false}
                   autoComplete="off"
                 />
-                <button type="button" className="ob-btn-browse">Browse</button>
+                {canBrowseKey && (
+                  <button type="button" className="ob-btn-browse" onClick={handleBrowseKey}>
+                    {t.onboarding.ssh.browse}
+                  </button>
+                )}
               </div>
             </div>
             <div className="ob-form-group">
               <label htmlFor="ob-key-passphrase">
-                Passphrase <span className="ob-label-hint">(optional)</span>
+                {t.onboarding.ssh.passphraseLabel} <span className="ob-label-hint">{t.onboarding.common.optional}</span>
               </label>
               <input
                 id="ob-key-passphrase"
                 type="password"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
-                placeholder="Leave blank if none"
+                placeholder={t.onboarding.ssh.passphrasePlaceholder}
                 autoComplete="off"
               />
             </div>
@@ -227,13 +250,13 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <ChevronDownIcon />
-          Advanced
+          {t.onboarding.ssh.advanced}
         </button>
 
         <div className={`ob-advanced-panel${showAdvanced ? " open" : ""}`}>
           <div className="ob-advanced-grid">
             <div className="ob-form-group">
-              <label htmlFor="ob-ssh-port">SSH Port</label>
+              <label htmlFor="ob-ssh-port">{t.onboarding.ssh.sshPortLabel}</label>
               <input
                 id="ob-ssh-port"
                 type="text"
@@ -246,7 +269,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
             </div>
             <div className="ob-form-group">
               <label htmlFor="ob-jump-host">
-                Jump Host <span className="ob-label-hint">(optional)</span>
+                {t.onboarding.ssh.jumpHostLabel} <span className="ob-label-hint">{t.onboarding.common.optional}</span>
               </label>
               <input
                 id="ob-jump-host"
@@ -261,7 +284,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
           </div>
           <div className="ob-form-group">
             <label htmlFor="ob-ssh-args">
-              Extra SSH Arguments <span className="ob-label-hint">(optional)</span>
+              {t.onboarding.ssh.extraArgsLabel} <span className="ob-label-hint">{t.onboarding.common.optional}</span>
             </label>
             <input
               id="ob-ssh-args"
@@ -280,7 +303,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
         )}
 
         <button className="ob-btn-primary" onClick={handleSubmit}>
-          Save &amp; Continue
+          {t.onboarding.ssh.submit}
         </button>
 
         <a
@@ -290,7 +313,7 @@ export function SshStep({ state, onUpdate, onNext, onBack }: StepProps) {
           rel="noopener noreferrer"
         >
           <InfoIcon />
-          Step-by-step setup tutorial
+          {t.onboarding.ssh.tutorial}
         </a>
       </div>
     </div>

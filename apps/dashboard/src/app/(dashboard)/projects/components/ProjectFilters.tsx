@@ -3,6 +3,8 @@
 import { type ReactNode } from "react";
 import { Cloud, Server, HardDrive, LayoutGrid } from "lucide-react";
 import type { Project } from "@/constants/mock";
+import { useI18n } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 
 /**
  * Filter projects by where they're deployed: all, Openship Cloud, a specific
@@ -48,7 +50,7 @@ export interface ProjectFilterOption {
  * projects. The page uses the option count to decide whether the sidebar is
  * worth showing (≥2 real groups).
  */
-export function buildProjectFilterOptions(projects: Project[]): ProjectFilterOption[] {
+export function buildProjectFilterOptions(projects: Project[], t: Dictionary): ProjectFilterOption[] {
   let cloud = 0;
   let local = 0;
   const servers = new Map<string, number>();
@@ -57,7 +59,7 @@ export function buildProjectFilterOptions(projects: Project[]): ProjectFilterOpt
     if (p.deployTarget === "cloud") cloud++;
     else if (p.deployTarget === "local") local++;
     else if (p.deployTarget === "server") {
-      const name = p.serverName || "Server";
+      const name = p.serverName || t.projects.hosting.server;
       servers.set(name, (servers.get(name) ?? 0) + 1);
     }
   }
@@ -66,7 +68,7 @@ export function buildProjectFilterOptions(projects: Project[]): ProjectFilterOpt
     {
       key: "all",
       filter: { kind: "all" },
-      label: "All projects",
+      label: t.projects.filters.allProjects,
       icon: <LayoutGrid className="size-4" />,
       count: projects.length,
     },
@@ -76,7 +78,7 @@ export function buildProjectFilterOptions(projects: Project[]): ProjectFilterOpt
     options.push({
       key: "cloud",
       filter: { kind: "cloud" },
-      label: "Openship Cloud",
+      label: t.projects.filters.cloud,
       icon: <Cloud className="size-4" />,
       count: cloud,
     });
@@ -96,7 +98,7 @@ export function buildProjectFilterOptions(projects: Project[]): ProjectFilterOpt
     options.push({
       key: "local",
       filter: { kind: "local" },
-      label: "Local",
+      label: t.projects.filters.local,
       icon: <HardDrive className="size-4" />,
       count: local,
     });
@@ -112,13 +114,14 @@ interface ProjectFiltersProps {
 }
 
 export function ProjectFilters({ options, active, onChange }: ProjectFiltersProps) {
+  const { t } = useI18n();
   const activeKey = projectFilterKey(active);
 
   return (
     <div className="bg-card rounded-2xl border border-border/50">
       <div className="px-5 py-4 border-b border-border/50">
-        <h2 className="font-semibold text-foreground text-[15px]">Filter by target</h2>
-        <p className="text-xs text-muted-foreground">Where projects are deployed</p>
+        <h2 className="font-semibold text-foreground text-[15px]">{t.projects.filters.title}</h2>
+        <p className="text-xs text-muted-foreground">{t.projects.filters.subtitle}</p>
       </div>
       <div className="p-2">
         {options.map((opt) => {
@@ -136,7 +139,7 @@ export function ProjectFilters({ options, active, onChange }: ProjectFiltersProp
               }
             >
               <span className={isActive ? "text-primary" : "text-muted-foreground"}>{opt.icon}</span>
-              <span className="flex-1 text-left truncate">{opt.label}</span>
+              <span className="flex-1 text-start truncate">{opt.label}</span>
               <span className={"text-xs tabular-nums " + (isActive ? "text-foreground" : "text-muted-foreground/60")}>
                 {opt.count}
               </span>

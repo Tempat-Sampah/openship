@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession, getDeploymentInfo } from "@/lib/server/session";
 import { Sidebar } from "@/components/sidebar";
+import { UpdateCenter } from "@/components/updates/UpdateCenter";
 import { MigratedLauncher } from "@/components/migrated-launcher";
 import { MigrationInProgress } from "@/components/migration-in-progress";
 import { DashboardProviders } from "./providers";
@@ -150,6 +151,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <Sidebar />
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
+          {/* Update + advisory surface (desktop & self-hosted). Renders nothing
+              unless there's an advisory, an available update, or a what's-new. */}
+          <UpdateCenter />
           {children}
         </main>
       </div>

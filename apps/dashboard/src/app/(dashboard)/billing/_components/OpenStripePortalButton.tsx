@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { ArrowUpRight, Loader2 } from "lucide-react";
 import { api } from "@/lib/api/client";
+import { useI18n } from "@/components/i18n-provider";
 
-export function OpenStripePortalButton({ label = "Open Stripe Portal" }: { label?: string }) {
+export function OpenStripePortalButton({ label }: { label?: string }) {
+  const { t } = useI18n();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const buttonLabel = label ?? t.billing.portal.openButton;
 
   async function openPortal() {
     setPending(true);
@@ -19,11 +22,11 @@ export function OpenStripePortalButton({ label = "Open Stripe Portal" }: { label
       );
       const portalUrl = body.data?.portalUrl ?? body.portalUrl;
       if (!portalUrl) {
-        throw new Error("Portal URL missing from response");
+        throw new Error(t.billing.portal.errorMissingUrl);
       }
       window.location.href = portalUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to open Stripe portal");
+      setError(err instanceof Error ? err.message : t.billing.portal.errorOpenFailed);
       setPending(false);
     }
   }
@@ -40,7 +43,7 @@ export function OpenStripePortalButton({ label = "Open Stripe Portal" }: { label
         <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-primary/90" />
         <span className="relative flex items-center gap-1.5">
           {pending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-          {label}
+          {buttonLabel}
           {!pending ? <ArrowUpRight className="size-3.5" /> : null}
         </span>
       </button>

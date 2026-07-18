@@ -21,7 +21,7 @@ import {
   type ProjectRootSnapshotInput,
   type RepoTreeEntry,
 } from "../../lib/project-root-detector";
-import type { ProjectType } from "@repo/core";
+import { parseDeploymentMetadata, type ProjectType, type RoutingConfig } from "@repo/core";
 import { env } from "../../config";
 import { createGitHubReader, type ProjectReader } from "./project-reader";
 
@@ -29,6 +29,7 @@ const PREPARE_FILE_CONTENTS = [
   ...MANIFEST_FILES,
   "pnpm-workspace.yaml",
   "vercel.json",
+  "render.yaml",
   "turbo.json",
   "nx.json",
   "rush.json",
@@ -78,6 +79,24 @@ export interface ProjectInfo {
   monorepoApps?: MonorepoApp[];
   monorepoWorkspace?: MonorepoWorkspace;
   rootEnv?: Record<string, string>;
+  /** Routing config parsed from the repo-root `vercel.json` (rewrites/redirects/
+   *  headers/cleanUrls/trailingSlash). Persisted on the project + compiled to
+   *  OpenResty at deploy. */
+  routing?: RoutingConfig;
+}
+
+/**
+ * Routing config is a repo-ROOT concern (the root `vercel.json`), so read it
+ * from the root snapshot's file contents regardless of which sub-app is selected
+ * as the primary. Returns the first source that declares routing (vercel today).
+ */
+function extractRootRouting(fileContents: Record<string, string>): RoutingConfig | undefined {
+  const lower: Record<string, string> = {};
+  for (const [name, content] of Object.entries(fileContents)) lower[name.toLowerCase()] = content;
+  for (const meta of parseDeploymentMetadata(lower)) {
+    if (meta.routing) return meta.routing;
+  }
+  return undefined;
 }
 
 /**
@@ -131,15 +150,16 @@ async function readProjectSnapshot(
       }),
   );
 
-  // Workspace manifests with dynamic basenames - PREPARE_FILE_CONTENTS
-  // is a static list, but .NET solutions are named per-repo (e.g.
-  // `MedicaScopeLMS.sln`) so the lowercase-equality match above would
-  // miss them. Without the content here, `detectWorkspaces` finds the
-  // filename in `files` but can't pull its body, so workspace
-  // discovery (and the whole monorepo flow) silently no-ops.
+  // Workspace/project manifests with dynamic basenames - PREPARE_FILE_CONTENTS
+  // is a static list, but .NET solution/project files are named per-repo (e.g.
+  // `MedicaScopeLMS.sln`, `Api.csproj`) so the lowercase-equality match above
+  // would miss them. Without the .sln body, `detectWorkspaces` can't discover
+  // sub-projects; without each .csproj/.fsproj body, we can't tell a deployable
+  // web/service project from a class library (see isDotnetLibraryOnly), so every
+  // project in a solution wrongly becomes its own deployable app.
   await Promise.all(
     files
-      .filter((file) => /\.sln$/i.test(file.name))
+      .filter((file) => /\.(sln|csproj|fsproj)$/i.test(file.name))
       .map(async (file) => {
         const content = await reader.readText(joinProjectPath(normalizedRootDirectory, file.name));
         if (content) {
@@ -265,8 +285,9 @@ export async function resolveFromReader(
     readComposeText(reader, selected.rootDirectory, selected.files),
     readProjectText(reader, selected.rootDirectory, ".env"),
   ]);
+  const routing = extractRootRouting(rootSnapshot.fileContents ?? {});
 
-  return toProjectInfo(repoMeta, selected, composeContent, selectedBranch, composeEnvContent, monorepo);
+  return toProjectInfo(repoMeta, selected, composeContent, selectedBranch, composeEnvContent, monorepo, routing);
 }
 
 async function resolveFromGitHub(
@@ -312,6 +333,7 @@ function toProjectInfo(
   selectedBranch?: string,
   composeEnvContent?: string,
   monorepo?: { apps: MonorepoApp[]; workspace: MonorepoWorkspace } | null,
+  routing?: RoutingConfig,
 ): ProjectInfo {
   const stack = projectRoot.stack;
   const rootEnv = composeEnvContent ? parseComposeEnvFile(composeEnvContent) : {};
@@ -362,5 +384,6 @@ function toProjectInfo(
       ? { monorepoApps: monorepo.apps, monorepoWorkspace: monorepo.workspace }
       : {}),
     ...(Object.keys(rootEnv).length > 0 && { rootEnv }),
+    ...(routing && { routing }),
   };
 }

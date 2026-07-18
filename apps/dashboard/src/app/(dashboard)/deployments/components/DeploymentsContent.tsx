@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { deployApi, projectsApi } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { DeploymentsFilters } from "./DeploymentsFilters";
 import { DeploymentsList } from "./DeploymentsList";
 import { LoadingSkeleton } from "./LoadingSkeleton";
@@ -39,6 +40,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
   hideHeader = false,
   hideSidebar = false,
 }) => {
+  const { t } = useI18n();
   const isProject = !!projectId;
 
   const [deployments, setDeployments] = useState<Deployment[]>([]);
@@ -119,14 +121,27 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
       {!hideHeader && (
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Deployments
+            {t.deployments.header.title}
           </h1>
           <p className="text-sm text-muted-foreground/70 mt-1">
             {isLoading
-              ? "Loading…"
+              ? t.deployments.header.loading
               : isProject
-                ? `${deployments.length} deployment${deployments.length !== 1 ? "s" : ""}`
-                : `${deployments.length} total across ${projects.length} project${projects.length !== 1 ? "s" : ""}`}
+                ? interpolate(
+                    deployments.length === 1
+                      ? t.deployments.header.countProjectOne
+                      : t.deployments.header.countProjectOther,
+                    { count: String(deployments.length) },
+                  )
+                : interpolate(
+                    projects.length === 1
+                      ? t.deployments.header.countAllOne
+                      : t.deployments.header.countAllOther,
+                    {
+                      deployments: String(deployments.length),
+                      projects: String(projects.length),
+                    },
+                  )}
           </p>
         </div>
       )}
@@ -170,7 +185,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
           <div className="bg-card rounded-2xl border border-border/50 p-5">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="size-4 text-muted-foreground" />
-              <h3 className="font-semibold text-foreground text-sm">Overview</h3>
+              <h3 className="font-semibold text-foreground text-sm">{t.deployments.sidebar.overview.title}</h3>
             </div>
 
             <div className="space-y-3">
@@ -179,7 +194,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Rocket className="size-4 text-primary" />
                   </div>
-                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-sm text-muted-foreground">{t.deployments.sidebar.overview.total}</span>
                 </div>
                 <span className="text-lg font-semibold text-foreground">
                   {isLoading ? "–" : stats.total}
@@ -191,7 +206,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                     <CheckCircle2 className="size-4 text-emerald-500" />
                   </div>
-                  <span className="text-sm text-muted-foreground">Successful</span>
+                  <span className="text-sm text-muted-foreground">{t.deployments.sidebar.overview.successful}</span>
                 </div>
                 <span className="text-lg font-semibold text-foreground">
                   {isLoading ? "–" : stats.success}
@@ -203,7 +218,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
                     <XCircle className="size-4 text-red-500" />
                   </div>
-                  <span className="text-sm text-muted-foreground">Failed</span>
+                  <span className="text-sm text-muted-foreground">{t.deployments.sidebar.overview.failed}</span>
                 </div>
                 <span className="text-lg font-semibold text-foreground">
                   {isLoading ? "–" : (stats.failed || 0) + (stats.canceled || 0)}
@@ -216,7 +231,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
                       <Loader2 className="size-4 text-amber-500 animate-spin" />
                     </div>
-                    <span className="text-sm text-muted-foreground">In Progress</span>
+                    <span className="text-sm text-muted-foreground">{t.deployments.sidebar.overview.inProgress}</span>
                   </div>
                   <span className="text-lg font-semibold text-foreground">{activeCount}</span>
                 </div>
@@ -229,18 +244,18 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
             <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent rounded-2xl border border-primary/10 p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="size-4 text-primary" />
-                <h3 className="font-semibold text-foreground text-sm">Auto-Deploy</h3>
+                <h3 className="font-semibold text-foreground text-sm">{t.deployments.sidebar.autoDeploy.title}</h3>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Enable auto-deploy to trigger deployments automatically on every push to your main branch.
+                {t.deployments.sidebar.autoDeploy.description}
               </p>
               {!isProject && (
                 <Link
                   href="/projects"
                   className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 mt-3 transition-colors"
                 >
-                  Go to project settings
-                  <ArrowRight className="size-3.5" />
+                  {t.deployments.sidebar.autoDeploy.cta}
+                  <ArrowRight className="size-3.5 rtl:rotate-180" />
                 </Link>
               )}
             </div>
@@ -248,17 +263,17 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
             <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent rounded-2xl border border-primary/10 p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="size-4 text-primary" />
-                <h3 className="font-semibold text-foreground text-sm">Get Started</h3>
+                <h3 className="font-semibold text-foreground text-sm">{t.deployments.sidebar.getStarted.title}</h3>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Import a Git repository or use a template to create your first deployment.
+                {t.deployments.sidebar.getStarted.description}
               </p>
               <Link
                 href="/library"
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 mt-3 transition-colors"
               >
-                Deploy a project
-                <ArrowRight className="size-3.5" />
+                {t.deployments.sidebar.getStarted.cta}
+                <ArrowRight className="size-3.5 rtl:rotate-180" />
               </Link>
             </div>
           )}
@@ -267,7 +282,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
           <div className="bg-card rounded-2xl border border-border/50 p-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="size-4 text-muted-foreground" />
-              <h3 className="font-semibold text-foreground text-sm">Recent</h3>
+              <h3 className="font-semibold text-foreground text-sm">{t.deployments.sidebar.recent.title}</h3>
             </div>
 
             {isLoading ? (
@@ -285,7 +300,7 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
                   <Clock className="size-4 text-muted-foreground/50" />
                 </div>
                 <p className="text-xs text-muted-foreground/70">
-                  Your deployments will appear here
+                  {t.deployments.sidebar.recent.empty}
                 </p>
               </div>
             ) : (
@@ -306,10 +321,10 @@ export const DeploymentsContent: React.FC<DeploymentsContentProps> = ({
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                        {d.projectName || "Unknown"}
+                        {d.projectName || t.deployments.sidebar.recent.unknown}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(d.createdAt))}
+                        {formatDistanceToNow(new Date(d.createdAt), t.deployments.time)}
                       </p>
                     </div>
                   </Link>

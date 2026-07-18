@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface DnsRecord {
   type: string;
@@ -11,6 +12,7 @@ interface DnsRecord {
 }
 
 export function DnsRecordCard({ label, record }: { label: string; record: DnsRecord }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const copyValue = () => {
@@ -31,7 +33,9 @@ export function DnsRecordCard({ label, record }: { label: string; record: DnsRec
       </div>
       <p className="text-sm font-medium text-foreground mb-1">{record.name}</p>
       {record.priority !== undefined && (
-        <p className="text-xs text-muted-foreground mb-1">Priority: {record.priority}</p>
+        <p className="text-xs text-muted-foreground mb-1">
+          {interpolate(t.emails.recordCard.priority, { priority: String(record.priority) })}
+        </p>
       )}
       <div className="flex items-start gap-2 mt-2">
         <code className="flex-1 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 break-all leading-relaxed">
@@ -40,7 +44,7 @@ export function DnsRecordCard({ label, record }: { label: string; record: DnsRec
         <button
           onClick={copyValue}
           className="shrink-0 p-1.5 rounded-lg hover:bg-muted transition-colors"
-          title="Copy value"
+          title={t.emails.recordCard.copyValue}
         >
           {copied ? (
             <Check className="size-3.5 text-emerald-500" />

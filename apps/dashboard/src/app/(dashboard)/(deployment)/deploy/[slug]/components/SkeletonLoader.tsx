@@ -1,5 +1,8 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { useI18n } from "@/components/i18n-provider";
 
 type LoadingSource =
   | { kind: "repo"; owner: string; repo: string; branch?: string }
@@ -50,20 +53,18 @@ function sourceLabel(source: LoadingSource): string | null {
   return source.branch ? `${source.owner}/${source.repo} · ${source.branch}` : `${source.owner}/${source.repo}`;
 }
 
-function phaseSequence(source: LoadingSource): string[] {
-  if (source?.kind === "settings") {
-    // Config-edit: hydrating from saved data, NOT touching the repo.
-    return ["Loading saved settings", "Restoring configuration"];
-  }
-  if (source?.kind === "local") {
-    return ["Scanning project", "Reading manifests", "Detecting framework"];
-  }
-  return ["Connecting to GitHub", "Fetching repository", "Analyzing structure"];
-}
-
 const StatusHeader = ({ source }: { source: LoadingSource }) => {
+  const { t } = useI18n();
   const label = sourceLabel(source);
-  const phases = phaseSequence(source);
+  const s = t.deploy.skeleton;
+  // Config-edit hydrates from saved data (settings); local scans the folder;
+  // otherwise we're pulling from the remote repo.
+  const phases =
+    source?.kind === "settings"
+      ? [s.settings1, s.settings2]
+      : source?.kind === "local"
+        ? [s.local1, s.local2, s.local3]
+        : [s.repo1, s.repo2, s.repo3];
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -82,7 +83,7 @@ const StatusHeader = ({ source }: { source: LoadingSource }) => {
             style={{ animation: "deploy-fade 0.32s ease-out both" }}
           >
             {phases[phase]}
-            <span className="inline-block w-4 text-left">
+            <span className="inline-block w-4 text-start">
               <span
                 className="inline-block"
                 style={{ animation: "deploy-dots 1.2s steps(4, end) infinite" }}

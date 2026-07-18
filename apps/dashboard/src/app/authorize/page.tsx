@@ -6,6 +6,7 @@ import { useSession } from "@/lib/auth-client";
 import { buildAuthPageHref, getCloudDesktopHandoffUrl } from "@/lib/cloud-auth";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { Loader2, Monitor, Check } from "lucide-react";
 
 /**
@@ -34,6 +35,7 @@ function AuthorizePageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const { t } = useI18n();
 
   const callback = searchParams.get("callback");
   const appName = searchParams.get("app") || "Openship Desktop";
@@ -66,9 +68,9 @@ function AuthorizePageInner() {
     return (
       <AuthShell>
         <div className="text-center">
-          <h1 className="text-xl font-semibold">Invalid Request</h1>
+          <h1 className="text-xl font-semibold">{t.misc.authorize.invalidRequest}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Missing authorization parameters.
+            {t.misc.authorize.missingParams}
           </p>
         </div>
       </AuthShell>
@@ -92,27 +94,28 @@ function AuthorizePageInner() {
         <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/80 to-primary shadow-sm">
           <Monitor className="size-7 text-primary-foreground" />
         </div>
-        <h1 className="text-xl font-semibold">Authorize {appName}</h1>
+        <h1 className="text-xl font-semibold">{interpolate(t.misc.authorize.title, { app: appName })}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {appName}
-          {machine ? ` on ${machine}` : ""} wants to connect to your account.
+          {machine
+            ? interpolate(t.misc.authorize.wantsToConnectOnMachine, { app: appName, machine })
+            : interpolate(t.misc.authorize.wantsToConnect, { app: appName })}
         </p>
       </div>
 
       <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
-        <p className="text-sm font-medium text-foreground">Signed in as</p>
+        <p className="text-sm font-medium text-foreground">{t.misc.authorize.signedInAs}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">{session.user.email}</p>
 
         <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium text-foreground">This will allow:</p>
+          <p className="text-sm font-medium text-foreground">{t.misc.authorize.willAllow}</p>
           <ul className="space-y-1 text-sm text-muted-foreground">
             <li className="flex items-center gap-2">
               <Check className="size-3.5 text-green-500 shrink-0" />
-              Deploy and manage applications
+              {t.misc.authorize.permDeploy}
             </li>
             <li className="flex items-center gap-2">
               <Check className="size-3.5 text-green-500 shrink-0" />
-              Access your projects and settings
+              {t.misc.authorize.permAccess}
             </li>
           </ul>
         </div>
@@ -126,14 +129,14 @@ function AuthorizePageInner() {
             if (handoffUrl) window.location.href = handoffUrl;
           }}
         >
-          Authorize
+          {t.misc.authorize.authorize}
         </Button>
         <Button
           variant="outline"
           className="w-full"
           onClick={() => window.close()}
         >
-          Cancel
+          {t.misc.authorize.cancel}
         </Button>
       </div>
     </AuthShell>

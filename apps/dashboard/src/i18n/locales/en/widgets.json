@@ -1,0 +1,291 @@
+{
+  "shared": {
+    "dnsRecords": {
+      "priority": "priority {n}",
+      "recommended": "recommended",
+      "name": "Name",
+      "value": "Value",
+      "copy": "Copy"
+    },
+    "errorState": {
+      "commonCauses": "Common causes",
+      "needHelp": "Need help?",
+      "needHelpDesc": "Check the documentation or reach out if the issue persists.",
+      "documentation": "Documentation",
+      "repoNotFound": {
+        "title": "Repository Not Found",
+        "subtitle": "We couldn't find the repository you're looking for.",
+        "hints": [
+          "Repository is private and you haven't granted access",
+          "Repository name or owner is misspelled",
+          "Repository has been deleted or moved",
+          "Your GitHub connection has expired"
+        ],
+        "backToLibrary": "Back to Library",
+        "importRepository": "Import Repository"
+      },
+      "projectNotFound": {
+        "title": "Project Not Found",
+        "subtitle": "The project you are looking for does not exist or has been deleted.",
+        "hints": [
+          "Project has been deleted",
+          "You don't have access to this project",
+          "The project URL is incorrect"
+        ],
+        "backToDashboard": "Back to Dashboard",
+        "createNewProject": "Create New Project"
+      },
+      "accessDenied": {
+        "title": "Access Denied",
+        "subtitle": "You don't have permission to access this resource.",
+        "hints": [
+          "You are not the project owner",
+          "Your account doesn't have the required permissions",
+          "Your team membership has changed"
+        ],
+        "backToDashboard": "Back to Dashboard"
+      }
+    },
+    "machineSettings": {
+      "title": "Machine Settings",
+      "configureFor": "Configure compute resources for",
+      "docs": "Docs",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "storage": "Storage",
+      "base": "Base",
+      "current": "Current",
+      "creditsPerMonth": "credits/month",
+      "fromCurrent": "from current",
+      "viewPricing": "View pricing",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "toastUpdated": "Machine settings updated",
+      "toastFailed": "Failed to update settings"
+    },
+    "serverSelector": {
+      "serverLabel": "Server",
+      "loadingServers": "Loading servers…",
+      "noServerConnected": "No server connected",
+      "connectServerFirst": "Connect a server first, then come back to continue setup.",
+      "addServer": "Add Server",
+      "selectServer": "Select a server…",
+      "addNewServer": "Add new server…"
+    }
+  },
+  "backup": {
+    "runCard": {
+      "streamError": "Couldn't stream run progress: {message}",
+      "loading": "Loading…",
+      "live": "Live",
+      "started": "Started",
+      "finished": "Finished",
+      "elapsed": "Elapsed",
+      "bytes": "Bytes",
+      "runId": "Run id",
+      "status": {
+        "queued": "Queued",
+        "preparing": "Preparing",
+        "snapshotting": "Snapshotting",
+        "uploading": "Uploading",
+        "verifying": "Verifying",
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "serverError": "Server error"
+      },
+      "phase": {
+        "queued": "Waiting for a worker…",
+        "preparing": "Resolving destination + service…",
+        "snapshotting": "Producing artifacts (pre-hook running)…",
+        "uploading": "Streaming to destination…",
+        "verifying": "Writing manifest…"
+      }
+    },
+    "policyEditor": {
+      "presetHourly": "Hourly",
+      "presetDaily": "Daily (03:17)",
+      "presetWeekly": "Weekly (Sun 03:17)",
+      "presetMonthly": "Monthly (1st 03:17)",
+      "presetManual": "Manual only",
+      "selectDestinationAlert": "Select a destination",
+      "failedSave": "Failed to save policy",
+      "rotateConfirm": "Rotate webhook token? The current URL will stop working.",
+      "failedRotate": "Failed to rotate token",
+      "editTitle": "Edit backup policy",
+      "createTitle": "Create backup policy",
+      "serviceLabel": "Service: {name}",
+      "projectLevel": "Project-level policy",
+      "destination": "Destination",
+      "selectOption": "— select —",
+      "schedule": "Schedule",
+      "cronPlaceholder": "Custom cron (5 fields), or leave blank for manual-only",
+      "retainCount": "Retain count",
+      "retainCountHint": "Keep N most recent succeeded runs",
+      "retainDays": "Retain days",
+      "retainDaysHint": "Drop runs older than N days",
+      "preDeployTrigger": "Pre-deploy trigger",
+      "preDeployLabel": "Automatically back up before each new deployment lands",
+      "preDeployHint": "Fires on every successful build, just before the new code goes live.",
+      "webhookTrigger": "Webhook trigger",
+      "webhookLabel": "Enable inbound webhook URL",
+      "webhookHint": "Generates a per-policy token. POST to the URL from any external trigger (GitHub Actions, monitoring, your own scheduler).",
+      "copyUrl": "Copy URL",
+      "rotateToken": "Rotate token",
+      "preHook": "Pre-hook (runs before snapshot)",
+      "preHookHint": "Common for DBs: pg_dump > /tmp/dump.sql. Failure aborts the run.",
+      "postHook": "Post-hook (runs after upload)",
+      "postHookHint": "Cleanup; failures logged but don't fail the run.",
+      "policyEnabled": "Policy enabled",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "saveChanges": "Save changes",
+      "createPolicy": "Create policy"
+    }
+  },
+  "cloud": {
+    "connectionGate": {
+      "reconnect": "Reconnect Openship Cloud",
+      "deployedOn": "This project is deployed on Openship Cloud",
+      "sessionMissing": "Your Openship Cloud session is missing. Connect to manage deployments, view logs, and access runtime controls for {name}.",
+      "thisProject": "this project",
+      "connecting": "Connecting…",
+      "connect": "Connect to Openship Cloud",
+      "readOnlyNote": "You can still browse this page in read-only mode while disconnected."
+    }
+  },
+  "integrations": {
+    "githubPermission": {
+      "title": "Connect to GitHub",
+      "subtitle": "Choose repository access level",
+      "intro": "Select which repositories Openship can access. You can change this later in your GitHub settings.",
+      "publicTitle": "Public repositories only",
+      "publicDesc": "Access to your public repositories. Perfect for open source projects.",
+      "publicItem1": "Read public repository data",
+      "publicItem2": "Deploy public repositories",
+      "publicItem3": "Create webhooks for public repos",
+      "allTitle": "Public and private repositories",
+      "allDesc": "Full access to all your repositories. Required for private projects.",
+      "allItem1": "Read public and private repository data",
+      "allItem2": "Deploy any repository",
+      "allItem3": "Create webhooks for all repos",
+      "allItem4": "Access organization repositories",
+      "noteLabel": "Note:",
+      "noteText": "You can revoke access at any time from your GitHub settings under Applications → Authorized OAuth Apps.",
+      "cancel": "Cancel",
+      "connecting": "Connecting...",
+      "connect": "Connect to GitHub"
+    }
+  },
+  "permissions": {
+    "resourcePicker": {
+      "failedLoadResources": "Failed to load resources",
+      "searchPlaceholder": "Search {type}...",
+      "allResources": "All {type}",
+      "noMatch": "No resources match your search.",
+      "noResourcesYet": "No {type} in this organization yet.",
+      "selectedSummaryOne": "{count} resource selected across all types.",
+      "selectedSummaryOther": "{count} resources selected across all types.",
+      "wildcard": "wildcard",
+      "coveredByAll": "covered by all",
+      "failedLoadOrgs": "Failed to load GitHub orgs",
+      "failedLoadRepos": "Failed to load repos for {login}",
+      "noOrgs": "No GitHub organizations connected.",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "entireOrg": "entire org",
+      "repoCountOne": "{count} repo",
+      "repoCountOther": "{count} repos",
+      "coveredByOrg": "Covered by the org-wide grant above.",
+      "noRepos": "No repositories.",
+      "searchRepos": "Search repos…"
+    }
+  },
+  "routing": {
+    "domainSwitcher": {
+      "notConfigured": "Not configured",
+      "selectDomain": "Select domain"
+    },
+    "publicEndpoints": {
+      "mappedToPort": "Mapped to port {port}.",
+      "noPortYet": "No port selected yet.",
+      "mappedTo": "Mapped to {path}.",
+      "exposedPort": "Exposed port",
+      "staticPath": "Static path",
+      "auto": "Auto",
+      "domain": "Domain",
+      "domainsRouted": "{count} domains routed to this app.",
+      "accessibleWhere": "Where your site will be accessible",
+      "addDomain": "Add domain",
+      "primaryDomain": "Primary domain",
+      "domainN": "Domain {n}",
+      "remove": "Remove"
+    },
+    "configEditor": {
+      "remove": "Remove",
+      "removeHeader": "Remove header",
+      "add": "Add",
+      "addHeader": "Add header",
+      "rewrites": "Rewrites",
+      "rewritesHint": "Serve another path/backend without changing the URL (e.g. /api/(.*) → backend).",
+      "redirects": "Redirects",
+      "redirectsHint": "HTTP redirect (301/308 permanent, else 307).",
+      "headers": "Headers",
+      "headersHint": "Response headers added for matching paths.",
+      "permanent": "permanent",
+      "cleanUrls": "Clean URLs",
+      "cleanUrlsHint": "(strip .html)",
+      "trailingSlash": "Trailing slash"
+    },
+    "settingsCard": {
+      "recordLabels": {
+        "CNAME": "Routes traffic through the edge network",
+        "A": "Points to your server IP",
+        "TXT": "Verifies domain ownership"
+      },
+      "publiclyExposed": "Publicly exposed",
+      "internalOnly": "Internal only",
+      "freeSubdomain": "Free subdomain",
+      "free": "Free",
+      "customDomain": "Custom domain",
+      "custom": "Custom",
+      "save": "Save",
+      "checkingDns": "Checking DNS…",
+      "addRecordHint": "Add a {primary} and {txt} record",
+      "viewRecords": "View records",
+      "exposedPort": "Exposed port",
+      "staticPath": "Static path",
+      "staticPathHint": "Serve files from this subdirectory inside the build output. Use {path} for the root output.",
+      "dnsConfiguration": "DNS Configuration",
+      "addRecordsFor": "Add these records for {hostname}",
+      "nameHost": "Name / Host",
+      "valueTarget": "Value / Target",
+      "dnsHintSelfhosted": "Add the A record pointing to your server IP, then the TXT record for verification.",
+      "dnsHintCloud": "Add the CNAME record for routing, then the TXT record for verification.",
+      "dnsPropagation": "DNS changes can take up to 48 hours."
+    }
+  },
+  "updates": {
+    "severity": {
+      "critical": "Critical",
+      "recommended": "Recommended",
+      "info": "Advisory"
+    },
+    "viewChangelog": "View changelog",
+    "available": "is available",
+    "youreOn": "· you're on {version}",
+    "rerunInstall": "Re-run your install to update your self-hosted server.",
+    "updateNow": "Update now",
+    "changelog": "Changelog",
+    "updatedTo": "Updated to Openship {version}",
+    "seeChanges": "See what changed in this release.",
+    "onLatest": "You're on the latest version.",
+    "whatsNew": "What's new",
+    "whatsNewIn": "What's new in {version}",
+    "close": "Close",
+    "noNotes": "No release notes for this version.",
+    "viewOnGithub": "View on GitHub",
+    "dismiss": "Dismiss"
+  }
+}

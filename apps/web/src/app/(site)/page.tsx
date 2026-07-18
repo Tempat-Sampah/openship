@@ -32,7 +32,7 @@ const softwareLd = {
   },
   description:
     "Open source, self-hostable deployment platform with AI-powered builds, free SSL, instant rollbacks, unlimited domains, and CLI/MCP support.",
-  license: "https://www.gnu.org/licenses/agpl-3.0.html",
+  license: "https://www.apache.org/licenses/LICENSE-2.0",
   offers: {
     "@type": "Offer",
     price: "0",

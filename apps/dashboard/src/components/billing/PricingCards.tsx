@@ -11,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { PlanTierId } from "@repo/core";
+import { useI18n } from "@/components/i18n-provider";
 
 /* ------------------------------------------------------------------ */
 /*  Types — mirror the shape returned by GET /api/billing/plans       */
@@ -47,8 +48,10 @@ const PLAN_ICON: Record<string, React.ReactNode> = {
   enterprise: <Sparkles className="size-5" />,
 };
 
-function formatPrice(cents: number | null): { dollars: string; suffix: string | null } {
-  if (cents === null) return { dollars: "Custom", suffix: null };
+function formatPrice(cents: number | null): { dollars: string | null; suffix: string | null } {
+  // `dollars: null` signals the "contact sales" tier, so the component can
+  // render the localized "Custom" label in place of a price.
+  if (cents === null) return { dollars: null, suffix: null };
   if (cents === 0) return { dollars: "$0", suffix: null };
   const dollars = Math.round(cents / 100);
   return { dollars: `$${dollars}`, suffix: "/mo" };
@@ -64,6 +67,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
   onSelectPlan,
   subscribingPlan,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
       {plans.map((plan) => {
@@ -84,8 +88,8 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
             }`}
           >
             {isPopular && (
-              <span className="absolute -top-2.5 left-6 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground">
-                Most popular
+              <span className="absolute -top-2.5 start-6 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground">
+                {t.billing.pricing.mostPopular}
               </span>
             )}
 
@@ -106,7 +110,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
             {/* Price */}
             <div className="mb-1 flex items-baseline gap-1">
               <span className="text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                {dollars}
+                {dollars ?? t.billing.pricing.custom}
               </span>
               {suffix && (
                 <span className="text-sm font-medium text-muted-foreground">
@@ -122,19 +126,19 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
             <div className="mb-5">
               {isCurrent ? (
                 <div className="flex h-10 w-full items-center justify-center rounded-lg border border-border/50 bg-muted/40 text-sm font-medium text-muted-foreground">
-                  Current plan
+                  {t.billing.pricing.currentPlan}
                 </div>
               ) : isEnterprise ? (
                 <a
                   href={plan.contactSales ?? "mailto:sales@openship.io"}
                   className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border/50 bg-card text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
                 >
-                  Contact sales
-                  <ArrowRight className="size-3.5" />
+                  {t.billing.pricing.contactSales}
+                  <ArrowRight className="size-3.5 rtl:rotate-180" />
                 </a>
               ) : plan.price.monthly === 0 ? (
                 <div className="flex h-10 w-full items-center justify-center rounded-lg border border-border/50 bg-muted/40 text-sm font-medium text-muted-foreground">
-                  Free forever
+                  {t.billing.pricing.freeForever}
                 </div>
               ) : (
                 <button
@@ -151,8 +155,8 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                      Upgrade
-                      <ArrowRight className="size-3.5" />
+                      {t.billing.pricing.upgrade}
+                      <ArrowRight className="size-3.5 rtl:rotate-180" />
                     </>
                   )}
                 </button>

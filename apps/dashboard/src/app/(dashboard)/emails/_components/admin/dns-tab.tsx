@@ -37,6 +37,7 @@ import {
 } from "@/lib/api";
 import { DnsRecordsView } from "@/components/shared/DnsRecordsView";
 import { SectionCard } from "./_shared/section-card";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface DnsTabProps {
   status: MailSetupStatus;
@@ -53,6 +54,7 @@ export function DnsTab({
   selectedDomain,
   onSelectDomain,
 }: DnsTabProps) {
+  const { t } = useI18n();
   const activeDomain = selectedDomain || primaryDomain;
   const isPrimary = activeDomain === primaryDomain;
 
@@ -111,7 +113,7 @@ export function DnsTab({
         // 404 = no records generated for this domain → empty, not an error.
         if (!cancelled) {
           setRecords(null);
-          setRecordsMsg(`No DNS records on file for ${activeDomain}.`);
+          setRecordsMsg(interpolate(t.emailsAdmin.dns.noRecordsFor, { domain: activeDomain }));
         }
       })
       .finally(() => {
@@ -139,7 +141,7 @@ export function DnsTab({
     try {
       setScan(await mailAdminApi.dns.scan(serverId, activeDomain));
     } catch (err) {
-      setScanErr(getApiErrorMessage(err, "DNS scan failed"));
+      setScanErr(getApiErrorMessage(err, t.emailsAdmin.dns.scanFailed));
     } finally {
       setScanning(false);
     }
@@ -151,11 +153,11 @@ export function DnsTab({
 
       {/* Domain picker */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-muted-foreground">Domain</span>
+        <span className="text-sm text-muted-foreground">{t.emailsAdmin.dns.domainLabel}</span>
         {loadingDomains ? (
           <div className="px-3 py-2 rounded-xl border border-border bg-muted/30 flex items-center gap-2">
             <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Loading…</span>
+            <span className="text-sm text-muted-foreground">{t.emailsAdmin.dns.loading}</span>
           </div>
         ) : (
           <select
@@ -174,14 +176,14 @@ export function DnsTab({
           </select>
         )}
         {isPrimary && (
-          <span className="text-xs text-muted-foreground/70">primary</span>
+          <span className="text-xs text-muted-foreground/70">{t.emailsAdmin.dns.primary}</span>
         )}
       </div>
 
       {/* Records for publishing */}
       <SectionCard
-        title="Records for publishing"
-        description={`Publish these at your DNS provider for ${activeDomain}.`}
+        title={t.emailsAdmin.dns.recordsTitle}
+        description={interpolate(t.emailsAdmin.dns.recordsDesc, { domain: activeDomain })}
         icon={FileText}
         density="split"
       >
@@ -200,8 +202,7 @@ export function DnsTab({
               strokeWidth={1.5}
             />
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              {recordsMsg ??
-                "The install wizard generates records during the DKIM step; additional domains get theirs when added."}
+              {recordsMsg ?? t.emailsAdmin.dns.recordsEmpty}
             </p>
           </div>
         )}
@@ -209,8 +210,8 @@ export function DnsTab({
 
       {/* Published-records verification */}
       <SectionCard
-        title="Published records check"
-        description={`Live public-DNS lookup for ${activeDomain}, compared to the records above.`}
+        title={t.emailsAdmin.dns.checkTitle}
+        description={interpolate(t.emailsAdmin.dns.checkDesc, { domain: activeDomain })}
         icon={ShieldCheck}
         density="split"
         action={
@@ -220,7 +221,7 @@ export function DnsTab({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-muted/80 border border-border transition-colors disabled:opacity-50"
           >
             <RefreshCcw className={`size-3 ${scanning ? "animate-spin" : ""}`} />
-            {scan ? "Rescan" : "Verify"}
+            {scan ? t.emailsAdmin.dns.rescan : t.emailsAdmin.dns.verify}
           </button>
         }
       >
@@ -236,9 +237,9 @@ export function DnsTab({
         ) : scan === null ? (
           <div className="px-5 py-10 text-center">
             <p className="text-sm text-muted-foreground">
-              Run a live DNS lookup for{" "}
-              <span className="font-medium text-foreground">{activeDomain}</span>{" "}
-              and compare it to the records above.
+              {t.emailsAdmin.dns.runLookupBefore}
+              <span className="font-medium text-foreground">{activeDomain}</span>
+              {t.emailsAdmin.dns.runLookupAfter}
             </p>
           </div>
         ) : scan.checks.length === 0 ? (
@@ -248,7 +249,7 @@ export function DnsTab({
               strokeWidth={1.5}
             />
             <p className="text-sm text-muted-foreground">
-              No records on file for {activeDomain} to verify.
+              {interpolate(t.emailsAdmin.dns.noRecordsVerify, { domain: activeDomain })}
             </p>
           </div>
         ) : (
@@ -264,12 +265,12 @@ export function DnsTab({
 }
 
 function Header() {
+  const { t } = useI18n();
   return (
     <div>
-      <h2 className="text-lg font-semibold text-foreground">DNS records</h2>
+      <h2 className="text-lg font-semibold text-foreground">{t.emailsAdmin.dns.heading}</h2>
       <p className="text-sm text-muted-foreground mt-0.5 max-w-2xl">
-        The records each domain needs at your DNS provider for mail delivery.
-        Pick a domain to view its records and verify they&apos;re published.
+        {t.emailsAdmin.dns.description}
       </p>
     </div>
   );
@@ -278,7 +279,16 @@ function Header() {
 // ─── Verification row ──────────────────────────────────────────────────────
 
 function DnsCheckRow({ check }: { check: DnsCheck }) {
+  const { t } = useI18n();
   const pres = presentation(check.status);
+  const statusLabel =
+    check.status === "pass"
+      ? t.emailsAdmin.dns.pass
+      : check.status === "warn"
+        ? t.emailsAdmin.dns.warning
+        : check.status === "fail"
+          ? t.emailsAdmin.dns.fail
+          : t.emailsAdmin.dns.unknown;
   const showExpectedActual =
     (check.status === "warn" || check.status === "fail") && check.expected;
   return (
@@ -300,10 +310,10 @@ function DnsCheckRow({ check }: { check: DnsCheck }) {
         </p>
         {showExpectedActual && (
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px]">
-            <KV label="Expected" value={check.expected} />
+            <KV label={t.emailsAdmin.dns.expected} value={check.expected} />
             <KV
-              label="Actual"
-              value={check.actual || "(no record)"}
+              label={t.emailsAdmin.dns.actual}
+              value={check.actual || t.emailsAdmin.dns.noRecord}
               muted={!check.actual}
             />
           </div>
@@ -312,7 +322,7 @@ function DnsCheckRow({ check }: { check: DnsCheck }) {
       <span
         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold shrink-0 ${pres.pill}`}
       >
-        {pres.label}
+        {statusLabel}
       </span>
     </div>
   );

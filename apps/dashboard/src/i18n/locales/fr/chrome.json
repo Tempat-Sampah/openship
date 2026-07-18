@@ -1,0 +1,48 @@
+{
+  "accountSwitcher": {
+    "workspacesCount": "{count} espaces de travail",
+    "newWorkspace": "Nouvel espace de travail",
+    "createTitle": "Créer un espace de travail",
+    "createDescription": "Une organisation distincte pour les projets, les déploiements, les serveurs et les membres.",
+    "nameLabel": "Nom",
+    "namePlaceholder": "Acme Corp",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "toastTitle": "Organisation",
+    "switchFailed": "Échec du changement",
+    "createFailed": "Échec de la création"
+  },
+  "sidebar": {
+    "workspaceFallback": "Espace de travail",
+    "workspacesCount": "{count} espaces de travail",
+    "switchOrganization": "Changer d'organisation",
+    "current": "Actuel",
+    "cloudLabel": "Cloud : {email}",
+    "linkedToCloud": "Lié à Openship Cloud en tant que {email}",
+    "backToSetup": "Retour à la configuration"
+  },
+  "migration": {
+    "inProgressTitle": "Migration en cours",
+    "inProgressBody": "Vos données sont en cours de transfert. Cette page s'actualisera une fois la bascule terminée — généralement en 30 à 90 secondes.",
+    "inProgressHint": "Ne fermez pas cet onglet. Nous vérifions l'état de la migration toutes les quelques secondes et rechargerons automatiquement.",
+    "newLocation": "Nouvel emplacement",
+    "switchBackPrompt": "Besoin de repasser en mode mono-utilisateur sur cette machine ?",
+    "switchBackAction": "Revenir au mode mono-utilisateur",
+    "cloudTitle": "Cette instance a été déplacée vers Openship Cloud",
+    "cloudBody": "Votre équipe collabore désormais à l'URL ci-dessous. Cette instance locale ne contient plus vos projets, paramètres ou déploiements — ouvrez le tableau de bord cloud pour continuer.",
+    "cloudCta": "Ouvrir le tableau de bord cloud",
+    "tunneledTitle": "Votre openship est désormais accessible via le tunnel",
+    "tunneledBody": "Vos coéquipiers peuvent se connecter à l'URL ci-dessous lorsque votre machine est en ligne. Les données résident toujours sur cet appareil — le tunnel ne fait que les exposer via le edge Oblien.",
+    "tunneledCta": "Ouvrir l'URL du tunnel",
+    "serverTitle": "Cette instance a été déplacée vers votre serveur",
+    "serverBody": "Votre équipe collabore désormais à l'URL ci-dessous. Cette instance locale ne contient plus vos projets, paramètres ou déploiements — ouvrez le tableau de bord de l'équipe pour continuer.",
+    "serverCta": "Ouvrir le tableau de bord de l'équipe"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "descGlobal": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "descDashboard": "Cette page n'existe pas ou a peut-être été déplacée. Vérifiez l'URL, ou revenez à votre tableau de bord.",
+    "backToDashboard": "Retour au tableau de bord",
+    "viewDeployments": "Voir les déploiements"
+  }
+}

@@ -32,6 +32,7 @@ import {
 } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 const CHANNEL_ICONS: Record<ChannelKind, React.ElementType> = {
   email: Mail,
@@ -141,27 +142,28 @@ function ChannelsCard({
   onChange: () => Promise<void>;
 }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this channel? Subscriptions using it will stop.")) return;
+    if (!confirm(t.settings.notifications.channels.confirmDelete)) return;
     try {
       await notificationsApi.deleteChannel(id);
-      showToast("Channel removed", "success", "Notifications");
+      showToast(t.settings.notifications.channels.channelRemoved, "success", t.settings.common.toast.notifications);
       await onChange();
     } catch (err) {
-      showToast(getApiErrorMessage(err), "error", "Notifications");
+      showToast(getApiErrorMessage(err), "error", t.settings.common.toast.notifications);
     }
   };
 
   return (
     <SettingsSection
       icon={Bell}
-      title="Delivery channels"
-      description="Where your notifications go. Verified channels are reachable; unverified ones are skipped."
+      title={t.settings.notifications.channels.title}
+      description={t.settings.notifications.channels.description}
     >
       {channels.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No channels yet. Add one to start receiving notifications.</p>
+        <p className="text-sm text-muted-foreground">{t.settings.notifications.channels.empty}</p>
       ) : (
         <ul className="divide-y divide-border/40">
           {channels.map((ch) => {
@@ -173,19 +175,19 @@ function ChannelsCard({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{ch.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">{describeChannel(ch)}</p>
+                  <p className="text-xs text-muted-foreground truncate">{describeChannel(ch, t.settings.notifications.describe)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {ch.verified ? (
-                    <span className="text-[11px] uppercase tracking-wide text-emerald-500">Verified</span>
+                    <span className="text-[11px] uppercase tracking-wide text-emerald-500">{t.settings.notifications.channels.verified}</span>
                   ) : ch.kind !== "in_app" ? (
-                    <span className="text-[11px] uppercase tracking-wide text-amber-500">Unverified</span>
+                    <span className="text-[11px] uppercase tracking-wide text-amber-500">{t.settings.notifications.channels.unverified}</span>
                   ) : null}
                   <button
                     type="button"
                     onClick={() => handleDelete(ch.id)}
                     className="p-1.5 rounded-md hover:bg-foreground/[0.04] text-muted-foreground hover:text-destructive transition"
-                    aria-label="Delete channel"
+                    aria-label={t.settings.notifications.channels.deleteChannel}
                   >
                     <Trash2 className="size-4" strokeWidth={1.7} />
                   </button>
@@ -212,7 +214,7 @@ function ChannelsCard({
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/50 text-sm hover:bg-foreground/[0.04] transition"
           >
             <Plus className="size-4" strokeWidth={1.7} />
-            Add channel
+            {t.settings.notifications.channels.addChannel}
           </button>
         )}
       </div>
@@ -220,16 +222,19 @@ function ChannelsCard({
   );
 }
 
-function describeChannel(ch: NotificationChannel): string {
+function describeChannel(
+  ch: NotificationChannel,
+  labels: { slackWebhook: string; inApp: string },
+): string {
   switch (ch.kind) {
     case "email":
       return String((ch.config as { address?: string }).address ?? "");
     case "webhook":
       return String((ch.config as { url?: string }).url ?? "");
     case "slack":
-      return String((ch.config as { channelName?: string | null }).channelName ?? "Slack webhook");
+      return String((ch.config as { channelName?: string | null }).channelName ?? labels.slackWebhook);
     case "in_app":
-      return "Dashboard bell icon";
+      return labels.inApp;
     default:
       return "";
   }
@@ -243,6 +248,7 @@ function NewChannelForm({
   onCancel: () => void;
 }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [kind, setKind] = useState<ChannelKind>("email");
   const [label, setLabel] = useState("");
   const [address, setAddress] = useState("");
@@ -252,7 +258,7 @@ function NewChannelForm({
 
   const submit = async () => {
     if (!label.trim()) {
-      showToast("Label is required", "error", "Notifications");
+      showToast(t.settings.notifications.form.labelRequired, "error", t.settings.common.toast.notifications);
       return;
     }
     let config: Record<string, unknown> = {};
@@ -263,10 +269,10 @@ function NewChannelForm({
     setBusy(true);
     try {
       await notificationsApi.createChannel({ kind, label: label.trim(), config });
-      showToast("Channel added", "success", "Notifications");
+      showToast(t.settings.notifications.channels.channelAdded, "success", t.settings.common.toast.notifications);
       await onSaved();
     } catch (err) {
-      showToast(getApiErrorMessage(err), "error", "Notifications");
+      showToast(getApiErrorMessage(err), "error", t.settings.common.toast.notifications);
     } finally {
       setBusy(false);
     }
@@ -280,14 +286,14 @@ function NewChannelForm({
           onChange={(e) => setKind(e.target.value as ChannelKind)}
           className="bg-background border border-border/50 rounded-lg px-3 py-2 text-sm"
         >
-          <option value="email">Email</option>
-          <option value="webhook">Webhook</option>
-          <option value="slack">Slack</option>
-          <option value="in_app">In-app</option>
+          <option value="email">{t.settings.notifications.kinds.email}</option>
+          <option value="webhook">{t.settings.notifications.kinds.webhook}</option>
+          <option value="slack">{t.settings.notifications.kinds.slack}</option>
+          <option value="in_app">{t.settings.notifications.kinds.in_app}</option>
         </select>
         <input
           type="text"
-          placeholder="Label (e.g. On-call email)"
+          placeholder={t.settings.notifications.form.labelPlaceholder}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           className="bg-background border border-border/50 rounded-lg px-3 py-2 text-sm"
@@ -297,7 +303,7 @@ function NewChannelForm({
       {kind === "email" && (
         <input
           type="email"
-          placeholder="you@example.com"
+          placeholder={t.settings.notifications.form.emailPlaceholder}
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm"
@@ -306,7 +312,7 @@ function NewChannelForm({
       {kind === "webhook" && (
         <input
           type="url"
-          placeholder="https://example.com/openship-hook"
+          placeholder={t.settings.notifications.form.webhookPlaceholder}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm"
@@ -315,7 +321,7 @@ function NewChannelForm({
       {kind === "slack" && (
         <input
           type="url"
-          placeholder="https://hooks.slack.com/services/..."
+          placeholder={t.settings.notifications.form.slackPlaceholder}
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
           className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm"
@@ -329,14 +335,14 @@ function NewChannelForm({
           disabled={busy}
           className="px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
         >
-          {busy ? "Adding…" : "Add channel"}
+          {busy ? t.settings.notifications.form.adding : t.settings.notifications.form.addChannel}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:bg-foreground/[0.04] transition"
         >
-          Cancel
+          {t.settings.common.cancel}
         </button>
       </div>
     </div>
@@ -357,6 +363,7 @@ function SubscriptionsCard({
   onChange: () => Promise<void>;
 }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   // Look-up index: subscriptions[catId][channelId] → enabled?
@@ -373,7 +380,7 @@ function SubscriptionsCard({
       await notificationsApi.upsertSubscription({ category, channelId, enabled });
       await onChange();
     } catch (err) {
-      showToast(getApiErrorMessage(err), "error", "Notifications");
+      showToast(getApiErrorMessage(err), "error", t.settings.common.toast.notifications);
     } finally {
       setBusyKey(null);
     }
@@ -382,17 +389,17 @@ function SubscriptionsCard({
   return (
     <SettingsSection
       icon={Bell}
-      title="What to be notified about"
-      description="Pick which events go to which channel. Each cell is one subscription."
+      title={t.settings.notifications.subscriptions.title}
+      description={t.settings.notifications.subscriptions.description}
     >
       {channels.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Add a channel first to subscribe to events.</p>
+        <p className="text-sm text-muted-foreground">{t.settings.notifications.subscriptions.empty}</p>
       ) : (
         <div className="overflow-x-auto -mx-5">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-5 py-2 font-medium">Event</th>
+              <tr className="text-start text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-5 py-2 font-medium">{t.settings.notifications.subscriptions.eventHeader}</th>
                 {channels.map((ch) => (
                   <th key={ch.id} className="px-3 py-2 font-medium text-center min-w-[100px]">
                     {ch.label}
@@ -419,7 +426,7 @@ function SubscriptionsCard({
                           checked={enabled}
                           onChange={(e) => toggle(cat.id, ch.id, e.target.checked)}
                           className="size-4 rounded border-border/50 cursor-pointer accent-foreground"
-                          aria-label={`${cat.label} via ${ch.label}`}
+                          aria-label={interpolate(t.settings.notifications.subscriptions.cellAria, { category: cat.label, channel: ch.label })}
                         />
                       </td>
                     );
@@ -446,6 +453,7 @@ function OrgDefaultsCard({
   onChange: () => Promise<void>;
 }) {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [busyCat, setBusyCat] = useState<string | null>(null);
 
   const defIndex = useMemo(() => {
@@ -464,7 +472,7 @@ function OrgDefaultsCard({
       });
       await onChange();
     } catch (err) {
-      showToast(getApiErrorMessage(err), "error", "Notifications");
+      showToast(getApiErrorMessage(err), "error", t.settings.common.toast.notifications);
     } finally {
       setBusyCat(null);
     }
@@ -473,8 +481,8 @@ function OrgDefaultsCard({
   return (
     <SettingsSection
       icon={Bell}
-      title="Organization defaults"
-      description="Defaults applied when a new member joins this organization. Members can override per-channel."
+      title={t.settings.notifications.orgDefaults.title}
+      description={t.settings.notifications.orgDefaults.description}
     >
       <div className="space-y-2">
         {categories.map((cat) => {
@@ -497,16 +505,16 @@ function OrgDefaultsCard({
                 onChange={(e) => set(cat.id, enabled, e.target.value as ChannelKind)}
                 className="bg-background border border-border/50 rounded-lg px-2 py-1.5 text-sm"
               >
-                <option value="email">Email</option>
-                <option value="webhook">Webhook</option>
-                <option value="slack">Slack</option>
-                <option value="in_app">In-app</option>
+                <option value="email">{t.settings.notifications.kinds.email}</option>
+                <option value="webhook">{t.settings.notifications.kinds.webhook}</option>
+                <option value="slack">{t.settings.notifications.kinds.slack}</option>
+                <option value="in_app">{t.settings.notifications.kinds.in_app}</option>
               </select>
               <Toggle
                 checked={enabled}
                 disabled={isBusy}
                 onChange={(v: boolean) => set(cat.id, v, kind)}
-                aria-label={`Notify on ${cat.label}`}
+                aria-label={interpolate(t.settings.notifications.orgDefaults.notifyAria, { category: cat.label })}
               />
             </div>
           );

@@ -12,6 +12,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { OverviewStats } from './types';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface StatsGridProps {
   stats: OverviewStats;
@@ -81,6 +82,8 @@ const StatCardSkeleton: React.FC = () => (
 );
 
 const StatsGrid: React.FC<StatsGridProps> = ({ stats, isLoading = false }) => {
+  const { t } = useI18n();
+
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -106,47 +109,47 @@ const StatsGrid: React.FC<StatsGridProps> = ({ stats, isLoading = false }) => {
 
   const statCards = [
     {
-      title: 'Credits Balance',
+      title: t.overview.stats.creditsBalance,
       value: formatCredits(stats.creditsBalance),
       icon: <Coins className="w-5 h-5" />,
       color: '#059669',
       bgColor: 'rgba(5, 150, 105, 0.1)',
     },
     {
-      title: 'Token Usage',
+      title: t.overview.stats.tokenUsage,
       value: formatNumber(stats.totalTokenUsage),
-      subtitle: 'This month',
+      subtitle: t.overview.stats.thisMonth,
       icon: <Activity className="w-5 h-5" />,
       color: '#8b5cf6',
       bgColor: 'rgba(139, 92, 246, 0.1)',
     },
     {
-      title: 'API Requests',
+      title: t.overview.stats.apiRequests,
       value: formatNumber(stats.totalApiRequests),
-      subtitle: 'Last 7 days',
+      subtitle: t.overview.stats.last7Days,
       icon: <Cpu className="w-5 h-5" />,
       color: '#3b82f6',
       bgColor: 'rgba(59, 130, 246, 0.1)',
     },
     {
-      title: 'Deployments',
+      title: t.overview.stats.deployments,
       value: stats.totalDeployments,
-      subtitle: `${stats.successfulDeployments} successful`,
+      subtitle: interpolate(t.overview.stats.successfulCount, { count: String(stats.successfulDeployments) }),
       icon: <Rocket className="w-5 h-5" />,
       color: '#f59e0b',
       bgColor: 'rgba(245, 158, 11, 0.1)',
     },
     {
-      title: 'Active Projects',
+      title: t.overview.stats.activeProjects,
       value: stats.activeProjects,
       icon: <Box className="w-5 h-5" />,
       color: '#ec4899',
       bgColor: 'rgba(236, 72, 153, 0.1)',
     },
     {
-      title: 'Sandboxes',
+      title: t.overview.stats.sandboxes,
       value: stats.totalSandboxes,
-      subtitle: `${stats.activeSandboxes} active`,
+      subtitle: interpolate(t.overview.stats.activeCount, { count: String(stats.activeSandboxes) }),
       icon: <Bot className="w-5 h-5" />,
       color: '#06b6d4',
       bgColor: 'rgba(6, 182, 212, 0.1)',

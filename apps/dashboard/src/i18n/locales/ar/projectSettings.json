@@ -1,0 +1,595 @@
+{
+  "settingSection": {
+    "edit": "تعديل",
+    "save": "حفظ",
+    "cancel": "إلغاء"
+  },
+  "advanced": {
+    "projectInfo": {
+      "title": "معلومات المشروع",
+      "description": "ملخّص الإعداد الحالي"
+    },
+    "metric": {
+      "status": "الحالة",
+      "project": "المشروع",
+      "hostedOn": "مُستضاف على"
+    },
+    "statusActive": "نشط",
+    "statusDisabled": "معطّل",
+    "hostedCloud": "Openship Cloud",
+    "hostedServer": "خادم",
+    "hostedLocal": "محلي",
+    "projectStatus": {
+      "title": "حالة المشروع",
+      "description": "تحكّم في ما إذا كان المشروع نشطًا أم متوقفًا",
+      "active": "المشروع نشط",
+      "disabled": "المشروع معطّل",
+      "liveAccessible": "نشط ويمكن الوصول إليه",
+      "pausedInaccessible": "متوقّف ولا يمكن الوصول إليه",
+      "disable": "تعطيل",
+      "enable": "تفعيل"
+    },
+    "cache": {
+      "title": "ذاكرة التخزين المؤقت",
+      "description": "امسح مخرجات البناء والتبعيات المخزّنة مؤقتًا",
+      "clearInstall": "مسح ذاكرة التثبيت",
+      "clearInstallDesc": "إزالة node_modules المخزّنة مؤقتًا",
+      "clearBuild": "مسح ذاكرة البناء",
+      "clearBuildDesc": "إزالة مخرجات البناء المخزّنة مؤقتًا"
+    },
+    "transfer": {
+      "title": "النقل والاستنساخ",
+      "description": "انقل هذا المشروع أو انسخه إلى بيئة أخرى",
+      "current": "الحالي",
+      "transfer": "نقل",
+      "clone": "استنساخ",
+      "anotherServer": "خادم آخر",
+      "targetLocal": "الجهاز المحلي",
+      "targetServer": "خادم مُستضاف ذاتيًا",
+      "targetCloud": "Openship Cloud"
+    },
+    "danger": {
+      "title": "منطقة الخطر",
+      "description": "إجراءات لا يمكن التراجع عنها لهذا المشروع",
+      "body": "سيؤدي حذف هذا المشروع إلى إزالة جميع عمليات النشر والنطاقات المخصّصة ومتغيّرات البيئة وبيانات التحليلات بشكل دائم.",
+      "delete": "حذف المشروع"
+    },
+    "toast": {
+      "toggleFailed": "تعذّر تبديل حالة المشروع",
+      "clearInstallFailed": "تعذّر مسح ذاكرة التثبيت",
+      "clearBuildFailed": "تعذّر مسح ذاكرة البناء"
+    }
+  },
+  "backup": {
+    "live": {
+      "title": "نسخة احتياطية مباشرة",
+      "description": "تقدّم فوري للعملية التي بدأتها للتو. يبقى بعد تحديث الصفحة.",
+      "dismiss": "إخفاء"
+    },
+    "destinations": {
+      "title": "وجهات النسخ الاحتياطي",
+      "description": "وجهات تخزين لكل مستخدم. أضِف حاويات متوافقة مع S3 أو خوادم SFTP أو أقراصًا محلية.",
+      "manage": "إدارة",
+      "loading": "جارٍ التحميل…",
+      "emptyPrefix": "لا توجد وجهات بعد. ",
+      "emptyLink": "أنشئ واحدة",
+      "emptySuffix": " لبدء النسخ الاحتياطي.",
+      "verified": "مُوثّق",
+      "failed": "فشل"
+    },
+    "services": {
+      "title": "الخدمات والسياسات",
+      "description": "يمكن لكل خدمة أن تمتلك سياسة نسخ احتياطي خاصة بها (جدولة + وجهة). الإعدادات الافتراضية على مستوى المشروع تأتي في المرحلة الثانية.",
+      "refresh": "تحديث",
+      "empty": "لا توجد خدمات في هذا المشروع بعد. ستظهر النُسخ الاحتياطية على مستوى الخدمة هنا بمجرد إضافة بعضها.",
+      "policyLabel": "السياسة:",
+      "manualOnly": "يدوي فقط",
+      "preDeploy": "pre-deploy",
+      "webhook": "webhook",
+      "noPolicy": "لا توجد سياسة",
+      "backupNow": "انسخ الآن",
+      "editPolicy": "تعديل السياسة",
+      "addDestinationFirst": "أضِف وجهة أولًا",
+      "createPolicyHint": "أنشئ سياسة نسخ احتياطي لهذه الخدمة",
+      "createPolicy": "إنشاء سياسة"
+    },
+    "recent": {
+      "title": "النسخ الاحتياطية الأخيرة",
+      "description": "أحدث 25 عملية عبر جميع الخدمات في هذا المشروع.",
+      "loading": "جارٍ التحميل…",
+      "empty": "لا توجد نسخ احتياطية بعد.",
+      "protectedTitle": "محمي من تقليم الاحتفاظ",
+      "protected": "محمي",
+      "restoreTitle": "الاستعادة من هذه النسخة الاحتياطية",
+      "allowPrune": "السماح للاحتفاظ بالتقليم",
+      "protectFrom": "الحماية من الاحتفاظ"
+    },
+    "toast": {
+      "runFailed": "فشلت عملية النسخ الاحتياطي",
+      "toggleProtectionFailed": "تعذّر تبديل الحماية"
+    }
+  },
+  "build": {
+    "edit": "تعديل",
+    "webmail": {
+      "title": "مُدار بواسطة openship",
+      "description": "يستخدم بريد الويب مسار بناء وتشغيل ثابتًا — أوامر التثبيت والبناء والتشغيل غير قابلة للتهيئة. أعِد النشر من نظرة عامة البريد لالتقاط التغييرات من المصدر."
+    },
+    "services": {
+      "title": "إعدادات لكل خدمة",
+      "descriptionTemplate": "يحتوي هذا المشروع على {serviceLabel}. أوامر البناء والإطار والمنافذ وأوامر التشغيل موجودة في صف كل خدمة — اعرضها وعدّلها في علامة تبويب الخدمات.",
+      "open": "فتح الخدمات",
+      "subAppOne": "تطبيق فرعي واحد ({count})",
+      "subAppOther": "{count} تطبيقات فرعية",
+      "composeOne": "خدمة compose واحدة ({count})",
+      "composeOther": "{count} خدمات compose",
+      "both": "{subApps} و{composeServices}"
+    },
+    "runtime": {
+      "title": "إعداد وقت التشغيل",
+      "description": "للقراءة فقط. عدّل عبر معالج النشر بحيث يُشحن كل تغيير كإصدار جديد.",
+      "framework": "الإطار",
+      "packageManager": "مدير الحزم",
+      "runtimeIsolation": "عزل وقت التشغيل",
+      "resources": "الموارد",
+      "resourcesValue": "{cpu} vCPU · {memory} MB",
+      "runtimePort": "منفذ وقت التشغيل",
+      "installCommand": "أمر التثبيت",
+      "buildCommand": "أمر البناء",
+      "noBuildStep": "لا توجد خطوة بناء",
+      "outputDirectory": "مجلد المخرجات",
+      "rootDirectory": "المجلد الجذر",
+      "startCommand": "أمر البدء",
+      "staticNoServer": "ثابت (بدون خادم)",
+      "modeSandboxed": "معزول (حاوية)",
+      "modeDirect": "مباشر (عملية على المضيف)",
+      "modeDefault": "افتراضي (يُحدَّد عند النشر)"
+    },
+    "env": {
+      "title": "متغيّرات البيئة",
+      "description": "مشفّرة في حالة السكون. تبقى الأسرار مخفية — تُكتب القيم التي تغيّرها فقط.",
+      "edit": "تعديل"
+    }
+  },
+  "envVars": {
+    "cancel": "إلغاء",
+    "saveChanges": "حفظ التغييرات",
+    "title": "متغيّرات البيئة",
+    "description": "الإنتاج. مشفّرة في حالة السكون. تظهر الأسرار على أنها مضبوطة — اكتب لاستبدالها؛ اتركها فارغة للإبقاء عليها.",
+    "empty": "لا توجد متغيّرات بيئة بعد.",
+    "keyPlaceholder": "KEY",
+    "secretPlaceholder": "•••••••• (مضبوط — اكتب للاستبدال)",
+    "valuePlaceholder": "القيمة",
+    "hideValue": "إخفاء القيمة",
+    "showValue": "إظهار القيمة",
+    "markedSecret": "معلَّم كسرّي",
+    "markSecret": "وضع علامة سرّي",
+    "removeVariable": "إزالة المتغيّر",
+    "addVariable": "إضافة متغيّر",
+    "toast": {
+      "loadFailed": "تعذّر تحميل متغيّرات البيئة",
+      "loadFailedTitle": "خطأ",
+      "validationTitle": "التحقق",
+      "saved": "تم حفظ متغيّرات البيئة",
+      "savedTitle": "تم الحفظ",
+      "saveFailed": "تعذّر حفظ متغيّرات البيئة",
+      "saveFailedTitle": "فشل الحفظ"
+    }
+  },
+  "gitInfo": {
+    "repository": "المستودع",
+    "autoDeploy": "النشر التلقائي",
+    "deploysOnPush": "ينشر عند كل دفع",
+    "manualOnly": "النشر اليدوي فقط",
+    "branchToDeploy": "الفرع المراد نشره",
+    "chooseBranch": "اختر الفرع الذي تريد النشر منه من مستودعك",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "viewOnGithub": "عرض على GitHub",
+    "recentCommits": "الالتزامات الأخيرة",
+    "totalCommits": "{count} إجمالًا",
+    "noCommits": "لا توجد التزامات بعد",
+    "toast": {
+      "fetchBranchesFailed": "تعذّر جلب الفروع",
+      "errorTitle": "خطأ",
+      "branchUpdated": "تم تحديث الفرع بنجاح",
+      "updatedTitle": "تم التحديث",
+      "branchUpdateFailed": "تعذّر تحديث الفرع",
+      "autoDeployEnabled": "تم تفعيل النشر التلقائي",
+      "autoDeployDisabled": "تم تعطيل النشر التلقائي",
+      "autoDeployFailed": "تعذّر تحديث النشر التلقائي"
+    }
+  },
+  "git": {
+    "connectFirst": {
+      "title": "اربط GitHub أولًا",
+      "description": "اربط حساب GitHub الخاص بك لربط مستودع بهذا المشروع.",
+      "connecting": "جارٍ الربط…",
+      "connect": "ربط GitHub"
+    },
+    "link": {
+      "title": "ربط مستودع",
+      "description": "اربط مستودع GitHub لتفعيل عمليات النشر المُشغّلة عبر webhook.",
+      "select": "اختيار مستودع"
+    },
+    "picker": {
+      "title": "اختر مستودعًا",
+      "description": "اختر مستودعًا لربطه بهذا المشروع",
+      "linking": "جارٍ ربط المستودع…"
+    },
+    "appBanner": {
+      "title": "تطبيق GitHub غير مثبّت",
+      "description": "ثبّت تطبيق Openship على GitHub في حسابك أو مؤسستك لتفعيل النشر التلقائي وعمليات النشر المُشغّلة عبر webhook للمشاريع السحابية.",
+      "install": "تثبيت تطبيق GitHub"
+    },
+    "webhookBanner": {
+      "title": "تفعيل النشر التلقائي",
+      "description": "يحتاج النشر التلقائي إلى نقطة webhook مباشرة. اعرض واجهة برمجة تطبيقات Openship هذه على عنوان عام أو هيّئ نطاق webhook موثّقًا للتسليم المباشر."
+    },
+    "source": {
+      "title": "المستودع المصدر",
+      "description": "تكامل git ومُشغّلات النشر وصحّة المستودع",
+      "repository": "المستودع",
+      "open": "فتح"
+    },
+    "webhookEndpoint": {
+      "title": "نقطة Webhook",
+      "descriptionSet": "يسلّم GitHub أحداث الدفع مباشرة إلى هذا النطاق",
+      "descriptionUnset": "اختر نطاقًا لتسليم webhook المباشر",
+      "updating": "جارٍ التحديث...",
+      "select": "اختر نطاقًا...",
+      "clear": "مسح التحديد"
+    },
+    "autoDeployCard": {
+      "title": "النشر التلقائي",
+      "enabled": "مُفعّل",
+      "disabled": "معطّل",
+      "descDelivers": "تُسلَّم عمليات الدفع إلى {domain}",
+      "descAuto": "تؤدي عمليات الدفع إلى تشغيل عمليات النشر تلقائيًا",
+      "descManual": "يجب بدء عمليات النشر يدويًا"
+    },
+    "webhookCard": {
+      "title": "Webhook",
+      "direct": "مباشر",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "descDirect": "تُسلَّم الأحداث مباشرة عبر {domain}",
+      "descActive": "أحداث المستودع تصل إلى Openship",
+      "descInactive": "لم يتم تهيئة webhook أو أنه لا يستجيب"
+    },
+    "rollbackStrategy": {
+      "title": "استراتيجية التراجع",
+      "rebuild": "إعادة البناء (git)",
+      "instant": "فوري (لقطة)",
+      "descRebuild": "يعيد التراجع استنساخ الالتزام القديم وبناءه — أرخص، لكنه أبطأ وقد يفشل إذا لم يعد ذلك الالتزام قابلًا للبناء.",
+      "descInstant": "يحتفظ بمخرج بناء كل إصدار على القرص للتراجع في ثوانٍ. يستخدم مساحة قرص إضافية، محدودة بحدّ السجل.",
+      "toggleAria": "تبديل الاحتفاظ باللقطات"
+    },
+    "rollbackHistory": {
+      "title": "سجل التراجع",
+      "valueOne": "إصدار واحد ({count})",
+      "valueOther": "{count} إصدارات",
+      "descSnapshot": "عدد الإصدارات الأخيرة التي تحتفظ بمخرج بنائها للتراجع. تُقلَّم الأقدم لاستعادة مساحة القرص.",
+      "descGit": "ينطبق فقط على الوضع الفوري (اللقطة) — الوضع git لا يحتفظ بأي مخرجات.",
+      "decreaseAria": "تقليل سجل التراجع",
+      "increaseAria": "زيادة سجل التراجع"
+    },
+    "commits": {
+      "title": "الالتزامات الأخيرة",
+      "subtitle": "أحدث الالتزامات على {branch}",
+      "empty": "لم يتم العثور على التزامات",
+      "emptyDesc": "ادفع إلى مستودعك وسيظهر نشاط الالتزامات الأخير هنا.",
+      "viewAll": "عرض جميع الالتزامات على GitHub"
+    },
+    "cloneToken": {
+      "title": "تجاوز رمز الاستنساخ",
+      "description": "رمز خاص بالمشروع تستخدمه وحدة الاستنساخ قبل الرجوع إلى رمزك العام أو تطبيق GitHub",
+      "loading": "جارٍ التحميل…",
+      "explainer": "الصق رمز GitHub PAT هنا لاستخدامه لهذا المشروع فقط. الأعلى أولوية في سلسلة الاستنساخ - يتجاوز الرمز على مستوى الإعدادات وتطبيق GitHub.",
+      "hide": "إخفاء الرمز",
+      "show": "إظهار الرمز",
+      "saveToken": "حفظ الرمز",
+      "cancel": "إلغاء",
+      "savedTitle": "تم حفظ الرمز لهذا المشروع",
+      "lastUpdated": "آخر تحديث {when}",
+      "justNow": "الآن",
+      "replace": "استبدال",
+      "clear": "مسح"
+    },
+    "toast": {
+      "pasteToken": "الصق رمزًا قبل الحفظ",
+      "cloneTokenTitle": "رمز الاستنساخ",
+      "tokenSaved": "تم حفظ رمز استنساخ المشروع",
+      "tokenSaveFailed": "تعذّر حفظ الرمز",
+      "tokenCleared": "تم مسح رمز استنساخ المشروع",
+      "tokenClearFailed": "تعذّر مسح الرمز",
+      "autoDeployEnabled": "تم تفعيل النشر التلقائي",
+      "autoDeployDisabled": "تم تعطيل النشر التلقائي",
+      "autoDeployFailed": "تعذّر تبديل النشر التلقائي",
+      "rollbackGit": "استراتيجية التراجع: مُوجَّهة بـ git (بدون لقطات)",
+      "rollbackSnapshot": "استراتيجية التراجع: لقطة (يتم الاحتفاظ بالمخرجات)",
+      "rollbackStrategyFailed": "تعذّر تحديث استراتيجية التراجع",
+      "rollbackWindowOne": "الاحتفاظ بآخر إصدار واحد ({count}) للتراجع",
+      "rollbackWindowOther": "الاحتفاظ بآخر {count} إصدارات للتراجع",
+      "rollbackHistoryFailed": "تعذّر تحديث سجل التراجع",
+      "webhookDomainSet": "تم ضبط نطاق webhook على {domain}",
+      "webhookDomainCleared": "تم مسح نطاق webhook",
+      "webhookDomainFailed": "تعذّر ضبط نطاق webhook",
+      "linked": "تم الربط بـ {repo}",
+      "appNotInstalled": "تطبيق GitHub غير مثبّت لهذا الحساب",
+      "linkFailed": "تعذّر ربط المستودع"
+    }
+  },
+  "logs": {
+    "noRuntime": "لا توجد سجلات وقت تشغيل",
+    "noRuntimeDesc": "تم نشر هذا المشروع كتطبيق ثابت، لذا لا توجد عملية خادم قيد التشغيل لبثّ السجلات منها.",
+    "terminal": "الطرفية",
+    "server": "الخادم",
+    "requests": "الطلبات",
+    "target": "هدف سجل وقت التشغيل",
+    "targetDescProject": "التبديل بين وقت تشغيل المشروع وأوقات تشغيل الخدمات.",
+    "targetDescService": "التبديل بين أوقات تشغيل الخدمات.",
+    "projectRuntime": "وقت تشغيل المشروع",
+    "selectService": "اختر خدمة لعرض سجلات وقت تشغيلها.",
+    "projectFallback": "المشروع"
+  },
+  "resources": {
+    "title": "قوة الجهاز",
+    "description": "هيّئ قوة الجهاز لمشروعك.",
+    "tiers": {
+      "lightweight": { "name": "خفيف", "description": "التطبيقات الصغيرة والمواقع الثابتة" },
+      "standard": { "name": "قياسي", "description": "معظم تطبيقات الويب" },
+      "performance": { "name": "أداء عالٍ", "description": "التطبيقات ذات الحركة العالية" },
+      "enterprise": { "name": "المؤسسات", "description": "تطبيقات الإنتاج واسعة النطاق" },
+      "autoscale": { "name": "التوسّع التلقائي", "description": "يتوسّع بناءً على الطلب" }
+    },
+    "dynamic": "ديناميكي",
+    "custom": {
+      "name": "مخصّص",
+      "description": "حدّد مواردك الخاصة",
+      "clickToConfigure": "انقر للتهيئة"
+    },
+    "cpuValue": "{cpu} vCPU",
+    "customPanel": {
+      "title": "تهيئة الموارد المخصّصة",
+      "cpuCores": "أنوية المعالج",
+      "cpuRange": "النطاق: 0.25 - 4.00",
+      "memory": "الذاكرة (MB)",
+      "memoryRange": "النطاق: 128 - 8192",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "save": "حفظ الإعداد"
+    },
+    "toast": {
+      "updated": "تم تحديث الموارد بنجاح",
+      "updateFailed": "تعذّر تحديث الموارد",
+      "cpuRange": "يجب أن يكون المعالج بين 0.25 و4.00 نواة",
+      "memoryRange": "يجب أن تكون الذاكرة بين 128 MB و8192 MB",
+      "customSaved": "تم حفظ الموارد المخصّصة بنجاح",
+      "customSaveFailed": "تعذّر حفظ الموارد المخصّصة"
+    }
+  },
+  "sleep": {
+    "title": "وضع الجهاز",
+    "description": "تحكّم في التوفّر وكفاءة التكلفة",
+    "autoSleep": "السكون التلقائي",
+    "recommended": "موصى به",
+    "autoSleepDesc": "يتوقّف عند الخمول ويستيقظ فورًا",
+    "autoSleepMeta": "موفّر للتكلفة • بدون بدء بارد",
+    "alwaysOn": "دائم التشغيل",
+    "alwaysOnDesc": "الحاوية لا تتوقّف أبدًا",
+    "alwaysOnMeta": "أقصى توفّر • تكلفة أعلى",
+    "infoTitle": "كيف يعمل السكون التلقائي",
+    "infoBefore": "عند وجود طلبات، تبقى حاويتك قيد التشغيل. بعد فترة خمول، تدخل في وضع السكون لتوفير التكاليف. عند الطلب التالي، تستيقظ ",
+    "infoEmphasis": "فورًا",
+    "infoAfter": " - دون أي تأخير بسبب البدء البارد.",
+    "toast": {
+      "updated": "تم تحديث وضع السكون بنجاح",
+      "updateFailed": "تعذّر تحديث وضع السكون"
+    }
+  },
+  "deleteDialog": {
+    "title": "حذف المشروع",
+    "bodyPrefix": "هل أنت متأكد أنك تريد حذف ",
+    "bodySuffix": "؟ لا يمكن التراجع عن هذا الإجراء وسيؤدي إلى حذف جميع بيانات المشروع وعمليات النشر والإعدادات بشكل دائم.",
+    "cancel": "إلغاء",
+    "delete": "حذف المشروع"
+  },
+  "deletion": {
+    "title": "حذف المشروع",
+    "cannotUndo": "لا يمكن التراجع عن هذا الإجراء.",
+    "aboutToPrefix": "أنت على وشك حذف ",
+    "aboutToSuffix": ".",
+    "deleteAllAria": "حذف جميع البيئات",
+    "deleteAll": "حذف جميع البيئات",
+    "deleteAllOn": "يزيل تطبيق المشروع وكل بيئة فرعية تحته.",
+    "deleteAllOff": "يزيل هذه البيئة فقط. تبقى الفروع الأخرى.",
+    "scanning": "جارٍ فحص الخدمات ووحدات التخزين المرفقة…",
+    "wipeAria": "مسح بيانات الخدمة أيضًا",
+    "wipeLabelOne": "مسح بيانات الخدمة أيضًا (وحدة تخزين واحدة، {count})",
+    "wipeLabelOther": "مسح بيانات الخدمة أيضًا ({count} وحدات تخزين)",
+    "wipeOn": "ستُزال وحدات التخزين بشكل دائم - محتويات قواعد البيانات والذواكر المؤقتة والملفات المرفوعة، كل ما تخزّنه هذه الخدمات سيختفي.",
+    "wipeOff": "معطّل: تُزال الحاويات لكن تبقى وحدات التخزين المسمّاة على القرص. أعِد إرفاقها لاحقًا بالاسم.",
+    "appData": "بيانات التطبيق",
+    "volOne": "وحدة ({count})",
+    "volOther": "{count} وحدات",
+    "amberWipe": "ستُزال جميع عمليات النشر والنطاقات ومتغيّرات البيئة وبيانات الخدمة الدائمة بشكل دائم.",
+    "amberNoWipe": "ستُزال جميع عمليات النشر والنطاقات ومتغيّرات البيئة والتحليلات بشكل دائم.",
+    "typePrefix": "اكتب ",
+    "typeSuffix": " للتأكيد.",
+    "cancel": "إلغاء",
+    "confirmDeleteWipe": "حذف + مسح البيانات",
+    "confirmDeleteEnvWipe": "حذف البيئة + مسح البيانات",
+    "confirmDelete": "حذف المشروع",
+    "confirmDeleteEnv": "حذف البيئة"
+  },
+  "routing": {
+    "title": "التوجيه",
+    "description": "عمليات إعادة الكتابة وإعادة التوجيه والترويسات. تُطبَّق عند الحفظ — دون إعادة بناء.",
+    "saving": "جارٍ الحفظ…",
+    "save": "حفظ",
+    "summaryNone": "لا شيء مُعَد",
+    "summaryActive": "مُعَد",
+    "toast": {
+      "title": "التوجيه",
+      "updated": "تم تحديث التوجيه — طُبِّق على النشر المباشر.",
+      "failed": "تعذّر تحديث التوجيه"
+    }
+  },
+  "domains": {
+    "status": {
+      "verified": "مُوثّق",
+      "active": "نشط",
+      "failed": "فشل",
+      "removing": "قيد الإزالة",
+      "pending": "قيد الانتظار"
+    },
+    "ssl": {
+      "includedByHost": "مُضمّن مع المضيف",
+      "active": "نشط",
+      "provisioning": "قيد التجهيز",
+      "expired": "منتهي الصلاحية",
+      "error": "خطأ",
+      "inactive": "غير نشط"
+    },
+    "typeCustom": "نطاق مخصّص",
+    "typeFree": "نطاق فرعي مجاني",
+    "primaryDomainTitle": "النطاق الأساسي",
+    "domainNTitle": "النطاق {n}",
+    "portLabel": "المنفذ {port}",
+    "noPortSelected": "لم يتم اختيار منفذ",
+    "meta": {
+      "accessTitle": "عنوان الوصول",
+      "accessSubtitle": "نقطة التطوير المحلية",
+      "local": "محلي",
+      "availableOnMachine": "متاح على هذا الجهاز",
+      "primaryTitle": "النطاق الأساسي",
+      "primaryAcross": "المسار الأساسي عبر {count} نطاقات",
+      "hostManaged": "عنوان إنتاج مُدار من المضيف",
+      "customProduction": "نطاق إنتاج مخصّص"
+    },
+    "route": {
+      "disabled": "معطّل",
+      "routePaused": "المسار متوقّف",
+      "serviceDisabled": "الخدمة معطّلة",
+      "internal": "داخلي",
+      "notExposed": "غير معروض",
+      "public": "عام"
+    },
+    "actions": {
+      "visit": "زيارة",
+      "editDomains": "تعديل النطاقات",
+      "hideSetup": "إخفاء الإعداد",
+      "addDomain": "إضافة نطاق"
+    },
+    "add": {
+      "title": "إضافة نطاق",
+      "description": "أضِف مسارًا: اختر نطاقًا مجانيًا أو مخصّصًا والمنفذ الذي يُوجَّه إليه.",
+      "free": "نطاق فرعي مجاني",
+      "custom": "نطاق مخصّص",
+      "domainName": "اسم النطاق",
+      "subdomain": "نطاق فرعي",
+      "customPlaceholder": "yourdomain.com",
+      "defaultAppName": "my-app",
+      "mapsToPort": "يُوجَّه إلى المنفذ",
+      "includeWww": "تضمين www",
+      "includeWwwDesc": "أنشئ أيضًا سجلات لـ www.{domain}",
+      "includeWwwFallback": "yourdomain.com",
+      "adding": "جارٍ الإضافة...",
+      "submit": "إضافة نطاق"
+    },
+    "dns": {
+      "title": "سجلات DNS",
+      "descPreview": "أضِف هذه السجلات لدى مزوّد DNS الخاص بك، ثم انقر إضافة نطاق لإرفاقه",
+      "descApply": "طبّق هذه السجلات لدى مزوّد DNS الخاص بك، ثم انتظر الانتشار",
+      "infoPreview": "أضِف هذه السجلات أولًا — فهي لا تتغيّر بعد الإضافة، لذا يبدأ الانتشار الآن. ثم اضغط إضافة نطاق لإرفاقه، وأخيرًا وثّق بمجرد أن يُحل DNS.",
+      "infoApply": "قد تستغرق تغييرات DNS ما يصل إلى 48 ساعة للانتشار عالميًا. بمجرد أن تُحل السجلات، انقر توثيق أدناه — سنتحقق من DNS، ونعلّم النطاق كنشط، ونجهّز SSL في الخلفية.",
+      "verifying": "جارٍ التوثيق...",
+      "verify": "توثيق {hostname}",
+      "copy": "نسخ"
+    },
+    "overview": {
+      "primary": "أساسي",
+      "mappedTo": "مُوجَّه إلى",
+      "status": "الحالة",
+      "ssl": "SSL",
+      "visit": "زيارة"
+    },
+    "cold": {
+      "localUrl": "العنوان المحلي",
+      "type": "النوع",
+      "status": "الحالة"
+    },
+    "edit": {
+      "title": "تعديل النطاقات",
+      "descServer": "عدّل المنفذ الداخلي الذي يُوجَّه إليه كل نطاق.",
+      "descStatic": "عدّل المسار الثابت الذي يخدمه كل نطاق.",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "save": "حفظ التغييرات"
+    },
+    "addRoute": {
+      "cancel": "إلغاء",
+      "add": "إضافة مسار",
+      "free": "نطاق فرعي مجاني",
+      "custom": "نطاق مخصّص",
+      "customPlaceholder": "app.example.com",
+      "defaultServiceName": "my-service",
+      "port": "المنفذ",
+      "portPlaceholder": "8080",
+      "submit": "إضافة",
+      "loading": "جارٍ تحميل المسارات...",
+      "emptyPrefix": "لا توجد نطاقات بعد. انقر ",
+      "emptyAction": "إضافة مسار",
+      "emptySuffix": " لتوجيه نطاق إلى منفذ خدمة."
+    },
+    "editRoute": {
+      "title": "تعديل المسار",
+      "internalOnly": "داخلي فقط",
+      "close": "إغلاق",
+      "disabledWarning": "الخدمة معطّلة - المسارات غير نشطة حتى تُعاد إعادة تفعيل الخدمة."
+    },
+    "menu": {
+      "editRoute": "تعديل المسار",
+      "settingPrimary": "جارٍ التعيين كأساسي...",
+      "setPrimary": "تعيين كأساسي",
+      "verifying": "جارٍ التوثيق...",
+      "verify": "توثيق",
+      "renewing": "جارٍ التجديد...",
+      "renewSsl": "تجديد SSL",
+      "rechecking": "جارٍ إعادة الفحص...",
+      "recheckSsl": "إعادة فحص SSL"
+    },
+    "toast": {
+      "enterPort": "أدخِل المنفذ الذي يجب أن يُوجَّه إليه هذا النطاق (1–65535).",
+      "addDomainTitle": "إضافة نطاق",
+      "addDomainFailed": "تعذّر إضافة النطاق",
+      "addDomainFailedTitle": "فشلت إضافة النطاق",
+      "addedCustom": "تمت إضافة {label} — طبّق سجلات DNS، ثم وثّق.",
+      "addedFree": "تمت إضافة {label}.",
+      "copied": "تم النسخ إلى الحافظة",
+      "verifiedSuccess": "تم توثيق {hostname} — يجري تجهيز SSL في الخلفية.",
+      "verifiedTitle": "تم توثيق النطاق",
+      "verifyNotYet": "تعذّر توثيق {hostname} بعد.",
+      "verifyFailedTitle": "فشل التوثيق",
+      "verifyFailed": "تعذّر توثيق النطاق.",
+      "sslRenewed": "تم تجديد SSL لـ {hostname}.",
+      "sslRenewFailed": "تعذّر تجديد SSL لـ {hostname}.",
+      "sslTitle": "SSL",
+      "sslVerified": "تم توثيق SSL لـ {hostname}.",
+      "sslNoCert": "لم يتم العثور على شهادة صالحة لـ {hostname} بعد. إذا كنت قد نشرت للتو، فامنح Let's Encrypt لحظة، ثم أعِد الفحص.",
+      "sslRecheckFailed": "تعذّرت إعادة فحص SSL لـ {hostname}.",
+      "completeEndpoints": "أكمِل كل نطاق ومنفذ مُوجَّه قبل الحفظ",
+      "domainsTitle": "النطاقات",
+      "routingUpdated": "تم تحديث توجيه النطاق",
+      "routingUpdateFailed": "تعذّر تحديث توجيه النطاق",
+      "primaryUpdated": "تم تحديث النطاق الأساسي",
+      "setPrimaryFailed": "تعذّر تعيين النطاق الأساسي",
+      "routeUpdateFailed": "تعذّر تحديث مسار الخدمة",
+      "enterPortShort": "أدخِل المنفذ الذي يجب أن يُوجَّه إليه هذا النطاق.",
+      "noServicePort": "لا توجد خدمة تنشر المنفذ {port}. أضِف ذلك المنفذ إلى خدمة أولًا.",
+      "enterCustom": "أدخِل نطاقًا مخصّصًا.",
+      "enterSubdomain": "أدخِل نطاقًا فرعيًا."
+    }
+  }
+}

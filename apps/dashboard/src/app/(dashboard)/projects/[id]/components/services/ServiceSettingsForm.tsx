@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { useI18n } from "@/components/i18n-provider";
 import {
   serviceKind,
   type Service,
@@ -33,6 +34,8 @@ const splitList = (value: string) =>
 const joinList = (value?: string[] | null) => (value ?? []).join("\n");
 
 export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormProps) {
+  const { t } = useI18n();
+  const f = t.projectDetail.services.settingsForm;
   const isMonorepo = serviceKind(service) === "monorepo";
 
   const [name, setName] = useState("");
@@ -101,26 +104,26 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      setError("Service name is required.");
+      setError(f.errors.nameRequired);
       return;
     }
 
     if (!isMonorepo) {
       if (sourceType === "image" && !image.trim()) {
-        setError("Add an image, or switch to Dockerfile build.");
+        setError(f.errors.imageOrDockerfile);
         return;
       }
       if (sourceType === "build" && !build.trim() && !dockerfile.trim()) {
-        setError("Add a build context or Dockerfile path.");
+        setError(f.errors.buildContextOrDockerfile);
         return;
       }
     } else {
       if (!rootDirectory.trim()) {
-        setError("Add a root directory (e.g. apps/web).");
+        setError(f.errors.rootDirectory);
         return;
       }
       if (!buildCommand.trim() && !startCommand.trim()) {
-        setError("Add at least a build command or a start command.");
+        setError(f.errors.buildOrStart);
         return;
       }
     }
@@ -180,7 +183,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
     try {
       await onSubmit(payload);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save service.");
+      setError(err instanceof Error ? err.message : f.errors.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -195,7 +198,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
       )}
 
       <div className="bg-card rounded-2xl border border-border/50 p-6 space-y-5">
-        <Field label="Name">
+        <Field label={f.name}>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -206,7 +209,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
 
         {isMonorepo ? (
           <div className="space-y-3">
-            <Field label="Root directory">
+            <Field label={f.rootDirectory}>
               <input
                 value={rootDirectory}
                 onChange={(event) => setRootDirectory(event.target.value)}
@@ -215,7 +218,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
               />
             </Field>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Framework">
+              <Field label={f.framework}>
                 <input
                   value={framework}
                   onChange={(event) => setFramework(event.target.value)}
@@ -223,7 +226,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                   className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
                 />
               </Field>
-              <Field label="Package manager">
+              <Field label={f.packageManager}>
                 <input
                   value={packageManager}
                   onChange={(event) => setPackageManager(event.target.value)}
@@ -232,7 +235,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                 />
               </Field>
             </div>
-            <Field label="Build image">
+            <Field label={f.buildImage}>
               <input
                 value={buildImage}
                 onChange={(event) => setBuildImage(event.target.value)}
@@ -240,7 +243,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                 className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40 font-mono"
               />
             </Field>
-            <Field label="Install command">
+            <Field label={f.installCommand}>
               <input
                 value={installCommand}
                 onChange={(event) => setInstallCommand(event.target.value)}
@@ -248,7 +251,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                 className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40 font-mono"
               />
             </Field>
-            <Field label="Build command">
+            <Field label={f.buildCommand}>
               <input
                 value={buildCommand}
                 onChange={(event) => setBuildCommand(event.target.value)}
@@ -256,7 +259,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                 className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40 font-mono"
               />
             </Field>
-            <Field label="Start command">
+            <Field label={f.startCommand}>
               <input
                 value={startCommand}
                 onChange={(event) => setStartCommand(event.target.value)}
@@ -264,7 +267,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                 className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40 font-mono"
               />
             </Field>
-            <Field label="Output directory">
+            <Field label={f.outputDirectory}>
               <input
                 value={outputDirectory}
                 onChange={(event) => setOutputDirectory(event.target.value)}
@@ -285,7 +288,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                     : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                 }`}
               >
-                Image
+                {f.image}
               </button>
               <button
                 type="button"
@@ -296,12 +299,12 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                     : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                 }`}
               >
-                Dockerfile
+                {f.dockerfile}
               </button>
             </div>
 
             {sourceType === "image" ? (
-              <Field label="Image">
+              <Field label={f.image}>
                 <input
                   value={image}
                   onChange={(event) => setImage(event.target.value)}
@@ -311,7 +314,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
               </Field>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Build context">
+                <Field label={f.buildContext}>
                   <input
                     value={build}
                     onChange={(event) => setBuild(event.target.value)}
@@ -319,7 +322,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
                     className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
                   />
                 </Field>
-                <Field label="Dockerfile">
+                <Field label={f.dockerfile}>
                   <input
                     value={dockerfile}
                     onChange={(event) => setDockerfile(event.target.value)}
@@ -333,7 +336,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Ports">
+          <Field label={f.ports}>
             <textarea
               value={ports}
               onChange={(event) => setPorts(event.target.value)}
@@ -342,7 +345,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
               className="w-full rounded-xl border border-border/50 bg-muted/20 px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
             />
           </Field>
-          <Field label="Depends on">
+          <Field label={f.dependsOn}>
             <textarea
               value={dependsOn}
               onChange={(event) => setDependsOn(event.target.value)}
@@ -355,7 +358,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
 
         <div className={`grid gap-3 ${isMonorepo ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
           {!isMonorepo && (
-            <Field label="Command">
+            <Field label={f.command}>
               <input
                 value={command}
                 onChange={(event) => setCommand(event.target.value)}
@@ -364,7 +367,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
               />
             </Field>
           )}
-          <Field label="Restart policy">
+          <Field label={f.restartPolicy}>
             <select
               value={restart}
               onChange={(event) => setRestart(event.target.value)}
@@ -378,7 +381,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
           </Field>
         </div>
 
-        <Field label="Volumes">
+        <Field label={f.volumes}>
           <textarea
             value={volumes}
             onChange={(event) => setVolumes(event.target.value)}
@@ -389,7 +392,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
         </Field>
 
         {!isMonorepo && (
-          <Field label="Healthcheck">
+          <Field label={f.healthcheck}>
             <input
               value={hcTest}
               onChange={(event) => setHcTest(event.target.value)}
@@ -397,7 +400,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
               className="h-11 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-foreground outline-none transition-colors focus:border-primary/40"
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Test command (shell form). Leave empty to use the image&apos;s default check.
+              {f.healthcheckHint}
             </p>
             {hcTest.trim() && (
               <div className="mt-2 grid gap-2 sm:grid-cols-4">
@@ -436,10 +439,10 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
           className="flex items-center justify-between rounded-2xl border border-border/50 bg-muted/10 px-4 py-3 cursor-pointer"
         >
           <span>
-            <span className="block text-sm font-medium text-foreground">Enabled</span>
-            <span className="text-xs text-muted-foreground">Enabled services deploy with the project.</span>
+            <span className="block text-sm font-medium text-foreground">{f.enabled}</span>
+            <span className="text-xs text-muted-foreground">{f.enabledHint}</span>
           </span>
-          <Checkbox id="service-enabled" checked={enabled} onCheckedChange={setEnabled} aria-label="Enabled" />
+          <Checkbox id="service-enabled" checked={enabled} onCheckedChange={setEnabled} aria-label={f.enabled} />
         </label>
       </div>
 
@@ -450,7 +453,7 @@ export function ServiceSettingsForm({ service, onSubmit }: ServiceSettingsFormPr
           className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          Save changes
+          {f.saveChanges}
         </button>
       </div>
     </form>

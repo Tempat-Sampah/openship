@@ -10,6 +10,7 @@ import React, {
   useMemo,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/components/i18n-provider";
 import { projectsApi, servicesApi, type Service } from "@/lib/api";
 import { PROJECT_INFO_NOT_FOUND, useProjectInfo } from "@/hooks/useProjectEndpoints";
 
@@ -226,6 +227,7 @@ export const ProjectSettingsProvider: React.FC<ProviderProps> = ({
   slug,
   initialProjectData,
 }) => {
+  const { t } = useI18n();
   const [projectData, setProjectData] = useState<BasicProjectData>(
     initialProjectData || {
       id: "",
@@ -807,18 +809,19 @@ export const ProjectSettingsProvider: React.FC<ProviderProps> = ({
   };
 
   const tabs = useMemo(() => {
+    const tl = t.projects.sidebar.tabs;
     return [
-      { id: "overview", label: "Overview", icon: "setting-100-1658432731.png" },
-      { id: "services", label: "Services", icon: "layers.png" },
-      { id: "domains", label: "Domains", icon: "server-59-1658435258.png" },
-      { id: "deployments", label: "Deployments", icon: "heart%20rate-118-1658433496.png" },
-      { id: "source", label: "Source", icon: "git%20branch-159-1658431404.png" },
-      { id: "runtime", label: "Runtime", icon: "setting-40-1662364403.png" },
-      { id: "logs", label: "Logs", icon: "terminal-184-1658431404.png" },
-      { id: "backup", label: "Backup", icon: "database.png" },
-      { id: "advanced", label: "Advanced", icon: "error%20triangle-81-1658234612.png" },
+      { id: "overview", label: tl.overview, icon: "setting-100-1658432731.png" },
+      { id: "services", label: tl.services, icon: "layers.png" },
+      { id: "domains", label: tl.domains, icon: "server-59-1658435258.png" },
+      { id: "deployments", label: tl.deployments, icon: "heart%20rate-118-1658433496.png" },
+      { id: "source", label: tl.source, icon: "git%20branch-159-1658431404.png" },
+      { id: "runtime", label: tl.runtime, icon: "setting-40-1662364403.png" },
+      { id: "logs", label: tl.logs, icon: "terminal-184-1658431404.png" },
+      { id: "backup", label: tl.backup, icon: "database.png" },
+      { id: "advanced", label: tl.advanced, icon: "error%20triangle-81-1658234612.png" },
     ];
-  }, []);
+  }, [t]);
 
   const defaultTab = tabs[0].id;
   const [activeTab, setActiveTab] = useState(resolveTab(slug?.[0]) || defaultTab);

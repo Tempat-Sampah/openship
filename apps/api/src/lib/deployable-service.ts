@@ -20,6 +20,7 @@
  * the source-built fields.
  */
 
+import { STACKS, type StackDefinition, type StackId } from "@repo/core";
 import type { ComposeService } from "./compose-parser";
 
 /** Source-built sub-app fields. Only meaningful when `kind === "monorepo"`. */
@@ -74,6 +75,27 @@ export function serviceKind(
   return (service as { kind?: string | null }).kind === "monorepo"
     ? "monorepo"
     : "compose";
+}
+
+/**
+ * A monorepo sub-app that is a STATIC build (frontend/static framework, no
+ * long-running server command of its own). Such a sub-app is served as files
+ * by a minimal nginx image (built via the static Dockerfile branch) rather than
+ * by running a `startCommand`. Derived from the persisted `framework` category +
+ * absence of a start command, so no extra DB column is needed. Compose services
+ * (Dockerfile/image) are never treated as static here.
+ */
+export function isStaticService(service: {
+  kind?: string | null;
+  framework?: string | null;
+  startCommand?: string | null;
+}): boolean {
+  if (serviceKind(service) !== "monorepo") return false;
+  if (service.startCommand?.trim()) return false;
+  const framework = service.framework;
+  if (!framework || !(framework in STACKS)) return false;
+  const category = (STACKS[framework as StackId] as StackDefinition).category;
+  return category === "frontend" || category === "static";
 }
 
 /**

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Coins, ArrowUpRight, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import { CreditData, DailyMetric } from './types';
+import { useI18n } from '@/components/i18n-provider';
 
 interface CreditsCardProps {
   data: CreditData;
@@ -11,6 +12,7 @@ interface CreditsCardProps {
 }
 
 const CreditsCard: React.FC<CreditsCardProps> = ({ data, isLoading = false }) => {
+  const { t } = useI18n();
   if (isLoading) {
     return (
       <div className="bg-white rounded-[20px] border border-black/5 p-6 h-full">
@@ -79,8 +81,8 @@ const CreditsCard: React.FC<CreditsCardProps> = ({ data, isLoading = false }) =>
             <Coins className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-black">Credits Balance</h3>
-            <p className="text-xs text-black/40">Available to use</p>
+            <h3 className="font-semibold text-black">{t.overview.credits.title}</h3>
+            <p className="text-xs text-black/40">{t.overview.credits.availableToUse}</p>
           </div>
         </div>
         
@@ -117,7 +119,7 @@ const CreditsCard: React.FC<CreditsCardProps> = ({ data, isLoading = false }) =>
       {/* Spent this period */}
       <div className="flex items-center justify-between pt-4 border-t border-emerald-100">
         <div>
-          <p className="text-xs text-black/40 mb-0.5">Spent this month</p>
+          <p className="text-xs text-black/40 mb-0.5">{t.overview.credits.spentThisMonth}</p>
           <p className="text-sm font-semibold text-black">${formatCredits(data.spent)}</p>
         </div>
         
@@ -126,7 +128,7 @@ const CreditsCard: React.FC<CreditsCardProps> = ({ data, isLoading = false }) =>
           className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-full hover:bg-emerald-700 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Add
+          {t.overview.credits.add}
         </Link>
       </div>
     </div>

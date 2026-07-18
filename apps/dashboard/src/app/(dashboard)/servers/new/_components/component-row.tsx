@@ -4,6 +4,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { ComponentState } from "./types";
+import { useI18n } from "@/components/i18n-provider";
 
 export function ComponentRow({
   component,
@@ -12,6 +13,7 @@ export function ComponentRow({
   component: ComponentState;
   showInstall?: boolean;
 }) {
+  const { t } = useI18n();
   const isHealthy = component.status?.healthy;
   const isInstalling = component.installState === "installing";
   const isInstalled = component.installState === "installed";
@@ -42,9 +44,9 @@ export function ComponentRow({
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
           {showInstall && isFailed
-            ? component.installError ?? "Installation failed"
+            ? component.installError ?? t.servers.setup.installationFailed
             : showInstall && isInstalling
-              ? "Installing\u2026"
+              ? t.servers.setup.installing
               : component.status?.message ?? component.description}
         </p>
       </div>
@@ -57,7 +59,7 @@ export function ComponentRow({
               : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
           }`}
         >
-          {isHealthy ? "Ready" : "Missing"}
+          {isHealthy ? t.servers.setup.ready : t.servers.setup.missing}
         </div>
       )}
     </div>

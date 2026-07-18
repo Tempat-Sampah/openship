@@ -28,7 +28,7 @@ import { platform } from "../../lib/controller-helpers";
 import { webhookProxyTarget } from "../../config";
 import { resolveDeploymentRuntime, resolveDeploymentPlatform } from "../../lib/deployment-runtime";
 import { syncProjectToServerManifest } from "../../lib/openship-manifest-sync";
-import { ensureManagedEdgeProxy } from "../../lib/managed-edge-proxy";
+import { syncManagedEdgeRoutes, edgeUnsyncedWarning } from "../../lib/managed-edge-proxy";
 import { decryptEnvMap } from "../../lib/encryption";
 import {
   buildProjectRouteDomains,
@@ -1227,7 +1227,10 @@ async function executeServerDeploy(phase: DeployPhaseInputs): Promise<void> {
     ...(postSync.warningMessage
       ? {
           warningMessage: postSync.warningMessage,
-          metaPatch: { deployWarning: postSync.warningMessage },
+          // `edgeUnsynced` is the structured signal the project status reads to
+          // flag "Action Required" + offer Retry routing; `deployWarning` is the
+          // human message. Both cleared when routing later syncs (retry/redeploy).
+          metaPatch: { deployWarning: postSync.warningMessage, edgeUnsynced: true },
         }
       : {}),
   });
@@ -1270,26 +1273,22 @@ async function runPostDeploySync(opts: {
   // deploy that comes up locally but whose cloud edge route didn't wire is
   // surfaced as a deployment warning — not just a buried log line that leaves
   // the operator with a green deploy and a dead URL.
+  // Best-effort: this only wires the free .opsh.io URL through cloud edge.
+  // Containers are up and custom domains route locally, so a cloud failure
+  // (403, slug taken, unreachable) must not fail the deploy. Shared with the
+  // standalone "retry routing" action via syncManagedEdgeRoutes.
   const edgeFailures: string[] = [];
 
   if (usesManagedRouting) {
-    for (const domain of plannedDomains.filter((d) => d.isCloud && d.managedSubdomain)) {
-      logger.log(`Syncing managed edge proxy for ${domain.hostname}...\n`);
-      // Best-effort: this only wires the free .opsh.io URL through cloud
-      // edge. Containers are up and custom domains route locally, so a
-      // cloud failure (403, slug taken, unreachable) must not fail the deploy.
-      try {
-        await ensureManagedEdgeProxy(organizationId, domain.managedSubdomain!, { serverId });
-      } catch (err) {
-        const reason = safeErrorMessage(err);
-        edgeFailures.push(`${domain.hostname} (${reason})`);
-        logger.log(
-          `Warning: could not sync managed edge proxy for ${domain.hostname}: ${reason}. ` +
-            `The deployment is live; this only affects the free ${domain.hostname} URL.\n`,
-          "warn",
-        );
-      }
-    }
+    const managedTargets = plannedDomains
+      .filter((d) => d.isCloud && d.managedSubdomain)
+      .map((d) => ({ hostname: d.hostname, subdomain: d.managedSubdomain! }));
+    const { failures } = await syncManagedEdgeRoutes(managedTargets, {
+      organizationId,
+      serverId,
+      onLog: (msg, level) => logger.log(msg, level),
+    });
+    edgeFailures.push(...failures);
   }
 
   for (const domain of obsoleteProjectDomains) {
@@ -1311,10 +1310,5 @@ async function runPostDeploySync(opts: {
   // prunes beyond rollbackWindow + skips pinned.
 
   if (edgeFailures.length === 0) return {};
-  return {
-    warningMessage:
-      `Deployed, but the free domain routing didn't sync for ${edgeFailures.join(", ")}. ` +
-      `The app is live on the server; the free .opsh.io URL won't resolve until the edge route is created. ` +
-      `Check that the server is reachable from Openship Cloud on port 80, then redeploy to retry.`,
-  };
+  return { warningMessage: edgeUnsyncedWarning(edgeFailures, "redeploy to retry") };
 }

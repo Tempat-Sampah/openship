@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useI18n } from "@/components/i18n-provider";
 
 interface MigratedLauncherProps {
   /** Where the data now lives. Operator goes here for the real dashboard. */
@@ -25,23 +28,25 @@ export function MigratedLauncher({
   migrationTargetUrl,
   teamMode,
 }: MigratedLauncherProps) {
+  const { t } = useI18n();
+  const m = t.chrome.migration;
   const variant =
     teamMode === "cloud_hosted"
       ? {
-          title: "This instance moved to Openship Cloud",
-          body: "Your team now collaborates at the URL below. This local instance no longer holds your projects, settings, or deployments — open the cloud dashboard to continue.",
-          cta: "Open cloud dashboard",
+          title: m.cloudTitle,
+          body: m.cloudBody,
+          cta: m.cloudCta,
         }
       : teamMode === "tunneled"
         ? {
-            title: "Your openship is now reachable via the tunnel",
-            body: "Teammates can sign in at the URL below when your machine is online. Data still lives on this device — the tunnel just exposes it through the Oblien edge.",
-            cta: "Open tunnel URL",
+            title: m.tunneledTitle,
+            body: m.tunneledBody,
+            cta: m.tunneledCta,
           }
         : {
-            title: "This instance moved to your server",
-            body: "Your team now collaborates at the URL below. This local instance no longer holds your projects, settings, or deployments — open the team dashboard to continue.",
-            cta: "Open team dashboard",
+            title: m.serverTitle,
+            body: m.serverBody,
+            cta: m.serverCta,
           };
 
   return (
@@ -54,7 +59,7 @@ export function MigratedLauncher({
 
         <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-white/40">
-            New location
+            {m.newLocation}
           </p>
           <p className="break-all font-mono text-sm text-white">
             {migrationTargetUrl}
@@ -70,13 +75,13 @@ export function MigratedLauncher({
 
         <div className="space-y-1 border-t border-white/10 pt-6">
           <p className="text-xs text-white/40">
-            Need single-user mode back on this machine?
+            {m.switchBackPrompt}
           </p>
           <Link
             href="/settings/migration/switch-back"
             className="text-sm text-white/70 underline-offset-4 hover:underline"
           >
-            Switch back to single user
+            {m.switchBackAction}
           </Link>
         </div>
       </div>

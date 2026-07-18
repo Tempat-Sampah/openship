@@ -64,7 +64,7 @@ export async function createRuntime(opts: CreateRuntimeOptions): Promise<Runtime
   switch (opts.mode) {
     case "docker": {
       const { DockerRuntime } = await import("./docker");
-      return new DockerRuntime(opts.docker, opts.systemManager);
+      return await DockerRuntime.create(opts.docker, opts.systemManager);
     }
     case "bare": {
       const { BareRuntime } = await import("./bare");

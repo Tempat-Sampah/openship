@@ -1,6 +1,6 @@
 import { api } from "./client";
 import { endpoints } from "./endpoints";
-import type { StackId, ComposeAdvanced } from "@repo/core";
+import type { StackId, ComposeAdvanced, RoutingConfig } from "@repo/core";
 import type { CloudResourceTier, CloudResourceCustom } from "@/context/deployment/types";
 
 export type PrepareProjectSource =
@@ -100,6 +100,8 @@ export interface PrepareProjectResponse extends PrepareAppConfig {
   monorepoApps?: PrepareMonorepoApp[];
   monorepoWorkspace?: PrepareMonorepoWorkspace;
   rootEnv?: Record<string, string>;
+  /** Routing config parsed from the repo's vercel.json (persisted on the project). */
+  routing?: RoutingConfig;
   error?: string;
   current_status?: string;
   exists?: boolean;

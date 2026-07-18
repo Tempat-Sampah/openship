@@ -23,6 +23,7 @@ import { Loader2, Boxes, AlertCircle, Lock, Building2, ShieldCheck } from "lucid
 import { authClient, useSession } from "@/lib/auth-client";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { ResourcePicker } from "@/components/permissions/ResourcePicker";
 import { tokensApi, type PickerGrant, type ResourceType } from "@/lib/api";
 import { setActiveOrganizationId } from "@/lib/api/client";
@@ -82,6 +83,8 @@ function McpAuthorizeInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, isPending } = useSession();
+  const { t } = useI18n();
+  const m = t.misc.mcpAuthorize;
 
   const clientId = searchParams.get("client_id");
   const consentCode = searchParams.get("consent_code");
@@ -133,33 +136,38 @@ function McpAuthorizeInner() {
       // previous org's resource ids.
       const res = await orgClient.setActive({ organizationId: next });
       if (res?.error) {
-        setError("Couldn't switch organization. Please try again.");
+        setError(m.switchOrgError);
         return;
       }
       setActiveOrganizationId(next);
       setGrants([]);
       setOrgId(next);
     } catch {
-      setError("Couldn't switch organization. Please try again.");
+      setError(m.switchOrgError);
     } finally {
       setOrgSwitching(false);
     }
-  }, []);
+  }, [m]);
 
   const busy = submitting !== null || orgSwitching;
 
-  const orgName = orgs.find((o) => o.id === orgId)?.name ?? "this organization";
+  const orgName = orgs.find((o) => o.id === orgId)?.name ?? m.thisOrganization;
   // limited + nothing picked would send zero grants → full access, which
   // contradicts the choice. Block it and steer the user.
   const limitedButEmpty = mode === "limited" && grants.length === 0;
   const summary =
     mode === "full"
       ? readOnly
-        ? `Read-only access to everything in ${orgName}.`
-        : `Full access to ${orgName} — deploy, create, and manage any resource.`
+        ? interpolate(m.summaryReadOnly, { org: orgName })
+        : interpolate(m.summaryFull, { org: orgName })
       : limitedButEmpty
-        ? "Pick at least one resource, or switch to Full access."
-        : `Limited to ${grants.length} resource${grants.length === 1 ? "" : "s"} in ${orgName}${readOnly ? ", read-only" : ""}.`;
+        ? m.summaryPickOne
+        : interpolate(m.summaryLimited, {
+            count: String(grants.length),
+            resources: grants.length === 1 ? m.resourceSingular : m.resourcePlural,
+            org: orgName,
+            suffix: readOnly ? m.readOnlySuffix : "",
+          });
 
   const act = useCallback(
     async (accept: boolean) => {
@@ -190,11 +198,11 @@ function McpAuthorizeInner() {
           router.replace(`/login?returnTo=${encodeURIComponent(buildReturnTo(new URLSearchParams(searchParams.toString())))}`);
           return;
         }
-        setError("Couldn't complete authorization. Please try again.");
+        setError(m.authorizeError);
         setSubmitting(null);
       }
     },
-    [clientId, readOnly, grants, mode, orgId, consentCode, router, searchParams],
+    [clientId, readOnly, grants, mode, orgId, consentCode, router, searchParams, m],
   );
 
   // Not signed in → bounce to login, returning here afterward.
@@ -215,7 +223,7 @@ function McpAuthorizeInner() {
     return (
       <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/[0.06] p-4 text-sm text-red-500">
         <AlertCircle className="mt-0.5 size-4 shrink-0" />
-        Missing client_id — this authorization link is invalid.
+        {m.missingClientId}
       </div>
     );
   }
@@ -228,9 +236,9 @@ function McpAuthorizeInner() {
           <Boxes className="size-5" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Authorize MCP client</h1>
+          <h1 className="text-lg font-semibold text-foreground">{m.title}</h1>
           <p className="text-sm text-muted-foreground">
-            An MCP client wants to connect to your Openship account.
+            {m.subtitle}
           </p>
         </div>
       </div>
@@ -239,11 +247,11 @@ function McpAuthorizeInner() {
       <div className="space-y-3">
         <div className="rounded-xl border border-border/50 bg-muted/20 p-4 text-sm">
           <p className="text-muted-foreground">
-            Signed in as{" "}
+            {m.signedInAs}{" "}
             <span className="font-medium text-foreground">{session?.user?.email}</span>
           </p>
           <p className="mt-2 break-all text-muted-foreground">
-            Client <span className="font-mono text-xs text-foreground">{clientId}</span>
+            {m.client} <span className="font-mono text-xs text-foreground">{clientId}</span>
           </p>
         </div>
 
@@ -252,10 +260,10 @@ function McpAuthorizeInner() {
           <div className="rounded-xl border border-border/50 p-4">
             <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <Building2 className="size-3.5 text-muted-foreground" />
-              Organization
+              {m.organization}
             </div>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              The client can act only within this organization.
+              {m.orgScopeNote}
             </p>
             {orgs.length > 1 ? (
               <div className="relative mt-2">
@@ -263,14 +271,14 @@ function McpAuthorizeInner() {
                   value={orgId ?? ""}
                   onChange={(e) => handleOrgChange(e.target.value)}
                   disabled={busy}
-                  className="w-full appearance-none rounded-lg border border-border/60 bg-background px-3 py-2 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                  className="w-full appearance-none rounded-lg border border-border/60 bg-background px-3 py-2 pe-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                 >
                   {orgs.map((o) => (
                     <option key={o.id} value={o.id}>{o.name}</option>
                   ))}
                 </select>
                 {orgSwitching && (
-                  <Loader2 className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  <Loader2 className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
                 )}
               </div>
             ) : (
@@ -284,9 +292,9 @@ function McpAuthorizeInner() {
           inline only under Limited, so there's never a dead/empty panel. */}
       <div className="space-y-3 rounded-xl border border-border/50 p-4">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">How much access to grant</h2>
+          <h2 className="text-sm font-semibold text-foreground">{m.accessHeading}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            You can only grant access you already hold yourself.
+            {m.accessNote}
           </p>
         </div>
 
@@ -294,23 +302,23 @@ function McpAuthorizeInner() {
           active={mode === "full"}
           disabled={busy}
           onClick={() => setMode("full")}
-          title="Full access"
-          badge="Recommended"
-          desc={`Deploy, create, and manage everything in ${orgName} that you can. Best for your own client.`}
+          title={m.fullTitle}
+          badge={m.fullBadge}
+          desc={interpolate(m.fullDesc, { org: orgName })}
         />
         <AccessOption
           active={mode === "limited"}
           disabled={busy}
           onClick={() => setMode("limited")}
-          title="Limited access"
-          desc="Restrict the client to only the specific resources you choose."
+          title={m.limitedTitle}
+          desc={m.limitedDesc}
         />
 
         {/* Limited → resource picker, inline under the option. */}
         {mode === "limited" && (
           <div className="rounded-xl border border-border/50 bg-muted/10 p-3">
             <p className="mb-3 text-xs text-muted-foreground">
-              Choose the resources this client may access:
+              {m.chooseResources}
             </p>
             <ResourcePicker
               key={orgId ?? "none"}
@@ -335,10 +343,10 @@ function McpAuthorizeInner() {
           <span className="min-w-0">
             <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <Lock className="size-3.5 text-muted-foreground" />
-              Read-only
+              {m.readOnly}
             </span>
             <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-              The client can view but not deploy, change, or delete.
+              {m.readOnlyDesc}
             </span>
           </span>
         </label>
@@ -372,10 +380,10 @@ function McpAuthorizeInner() {
       {/* Footer actions */}
       <div className="flex items-center justify-end gap-2 border-t border-border/50 pt-4">
         <Button variant="outline" disabled={busy} onClick={() => act(false)}>
-          {submitting === "deny" ? <Loader2 className="size-4 animate-spin" /> : "Deny"}
+          {submitting === "deny" ? <Loader2 className="size-4 animate-spin" /> : m.deny}
         </Button>
         <Button disabled={busy || limitedButEmpty} onClick={() => act(true)}>
-          {submitting === "accept" ? <Loader2 className="size-4 animate-spin" /> : "Authorize"}
+          {submitting === "accept" ? <Loader2 className="size-4 animate-spin" /> : m.authorize}
         </Button>
       </div>
     </div>
@@ -404,7 +412,7 @@ function AccessOption({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors disabled:opacity-60 ${
+      className={`flex w-full items-start gap-3 rounded-xl border p-4 text-start transition-colors disabled:opacity-60 ${
         active ? "border-primary/50 bg-primary/[0.06]" : "border-border/50 hover:bg-muted/20"
       }`}
     >

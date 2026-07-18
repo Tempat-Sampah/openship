@@ -143,7 +143,67 @@ function generatePhpDockerfile(config: BuildConfig): string {
   return lines.join("\n");
 }
 
+// nginx server block for a static SPA build. `listen` is baked at build time
+// (the port is known); nginx's own $uri is written literally.
+function staticNginxTemplateLines(port: number): string[] {
+  return [
+    "server {",
+    `    listen ${port} default_server;`,
+    "    root /usr/share/nginx/html;",
+    "    index index.html;",
+    "    location / { try_files $uri $uri/ /index.html; }",
+    "}",
+  ];
+}
+
+/**
+ * Static build → served as files by a minimal nginx image with SPA fallback,
+ * matching how Vercel serves a static output directory. A builder stage runs the
+ * app's install+build (and any monorepo workspace prepare), then the built
+ * `outputDirectory` is copied into `nginx:alpine`. No runtime dependency fetch.
+ */
+function generateStaticDockerfile(config: BuildConfig): string {
+  const sourceDir = builderSourceDir(
+    normalizeDockerRootDirectory(config.rootDirectory, config.localPath),
+  );
+  const envPrefix = buildEnvPrefix(config.envVars);
+  const workspacePrepare = config.workspacePrepareCommand?.trim();
+  const output = normalizeRelativePath(config.outputDirectory);
+  const outputPath = output ? `${sourceDir}/${output}` : sourceDir;
+  const nginxTemplate = staticNginxTemplateLines(config.port)
+    .map((line) => `'${line}'`)
+    .join(" ");
+
+  const lines: string[] = [
+    `FROM ${config.buildImage} AS builder`,
+    `WORKDIR /workspace`,
+    `COPY . /workspace`,
+  ];
+  if (workspacePrepare) {
+    lines.push(`RUN ${envPrefix}${workspacePrepare}`);
+  }
+  lines.push(`WORKDIR ${sourceDir}`);
+  const stepsLine = installBuildRunLine(config, envPrefix);
+  if (stepsLine) lines.push(stepsLine);
+
+  lines.push(
+    `FROM nginx:alpine AS runtime`,
+    `RUN rm -f /etc/nginx/conf.d/default.conf`,
+    `COPY --from=builder ${outputPath} /usr/share/nginx/html`,
+    `RUN printf '%s\\n' ${nginxTemplate} > /etc/nginx/conf.d/app.conf`,
+    `EXPOSE ${config.port}`,
+    `CMD ["nginx", "-g", "daemon off;"]`,
+  );
+
+  return lines.join("\n");
+}
+
 export function generateDockerfile(config: BuildConfig): string {
+  // Static builds are served as files by a minimal nginx image (SPA fallback).
+  if (config.isStatic) {
+    return generateStaticDockerfile(config);
+  }
+
   // PHP stacks need a bespoke fpm+nginx recipe (Composer in build, nginx in
   // runtime) that the generic single-CMD template can't express.
   if (isPhpRuntime(config) && needsMultiStage(config)) {

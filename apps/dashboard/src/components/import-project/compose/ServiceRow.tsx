@@ -3,6 +3,7 @@
 import React from "react";
 import { CheckCircle2, Loader2, XCircle, Circle } from "lucide-react";
 import type { ServiceDeployStatus } from "@/context/deployment/types";
+import { useI18n } from "@/components/i18n-provider";
 
 // ─── Status helpers ──────────────────────────────────────────────────────────
 
@@ -32,15 +33,6 @@ const BADGE_STYLES: Record<ServiceDeployStatus["status"], string> = {
   pending: "bg-muted text-muted-foreground border-transparent",
 };
 
-const STATUS_LABEL: Record<ServiceDeployStatus["status"], string> = {
-  running: "Running",
-  built: "Built",
-  building: "Building",
-  deploying: "Deploying",
-  failed: "Failed",
-  pending: "Pending",
-};
-
 // ─── ServiceRow ──────────────────────────────────────────────────────────────
 
 interface ServiceRowProps {
@@ -48,6 +40,7 @@ interface ServiceRowProps {
 }
 
 const ServiceRow: React.FC<ServiceRowProps> = ({ service }) => {
+  const { t } = useI18n();
   const { serviceName, status, image, error, hostPort } = service;
 
   return (
@@ -87,7 +80,7 @@ const ServiceRow: React.FC<ServiceRowProps> = ({ service }) => {
       <span
         className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full border ${BADGE_STYLES[status]}`}
       >
-        {STATUS_LABEL[status]}
+        {t.importProject.serviceStatus[status]}
       </span>
     </div>
   );

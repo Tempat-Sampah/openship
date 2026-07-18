@@ -58,6 +58,7 @@ export {
 } from "./registry";
 
 // Common helpers — re-exported for orchestrator use.
+export { setBackupCredentialSecret } from "./common/credentials";
 export { HashingPassthrough } from "./common/sha256-stream";
 export { artifactKey, manifestKey, runPrefix } from "./common/key-builder";
 export { buildManifest, validateManifest } from "./common/manifest";

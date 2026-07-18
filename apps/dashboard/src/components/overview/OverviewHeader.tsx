@@ -3,21 +3,24 @@
 import React from 'react';
 import Link from 'next/link';
 import { Wallet, Plus, TrendingUp } from 'lucide-react';
+import { useI18n, interpolate } from '@/components/i18n-provider';
 
 interface OverviewHeaderProps {
   userName?: string;
   creditsBalance?: string | number;
 }
 
-const OverviewHeader: React.FC<OverviewHeaderProps> = ({ 
+const OverviewHeader: React.FC<OverviewHeaderProps> = ({
   userName,
   creditsBalance = 0,
 }) => {
+  const { t } = useI18n();
+
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return t.overview.header.goodMorning;
+    if (hour < 18) return t.overview.header.goodAfternoon;
+    return t.overview.header.goodEvening;
   };
 
   const formatCredits = (value: string | number): string => {
@@ -35,10 +38,12 @@ const OverviewHeader: React.FC<OverviewHeaderProps> = ({
         {/* Left: Greeting */}
         <div>
           <h1 className="text-3xl font-bold text-black mb-1.5" style={{ letterSpacing: '-0.5px' }}>
-            {userName ? `${getGreeting()}, ${userName}` : 'Overview'}
+            {userName
+              ? interpolate(t.overview.header.greetingWithName, { greeting: getGreeting(), name: userName })
+              : t.overview.header.overview}
           </h1>
           <p className="text-sm text-black/50">
-            Monitor your platform usage and manage resources
+            {t.overview.header.subtitle}
           </p>
         </div>
         
@@ -50,7 +55,7 @@ const OverviewHeader: React.FC<OverviewHeaderProps> = ({
                 <Wallet className="w-5 h-5 text-black/60" />
               </div>
               <div>
-                <p className="text-xs text-black/40 mb-0.5">Credits Balance</p>
+                <p className="text-xs text-black/40 mb-0.5">{t.overview.header.creditsBalance}</p>
                 <span className="text-2xl font-bold text-black">
                   {formatCredits(creditsBalance)}
                 </span>
@@ -59,10 +64,10 @@ const OverviewHeader: React.FC<OverviewHeaderProps> = ({
             
             <Link
               href="/billing"
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-black text-white text-sm font-medium rounded-xl hover:bg-black/80 transition-colors ml-4"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-black text-white text-sm font-medium rounded-xl hover:bg-black/80 transition-colors ms-4"
             >
               <Plus className="w-4 h-4" />
-              Top Up
+              {t.overview.header.topUp}
             </Link>
           </div>
         </div>

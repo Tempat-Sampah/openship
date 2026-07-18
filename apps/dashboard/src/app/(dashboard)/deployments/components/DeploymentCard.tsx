@@ -8,6 +8,20 @@ import type { Deployment } from "../types";
 import { formatDistanceToNow, formatBuildTime, getStatusConfig } from "../utils";
 import { GitBranch, Clock, ExternalLink, MoreVertical, Archive, Pin, Activity } from "lucide-react";
 import { getFrameworkConfig } from "@/components/import-project/Frameworks";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+
+type ServiceStatusLabels = {
+  deployed: string;
+  failed: string;
+  cancelled: string;
+  skipped: string;
+  building: string;
+  deploying: string;
+  running: string;
+  removedOnHost: string;
+  verifying: string;
+  pending: string;
+};
 
 interface DeploymentCardProps {
   deployment: Deployment;
@@ -21,32 +35,33 @@ interface DeploymentCardProps {
  */
 function getServiceStatusChipConfig(
   status: NonNullable<Deployment["serviceDeployments"]>[number]["status"],
+  labels: ServiceStatusLabels,
 ) {
   switch (status) {
     case "success":
       return {
-        label: "Deployed",
+        label: labels.deployed,
         bgClass: "bg-emerald-500/10",
         textClass: "text-emerald-600 dark:text-emerald-400",
         dotClass: "bg-emerald-500",
       };
     case "failure":
       return {
-        label: "Failed",
+        label: labels.failed,
         bgClass: "bg-red-500/10",
         textClass: "text-red-600 dark:text-red-400",
         dotClass: "bg-red-500",
       };
     case "cancelled":
       return {
-        label: "Cancelled",
+        label: labels.cancelled,
         bgClass: "bg-muted/60",
         textClass: "text-muted-foreground",
         dotClass: "bg-muted-foreground",
       };
     case "skipped":
       return {
-        label: "Skipped",
+        label: labels.skipped,
         bgClass: "bg-muted/40",
         textClass: "text-muted-foreground",
         dotClass: "bg-muted-foreground",
@@ -55,7 +70,7 @@ function getServiceStatusChipConfig(
     case "deploying":
     case "in_progress":
       return {
-        label: status === "building" ? "Building" : status === "deploying" ? "Deploying" : "Running",
+        label: status === "building" ? labels.building : status === "deploying" ? labels.deploying : labels.running,
         bgClass: "bg-blue-500/10",
         textClass: "text-blue-600 dark:text-blue-400",
         dotClass: "bg-blue-500",
@@ -63,7 +78,7 @@ function getServiceStatusChipConfig(
     case "missing":
       // Drift: the container was removed on the host out-of-band.
       return {
-        label: "Removed on host",
+        label: labels.removedOnHost,
         bgClass: "bg-orange-500/10",
         textClass: "text-orange-600 dark:text-orange-400",
         dotClass: "bg-orange-500",
@@ -71,7 +86,7 @@ function getServiceStatusChipConfig(
     case "indeterminate":
       // Started but unverified — connection dropped mid-deploy.
       return {
-        label: "Verifying",
+        label: labels.verifying,
         bgClass: "bg-amber-500/10",
         textClass: "text-amber-600 dark:text-amber-400",
         dotClass: "bg-amber-500",
@@ -79,7 +94,7 @@ function getServiceStatusChipConfig(
     case "pending":
     default:
       return {
-        label: "Pending",
+        label: labels.pending,
         bgClass: "bg-amber-500/10",
         textClass: "text-amber-600 dark:text-amber-400",
         dotClass: "bg-amber-500",
@@ -88,10 +103,24 @@ function getServiceStatusChipConfig(
 }
 
 export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onStatusChange }) => {
+  const { t } = useI18n();
   const router = useRouter();
   const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
   const statusConfig = getStatusConfig(deployment.status);
   const frameworkConfig = getFrameworkConfig(deployment.framework);
+
+  const statusLabelMap: Record<string, string> = {
+    success: t.deployments.status.deployed,
+    failed: t.deployments.status.failed,
+    canceled: t.deployments.status.canceled,
+    cancelled: t.deployments.status.canceled,
+    building: t.deployments.status.building,
+    deploying: t.deployments.status.deploying,
+    partial_failure: t.deployments.status.partial,
+    rejected: t.deployments.status.rejected,
+    reconciling: t.deployments.status.verifying,
+  };
+  const statusLabel = statusLabelMap[deployment.status] ?? t.deployments.status.pending;
 
   const hasCommitData = deployment.commit?.hash && deployment.commit.hash !== "N/A";
   const hasCommitMessage = deployment.commit?.message && deployment.commit.message !== "Manual deployment";
@@ -105,7 +134,7 @@ export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onSt
           default, brightens on hover. Uses the same status color as the pill. */}
       <span
         aria-hidden
-        className="absolute inset-y-2 left-0 w-0.5 rounded-full opacity-50 transition-opacity group-hover:opacity-100"
+        className="absolute inset-y-2 start-0 w-0.5 rounded-full opacity-50 transition-opacity group-hover:opacity-100"
         style={{ backgroundColor: statusConfig.color }}
       />
 
@@ -124,12 +153,12 @@ export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onSt
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
           <p className="text-sm font-semibold text-foreground truncate">
-            {deployment.projectName || "Unknown Project"}
+            {deployment.projectName || t.deployments.card.unknownProject}
           </p>
           {deployment.version != null && (
             <span
               className="shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground"
-              title={`Version ${deployment.version}`}
+              title={interpolate(t.deployments.card.versionTitle, { version: String(deployment.version) })}
             >
               v{deployment.version}
             </span>
@@ -138,7 +167,7 @@ export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onSt
             className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${statusConfig.bgColor}`}
             style={{ color: statusConfig.color }}
           >
-            {statusConfig.label}
+            {statusLabel}
           </span>
           {/* Rollback-state chips. Surfaced from the orchestrator-aware
               listing endpoint. Order: Active > Pinned > Snapshotted so
@@ -146,28 +175,28 @@ export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onSt
           {deployment.isActive && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
-              title="This is the deployment currently serving the project"
+              title={t.deployments.card.activeTitle}
             >
               <Activity className="size-2.5" />
-              Active
+              {t.deployments.card.active}
             </span>
           )}
           {deployment.pinned && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400"
-              title="Pinned — exempt from retention prune. Stays rollback-restorable indefinitely."
+              title={t.deployments.card.pinnedTitle}
             >
               <Pin className="size-2.5" />
-              Pinned
+              {t.deployments.card.pinned}
             </span>
           )}
           {!deployment.pinned && deployment.artifactRetainedAt && !deployment.isActive && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-              title="Artifact archived — this version is available to roll back to"
+              title={t.deployments.card.snapshottedTitle}
             >
               <Archive className="size-2.5" />
-              Snapshotted
+              {t.deployments.card.snapshotted}
             </span>
           )}
         </div>
@@ -178,12 +207,23 @@ export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onSt
         {deployment.serviceDeployments && deployment.serviceDeployments.length > 0 && (
           <div className="mt-1 flex flex-wrap items-center gap-1">
             {deployment.serviceDeployments.map((sd) => {
-              const cfg = getServiceStatusChipConfig(sd.status);
+              const cfg = getServiceStatusChipConfig(sd.status, t.deployments.serviceStatus);
               return (
                 <span
                   key={sd.id}
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cfg.bgClass} ${cfg.textClass}`}
-                  title={`${sd.serviceName}: ${cfg.label}${sd.reason ? ` (${sd.reason})` : ""}`}
+                  title={
+                    sd.reason
+                      ? interpolate(t.deployments.card.serviceTitleReason, {
+                          name: sd.serviceName,
+                          label: cfg.label,
+                          reason: sd.reason,
+                        })
+                      : interpolate(t.deployments.card.serviceTitle, {
+                          name: sd.serviceName,
+                          label: cfg.label,
+                        })
+                  }
                 >
                   <span className={`size-1.5 rounded-full ${cfg.dotClass}`} />
                   {sd.serviceName}
@@ -196,11 +236,11 @@ export const DeploymentCard: React.FC<DeploymentCardProps> = ({ deployment, onSt
         )}
         <div className="flex items-center gap-2 mt-0.5">
           <p className="max-w-[320px] truncate text-xs text-muted-foreground">
-            {hasCommitMessage ? deployment.commit.message : "Manual deploy"}
+            {hasCommitMessage ? deployment.commit.message : t.deployments.card.manualDeploy}
           </p>
           <span className="text-muted-foreground/40">·</span>
           <span className="text-xs text-muted-foreground shrink-0">
-            {formatDistanceToNow(new Date(deployment.createdAt))}
+            {formatDistanceToNow(new Date(deployment.createdAt), t.deployments.time)}
           </span>
           {deployment.buildTime ? (
             <>

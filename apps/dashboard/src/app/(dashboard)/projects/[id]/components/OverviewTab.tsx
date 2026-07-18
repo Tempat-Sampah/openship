@@ -3,6 +3,8 @@
 import React from "react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { useProjectInfo, useAnalyticsData } from "@/hooks/useProjectEndpoints";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 import {
   ExternalLink,
   GitBranch,
@@ -27,6 +29,7 @@ export const OverviewTab = () => {
     servicesData,
     selectedDomain,
   } = useProjectSettings();
+  const { t } = useI18n();
 
   // ATOMIC PER-ENDPOINT HOOKS — each one owns its own skeleton state.
   // No context coupling, no useMemo soup. Module-level caches dedup
@@ -44,11 +47,11 @@ export const OverviewTab = () => {
   const deployTarget = projectData.deployTarget as string | null;
   const platformLabel =
     deployTarget === "cloud"
-      ? "Openship Cloud"
+      ? t.projects.overview.platformCloud
       : deployTarget === "server"
-        ? "Self-hosted (Server)"
+        ? t.projects.overview.platformServer
         : deployTarget === "local"
-          ? "Self-hosted (Local)"
+          ? t.projects.overview.platformLocal
           : "-";
   const hasGit = !!(projectData.gitOwner && projectData.gitRepo);
   const isStaticRuntime =
@@ -56,10 +59,10 @@ export const OverviewTab = () => {
     projectData.options?.hasServer === false ||
     projectData.productionMode === "static";
   const modeLabel = isStaticRuntime
-    ? "Static Site"
+    ? t.projects.overview.modeStatic
     : projectData.productionMode === "standalone"
-      ? "Standalone"
-      : "Server";
+      ? t.projects.overview.modeStandalone
+      : t.projects.overview.modeServer;
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -85,35 +88,42 @@ export const OverviewTab = () => {
   const hasAnalytics = !!analyticsData;
   const stats: Stat[] = showStatsSkeleton
     ? [
-        { label: "Server Requests", value: "", icon: <Server className="size-4" />, loading: true },
-        { label: "Unique IPs", value: "", icon: <Users className="size-4" />, loading: true },
-        { label: "Avg Response", value: "", icon: <Gauge className="size-4" />, loading: true },
-        { label: "Bandwidth Out", value: "", icon: <ArrowUpDown className="size-4" />, loading: true },
+        { label: t.projects.stats.serverRequests, value: "", icon: <Server className="size-4" />, loading: true },
+        { label: t.projects.stats.uniqueIPs, value: "", icon: <Users className="size-4" />, loading: true },
+        { label: t.projects.stats.avgResponse, value: "", icon: <Gauge className="size-4" />, loading: true },
+        { label: t.projects.stats.bandwidthOut, value: "", icon: <ArrowUpDown className="size-4" />, loading: true },
       ]
     : [
         {
-          label: "Server Requests",
+          label: t.projects.stats.serverRequests,
           value: formatNumber(analyticsData?.summary?.uniqueRequests ?? 0),
           icon: <Server className="size-4" />,
-          subtext: `${formatNumber(analyticsData?.summary?.totalRequests ?? 0)} total, ${analyticsData?.summary?.avgRequestsPerHour ?? 0}/hr avg`,
+          subtext: interpolate(t.projects.stats.requestsSubtext, {
+            total: formatNumber(analyticsData?.summary?.totalRequests ?? 0),
+            avg: String(analyticsData?.summary?.avgRequestsPerHour ?? 0),
+          }),
         },
         {
-          label: "Unique IPs",
+          label: t.projects.stats.uniqueIPs,
           value: formatNumber(analyticsData?.summary?.uniqueIPs ?? 0),
           icon: <Users className="size-4" />,
-          subtext: `${analyticsData?.summary?.uniqueIPsPercentage ?? 0}% of total`,
+          subtext: interpolate(t.projects.stats.uniqueIPsSubtext, {
+            pct: String(analyticsData?.summary?.uniqueIPsPercentage ?? 0),
+          }),
         },
         {
-          label: "Avg Response",
+          label: t.projects.stats.avgResponse,
           value: `${analyticsData?.performance?.avgResponseTimeMs?.toFixed(2) || "N/A "}ms`,
           icon: <Gauge className="size-4" />,
-          subtext: "Response time",
+          subtext: t.projects.stats.responseTime,
         },
         {
-          label: "Bandwidth Out",
+          label: t.projects.stats.bandwidthOut,
           value: analyticsData?.bandwidth?.totalOutFormatted || "N/A",
           icon: <ArrowUpDown className="size-4" />,
-          subtext: `${analyticsData?.bandwidth?.totalInFormatted ?? "0 B"} in`,
+          subtext: interpolate(t.projects.stats.bandwidthInSubtext, {
+            value: analyticsData?.bandwidth?.totalInFormatted ?? "0 B",
+          }),
         },
       ];
 
@@ -135,15 +145,15 @@ export const OverviewTab = () => {
       {/* ── Info sections ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Infrastructure */}
-        <Card title="Infrastructure" icon={Cpu} iconColor="primary">
-          <Item label="Platform" value={platformLabel} loading={showProjectInfoSkeleton} />
-          <Item label="Mode" value={modeLabel} loading={showProjectInfoSkeleton} />
+        <Card title={t.projects.overview.infrastructure} icon={Cpu} iconColor="primary">
+          <Item label={t.projects.overview.platform} value={platformLabel} loading={showProjectInfoSkeleton} />
+          <Item label={t.projects.overview.mode} value={modeLabel} loading={showProjectInfoSkeleton} />
           {/* Port row shown when loading (we don't know hasServer yet)
               or when there's an actual server runtime. Once project
               info hydrates and we know it's static, the row is hidden. */}
           {(showProjectInfoSkeleton || !isStaticRuntime) && (
             <Item
-              label="Port"
+              label={t.projects.overview.port}
               value={String(projectData.port || 3000)}
               loading={showProjectInfoSkeleton}
             />
@@ -151,9 +161,9 @@ export const OverviewTab = () => {
         </Card>
 
         {/* Source & CI/CD */}
-        <Card title="Source & CI/CD" icon={GitBranch} iconColor="orange">
+        <Card title={t.projects.overview.sourceCicd} icon={GitBranch} iconColor="orange">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-muted-foreground">Repository</span>
+            <span className="text-[13px] text-muted-foreground">{t.projects.overview.repository}</span>
             {showProjectInfoSkeleton ? (
               <div className="h-[14px] w-28 rounded bg-muted-foreground/20 animate-pulse" />
             ) : hasGit ? (
@@ -167,23 +177,25 @@ export const OverviewTab = () => {
                 <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
               </a>
             ) : (
-              <span className="text-[13px] text-muted-foreground/60">Not connected</span>
+              <span className="text-[13px] text-muted-foreground/60">{t.projects.overview.notConnected}</span>
             )}
           </div>
           <Item
-            label="Branch"
+            label={t.projects.overview.branch}
             value={projectData.gitBranch || projectData.branch || "main"}
             loading={showProjectInfoSkeleton}
           />
           <StatusItem
-            label="Auto Deploy"
+            label={t.projects.overview.autoDeploy}
             active={!!gitData?.autoDeployEnabled}
             loading={showProjectInfoSkeleton}
+            t={t}
           />
           <StatusItem
-            label="Webhook"
+            label={t.projects.overview.webhook}
             active={!!gitData?.webhookActive}
             loading={showProjectInfoSkeleton}
+            t={t}
           />
         </Card>
       </div>
@@ -226,7 +238,7 @@ export const OverviewTab = () => {
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
             <BarChart3 className="size-3.5 text-primary" />
-            <span className="text-[13px] font-semibold text-foreground">Traffic</span>
+            <span className="text-[13px] font-semibold text-foreground">{t.projects.overview.traffic}</span>
           </div>
           {dateRange && <span className="text-[11px] text-muted-foreground">{dateRange}</span>}
         </div>
@@ -254,7 +266,7 @@ export const OverviewTab = () => {
           </div>
         ) : !hasAnalytics ? (
           <div className="flex items-center justify-center h-[120px] rounded-xl border border-dashed border-border/50 bg-muted/10">
-            <span className="text-[12px] text-muted-foreground">No traffic data yet</span>
+            <span className="text-[12px] text-muted-foreground">{t.projects.overview.noTrafficData}</span>
           </div>
         ) : (
           <div>
@@ -320,14 +332,14 @@ export const OverviewTab = () => {
           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
             <Layers className="size-3.5 text-emerald-500" />
           </div>
-          <span className="text-[13px] font-medium text-foreground">Services</span>
+          <span className="text-[13px] font-medium text-foreground">{t.projects.overview.services}</span>
           {serviceCount > 0 && (
             <span className="text-[11px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md">
               {serviceCount}
             </span>
           )}
           {services.length > 0 && (
-            <div className="flex items-center gap-1 ml-1">
+            <div className="flex items-center gap-1 ms-1">
               {services.slice(0, 4).map((svc) => (
                 <div
                   key={svc.id}
@@ -338,19 +350,19 @@ export const OverviewTab = () => {
                 </div>
               ))}
               {services.length > 4 && (
-                <span className="text-[10px] text-muted-foreground/60 ml-0.5">
+                <span className="text-[10px] text-muted-foreground/60 ms-0.5">
                   +{services.length - 4}
                 </span>
               )}
             </div>
           )}
           {serviceCount === 0 && (
-            <span className="text-xs text-muted-foreground">No services connected</span>
+            <span className="text-xs text-muted-foreground">{t.projects.overview.noServicesConnected}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
-          <span className="text-[12px]">Manage</span>
-          <ChevronRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+          <span className="text-[12px]">{t.projects.overview.manage}</span>
+          <ChevronRight className="size-3.5 group-hover:translate-x-0.5 transition-transform rtl:rotate-180" />
         </div>
       </button>
 
@@ -359,7 +371,7 @@ export const OverviewTab = () => {
         <div className="bg-card rounded-2xl border border-border/50 px-4 py-3.5">
           <div className="flex items-center gap-2 mb-3">
             <BarChart3 className="size-3.5 text-primary" />
-            <span className="text-[13px] font-semibold text-foreground">Top Paths</span>
+            <span className="text-[13px] font-semibold text-foreground">{t.projects.overview.topPaths}</span>
           </div>
           <div className="space-y-2">
             {topPaths.slice(0, 5).map((p, idx) => (
@@ -376,8 +388,8 @@ export const OverviewTab = () => {
                     style={{ width: `${p.percentage}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-muted-foreground/60 shrink-0 w-14 text-right">
-                  {p.count} req
+                <span className="text-[10px] text-muted-foreground/60 shrink-0 w-14 text-end">
+                  {interpolate(t.projects.overview.requestCount, { count: String(p.count) })}
                 </span>
               </div>
             ))}
@@ -437,7 +449,17 @@ function Item({ label, value, loading }: { label: string; value: string; loading
   );
 }
 
-function StatusItem({ label, active, loading }: { label: string; active: boolean; loading?: boolean }) {
+function StatusItem({
+  label,
+  active,
+  loading,
+  t,
+}: {
+  label: string;
+  active: boolean;
+  loading?: boolean;
+  t: Dictionary;
+}) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-[13px] text-muted-foreground">{label}</span>
@@ -454,7 +476,7 @@ function StatusItem({ label, active, loading }: { label: string; active: boolean
           <span
             className={`w-1.5 h-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
           />
-          {active ? "Active" : "Off"}
+          {active ? t.projects.overview.statusActive : t.projects.overview.statusOff}
         </span>
       )}
     </div>

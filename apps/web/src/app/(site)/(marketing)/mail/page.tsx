@@ -4,7 +4,7 @@ import HomeContent from "./_components/home/HomeContent";
 
 const TITLE = "Mail - Built-in transactional and team email";
 const DESCRIPTION =
-  "Send and receive on your own domains without a third-party SMTP provider. Built into Openship - unlimited domains, unlimited mailboxes, AGPL-3 open source.";
+  "Send and receive on your own domains without a third-party SMTP provider. Built into Openship - unlimited domains, unlimited mailboxes, Apache 2.0 open source.";
 
 export const metadata: Metadata = {
   title: "Mail",

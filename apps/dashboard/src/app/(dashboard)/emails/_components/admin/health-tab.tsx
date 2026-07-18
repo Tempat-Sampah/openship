@@ -52,10 +52,14 @@ import { Skeleton } from "./_shared/skeleton";
 import { StatusPill, type PillTone } from "./_shared/status-pill";
 import { LogsDrawer } from "./_shared/logs-drawer";
 import DropdownMenu, { type MenuAction } from "@/components/ui/DropdownMenu";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+
+type HealthDict = (typeof import("@/i18n/locales/en/emailsAdmin.json"))["health"];
 
 const HEALTH_POLL_MS = 10_000;
 
 export function HealthTab({ serverId }: { serverId: string }) {
+  const { t } = useI18n();
   const [components, setComponents] = useState<MailComponentHealth[] | null>(null);
   const [componentsErr, setComponentsErr] = useState<string | null>(null);
   const [componentsLastUpdated, setComponentsLastUpdated] = useState<number | null>(null);
@@ -71,7 +75,7 @@ export function HealthTab({ serverId }: { serverId: string }) {
       setComponentsErr(null);
       setComponentsLastUpdated(Date.now());
     } catch (err) {
-      setComponentsErr(err instanceof Error ? err.message : "Health check failed");
+      setComponentsErr(err instanceof Error ? err.message : t.emailsAdmin.health.healthCheckFailed);
     }
   }, [serverId]);
 
@@ -81,7 +85,7 @@ export function HealthTab({ serverId }: { serverId: string }) {
       setDns(r);
       setDnsErr(null);
     } catch (err) {
-      setDnsErr(err instanceof Error ? err.message : "DNS scan failed");
+      setDnsErr(err instanceof Error ? err.message : t.emailsAdmin.health.scanFailed);
     }
   }, [serverId]);
 
@@ -115,15 +119,14 @@ export function HealthTab({ serverId }: { serverId: string }) {
     }
   };
 
-  const summary = summarizeHealth(components, dns?.checks ?? null);
+  const summary = summarizeHealth(components, dns?.checks ?? null, t.emailsAdmin.health);
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Health</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t.emailsAdmin.health.heading}</h2>
         <p className="text-sm text-muted-foreground mt-0.5 max-w-2xl">
-          Live daemon status + DNS scan. Daemons refresh on a 10-second poll;
-          DNS scan runs once on open and again whenever you click Rescan.
+          {t.emailsAdmin.health.description}
         </p>
       </div>
 
@@ -150,14 +153,14 @@ export function HealthTab({ serverId }: { serverId: string }) {
 
       {/* ── Daemons ───────────────────────────────────────────────────── */}
       <SectionCard
-        title="Daemons"
-        description="Mail-server processes managed by systemd on the VPS."
+        title={t.emailsAdmin.health.daemonsTitle}
+        description={t.emailsAdmin.health.daemonsDesc}
         density="split"
         icon={Activity}
         action={
           componentsLastUpdated && (
             <span className="text-[11px] text-muted-foreground tabular-nums">
-              updated {timeAgo(componentsLastUpdated)}
+              {interpolate(t.emailsAdmin.health.updated, { time: timeAgo(componentsLastUpdated, t.emailsAdmin.health.time) })}
             </span>
           )
         }
@@ -185,11 +188,11 @@ export function HealthTab({ serverId }: { serverId: string }) {
 
       {/* ── DNS scan ──────────────────────────────────────────────────── */}
       <SectionCard
-        title="DNS scan"
+        title={t.emailsAdmin.health.dnsScanTitle}
         description={
           dns?.domain
-            ? `Live public-DNS check of every record we expect for ${dns.domain}.`
-            : "Live public-DNS check of every record this server expects."
+            ? interpolate(t.emailsAdmin.health.dnsScanDescFor, { domain: dns.domain })
+            : t.emailsAdmin.health.dnsScanDesc
         }
         density="split"
         icon={Search}
@@ -202,7 +205,7 @@ export function HealthTab({ serverId }: { serverId: string }) {
             <RefreshCcw
               className={`size-3 ${dnsRefreshing ? "animate-spin" : ""}`}
             />
-            Rescan
+            {t.emailsAdmin.health.rescan}
           </button>
         }
       >
@@ -220,8 +223,7 @@ export function HealthTab({ serverId }: { serverId: string }) {
               strokeWidth={1.5}
             />
             <p className="text-sm text-muted-foreground">
-              No DNS records on file yet. Finish the install wizard to populate
-              the scan.
+              {t.emailsAdmin.health.dnsEmpty}
             </p>
           </div>
         ) : dns ? (
@@ -252,7 +254,10 @@ function DaemonRow({
   serverId: string;
   onActed: () => void;
 }) {
+  const { t, dir } = useI18n();
+  const h = t.emailsAdmin.health;
   const presentation = daemonStatusPresentation(component.status);
+  const statusLabel = daemonStatusLabel(component.status, h);
   const { showToast } = useToast();
   const [acting, setActing] = useState<ComponentAction | null>(null);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -262,13 +267,23 @@ function DaemonRow({
     setActing(action);
     try {
       await mailAdminApi.components.action(serverId, component.key, action);
-      showToast(`${component.label} ${actionPastTense(action)}`, "success");
+      const doneTpl =
+        action === "start" ? h.toast.started : action === "stop" ? h.toast.stopped : h.toast.restarted;
+      showToast(interpolate(doneTpl, { label: component.label }), "success");
       await onActed();
     } catch (err) {
+      const failMsg =
+        action === "start" ? h.toast.startFailed : action === "stop" ? h.toast.stopFailed : h.toast.restartFailed;
+      const failTitleTpl =
+        action === "start"
+          ? h.toast.startFailedTitle
+          : action === "stop"
+            ? h.toast.stopFailedTitle
+            : h.toast.restartFailedTitle;
       showToast(
-        err instanceof Error ? err.message : `${action} failed`,
+        err instanceof Error ? err.message : failMsg,
         "error",
-        `${component.label} ${action} failed`,
+        interpolate(failTitleTpl, { label: component.label }),
       );
     } finally {
       setActing(null);
@@ -283,14 +298,14 @@ function DaemonRow({
     if (isRunning) {
       items.push({
         id: "restart",
-        label: acting === "restart" ? "Restarting…" : "Restart",
+        label: acting === "restart" ? h.menu.restarting : h.menu.restart,
         icon: <RotateCw className="size-4" strokeWidth={2.25} />,
         onClick: () => void run("restart"),
         disabled: acting !== null,
       });
       items.push({
         id: "stop",
-        label: acting === "stop" ? "Stopping…" : "Stop",
+        label: acting === "stop" ? h.menu.stopping : h.menu.stop,
         icon: <Square className="size-4" strokeWidth={2.25} />,
         onClick: () => void run("stop"),
         disabled: acting !== null,
@@ -299,7 +314,7 @@ function DaemonRow({
     } else {
       items.push({
         id: "start",
-        label: acting === "start" ? "Starting…" : "Start",
+        label: acting === "start" ? h.menu.starting : h.menu.start,
         icon: <Play className="size-4" strokeWidth={2.25} />,
         onClick: () => void run("start"),
         disabled: acting !== null,
@@ -307,7 +322,7 @@ function DaemonRow({
       });
       items.push({
         id: "restart",
-        label: acting === "restart" ? "Restarting…" : "Restart",
+        label: acting === "restart" ? h.menu.restarting : h.menu.restart,
         icon: <RotateCw className="size-4" strokeWidth={2.25} />,
         onClick: () => void run("restart"),
         disabled: acting !== null,
@@ -341,27 +356,27 @@ function DaemonRow({
           </p>
           {component.activeSince && component.status === "active" && (
             <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-              Up {timeAgo(new Date(component.activeSince).getTime())}
+              {interpolate(h.up, { time: timeAgo(new Date(component.activeSince).getTime(), h.time) })}
             </p>
           )}
         </div>
         <StatusPill tone={presentation.tone} icon={presentation.PillIcon}>
-          {presentation.label}
+          {statusLabel}
         </StatusPill>
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setLogsOpen(true)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-            title="Open logs"
+            title={h.openLogs}
           >
             <ScrollText className="size-3.5" strokeWidth={2.25} />
-            Logs
+            {h.logs}
           </button>
           {menuActions.length > 0 && (
             <DropdownMenu
               actions={menuActions}
-              align="right"
+              align={dir === "rtl" ? "left" : "right"}
               disabled={acting !== null}
               triggerClassName="inline-flex items-center justify-center w-8 h-8 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-60"
               trigger={
@@ -386,19 +401,10 @@ function DaemonRow({
   );
 }
 
-function actionPastTense(action: ComponentAction): string {
-  switch (action) {
-    case "start":
-      return "started";
-    case "stop":
-      return "stopped";
-    case "restart":
-      return "restarted";
-  }
-}
-
 function DnsCheckRow({ check }: { check: DnsCheck }) {
+  const { t } = useI18n();
   const presentation = dnsStatusPresentation(check.status);
+  const statusLabel = dnsStatusLabel(check.status, t.emailsAdmin.health);
   const showExpectedActual =
     (check.status === "warn" || check.status === "fail") && check.expected;
   return (
@@ -423,16 +429,16 @@ function DnsCheckRow({ check }: { check: DnsCheck }) {
         </p>
         {showExpectedActual && (
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px]">
-            <RowKV label="Expected" value={check.expected} />
+            <RowKV label={t.emailsAdmin.health.expected} value={check.expected} />
             <RowKV
-              label="Actual"
-              value={check.actual || "(no record)"}
+              label={t.emailsAdmin.health.actual}
+              value={check.actual || t.emailsAdmin.health.noRecord}
               muted={!check.actual}
             />
           </div>
         )}
       </div>
-      <StatusPill tone={presentation.tone}>{presentation.label}</StatusPill>
+      <StatusPill tone={presentation.tone}>{statusLabel}</StatusPill>
     </div>
   );
 }
@@ -637,6 +643,7 @@ interface BannerSummary {
 function summarizeHealth(
   components: MailComponentHealth[] | null,
   checks: DnsCheck[] | null,
+  h: HealthDict,
 ): BannerSummary | null {
   if (!components && !checks) return null;
 
@@ -666,8 +673,8 @@ function summarizeHealth(
       iconBg: "bg-emerald-500/10",
       iconColor: "text-emerald-600 dark:text-emerald-400",
       textColor: "text-emerald-700 dark:text-emerald-300",
-      label: "All systems operational",
-      sub: "Daemons are running and every DNS record is published correctly.",
+      label: h.summary.allGoodLabel,
+      sub: h.summary.allGoodSub,
     };
   }
 
@@ -682,8 +689,8 @@ function summarizeHealth(
       iconBg: "bg-amber-500/10",
       iconColor: "text-amber-600 dark:text-amber-400",
       textColor: "text-amber-700 dark:text-amber-300",
-      label: "Almost there",
-      sub: `${dnsWarns} optional DNS record${dnsWarns === 1 ? "" : "s"} could be improved - see DNS scan below.`,
+      label: h.summary.almostLabel,
+      sub: interpolate(dnsWarns === 1 ? h.summary.almostSubOne : h.summary.almostSubOther, { count: String(dnsWarns) }),
     };
   }
 
@@ -702,25 +709,25 @@ function summarizeHealth(
       iconBg: "bg-amber-500/10",
       iconColor: "text-amber-600 dark:text-amber-400",
       textColor: "text-amber-700 dark:text-amber-300",
-      label: `${names} not installed`,
+      label: interpolate(h.summary.notInstalledLabel, { names }),
       sub:
         missingComponents.length === 1
-          ? "Mail still works without it; install only if you actually need this component."
-          : "Mail still works without them; install only if you actually need these components.",
+          ? h.summary.notInstalledSubOne
+          : h.summary.notInstalledSubOther,
     };
   }
 
   const parts: string[] = [];
   if (downComponents.length > 0) {
-    parts.push(`${downComponents.map((c) => c.label).join(", ")} down`);
+    parts.push(interpolate(h.summary.partDown, { names: downComponents.map((c) => c.label).join(", ") }));
   }
   if (missingComponents.length > 0) {
     parts.push(
-      `${missingComponents.map((c) => c.label).join(", ")} not installed`,
+      interpolate(h.summary.partNotInstalled, { names: missingComponents.map((c) => c.label).join(", ") }),
     );
   }
   if (dnsFails > 0) {
-    parts.push(`${dnsFails} DNS record${dnsFails === 1 ? "" : "s"} missing`);
+    parts.push(interpolate(dnsFails === 1 ? h.summary.partDnsOne : h.summary.partDnsOther, { count: String(dnsFails) }));
   }
 
   return {
@@ -729,18 +736,52 @@ function summarizeHealth(
     iconBg: "bg-red-500/10",
     iconColor: "text-red-600 dark:text-red-400",
     textColor: "text-red-700 dark:text-red-300",
-    label: "Issues need attention",
+    label: h.summary.issuesLabel,
     sub: parts.join(" · "),
   };
 }
 
-function timeAgo(ts: number): string {
+// ─── Status label maps (localized) ───────────────────────────────────────────
+
+function daemonStatusLabel(status: MailComponentStatus, h: HealthDict): string {
+  switch (status) {
+    case "active":
+      return h.daemonStatus.running;
+    case "activating":
+      return h.daemonStatus.starting;
+    case "deactivating":
+      return h.daemonStatus.stopping;
+    case "inactive":
+      return h.daemonStatus.stopped;
+    case "failed":
+      return h.daemonStatus.failed;
+    case "missing":
+      return h.daemonStatus.missing;
+    default:
+      return h.daemonStatus.unknown;
+  }
+}
+
+function dnsStatusLabel(status: DnsCheckStatus, h: HealthDict): string {
+  switch (status) {
+    case "pass":
+      return h.dnsStatus.pass;
+    case "warn":
+      return h.dnsStatus.warning;
+    case "fail":
+      return h.dnsStatus.fail;
+    default:
+      return h.dnsStatus.unknown;
+  }
+}
+
+function timeAgo(ts: number, tt: HealthDict["time"]): string {
   const diff = Math.max(0, Date.now() - ts);
   const s = Math.round(diff / 1000);
-  if (s < 60) return `${s}s ago`;
+  if (s < 60) return interpolate(tt.secondsAgo, { n: String(s) });
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return interpolate(tt.minutesAgo, { n: String(m) });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return interpolate(tt.hoursAgo, { n: String(h) });
+  return interpolate(tt.daysAgo, { n: String(Math.floor(h / 24)) });
 }

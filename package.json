@@ -1,8 +1,8 @@
 {
   "name": "openship",
   "version": "0.1.9",
-  "description": "Source-available, self-hostable deployment platform",
-  "license": "SEE LICENSE IN LICENSE",
+  "description": "Open-source, self-hostable deployment platform",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/oblien/openship.git"
@@ -45,7 +45,7 @@
   },
   "packageManager": "bun@1.3.10",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@octokit/auth-oauth-device": "^8.0.3",

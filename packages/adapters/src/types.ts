@@ -123,6 +123,14 @@ export interface BuildConfig {
   dockerfileContent?: string;
   /** Whether the deployment needs a long-running server process. */
   hasServer?: boolean;
+  /**
+   * Static build served as files: the generated Docker recipe builds the app
+   * and serves `outputDirectory` from a minimal web server (SPA fallback to
+   * index.html) on `port`, instead of running a `startCommand`. Used for
+   * frontend/static monorepo sub-apps (which must be containerized because the
+   * monorepo pipeline is container-only).
+   */
+  isStatic?: boolean;
   /** Environment variables injected at build time */
   envVars: Record<string, string>;
   /** Resources allocated for the build container */
@@ -281,6 +289,30 @@ export interface ResourceUsage {
   networkTxBytes: number;
 }
 
+/** An extra path-prefix location that reverse-proxies to another target. */
+export interface RouteProxyLocation {
+  /** nginx location prefix, e.g. "/api/". */
+  pathPrefix: string;
+  /** Proxy target, e.g. "http://10.0.0.5:3000". */
+  targetUrl: string;
+}
+
+/** A redirect rule compiled from vercel.json `redirects`. */
+export interface RouteRedirect {
+  /** nginx location path (prefix or exact). */
+  path: string;
+  /** true → `location = <path>`; false → prefix location. */
+  exact: boolean;
+  statusCode: number;
+  destination: string;
+}
+
+/** A response-header rule compiled from vercel.json `headers`. */
+export interface RouteHeaderRule {
+  path: string;
+  headers: { key: string; value: string }[];
+}
+
 interface BaseRouteConfig {
   /** External domain (e.g. "my-app.example.com") */
   domain: string;
@@ -292,6 +324,17 @@ interface BaseRouteConfig {
    * Example: "http://127.0.0.1:4000/api/webhooks/"
    */
   webhookProxy?: string;
+  /**
+   * Extra path-prefix proxy locations added AHEAD of the primary `location /`
+   * (nginx longest-prefix match routes them). Used to compose a Vercel-style
+   * single domain: the primary target serves `/` and each entry reverse-proxies
+   * a path (e.g. `/api/`) to another service — driven by `vercel.json` rewrites.
+   */
+  proxyLocations?: RouteProxyLocation[];
+  /** Redirect rules (vercel.json `redirects`) → `return <code> <dest>` locations. */
+  redirects?: RouteRedirect[];
+  /** Response-header rules (vercel.json `headers`) → `add_header`. */
+  headerRules?: RouteHeaderRule[];
 }
 
 export interface ProxyRouteConfig extends BaseRouteConfig {

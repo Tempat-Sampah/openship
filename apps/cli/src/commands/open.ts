@@ -24,7 +24,7 @@ export const openCommand = new Command("open")
       if (!ready) {
         console.log(
           chalk.yellow(`\n  Heads up: the local API at ${apiUrl} isn't responding yet.`) +
-            chalk.dim("\n  Start it with `openship setup`, or use --cloud.\n"),
+            chalk.dim("\n  Start it with `openship up`, or use --cloud.\n"),
         );
       }
     }

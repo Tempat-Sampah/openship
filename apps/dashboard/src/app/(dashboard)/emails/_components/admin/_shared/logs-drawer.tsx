@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCcw, X } from "lucide-react";
 import { mailAdminApi, type ComponentLogs } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface LogsDrawerProps {
   serverId: string;
@@ -30,6 +31,7 @@ export function LogsDrawer({
   label,
   onClose,
 }: LogsDrawerProps) {
+  const { t, dir } = useI18n();
   const [logs, setLogs] = useState<ComponentLogs | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function LogsDrawer({
         }
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load logs");
+      setError(err instanceof Error ? err.message : t.emailsAdmin.shared.logsLoadFailed);
     } finally {
       setLoading(false);
     }
@@ -72,16 +74,22 @@ export function LogsDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex justify-end bg-black/50 backdrop-blur-[2px] animate-in fade-in duration-150"
+      className={`fixed inset-0 z-[9999] flex bg-black/50 backdrop-blur-[2px] animate-in fade-in duration-150 ${
+        dir === "rtl" ? "justify-start" : "justify-end"
+      }`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl h-full bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+      <div
+        className={`relative w-full max-w-2xl h-full bg-card border-s border-border shadow-2xl flex flex-col animate-in duration-200 ${
+          dir === "rtl" ? "slide-in-from-left" : "slide-in-from-right"
+        }`}
+      >
         <div className="flex items-start gap-3 px-5 py-4 border-b border-border/50">
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-foreground">
-              {label} logs
+              {interpolate(t.emailsAdmin.shared.logsTitle, { label })}
             </h2>
             <p className="text-[11.5px] text-muted-foreground mt-0.5 font-mono">
               journalctl -u {unit} -n 300
@@ -90,7 +98,7 @@ export function LogsDrawer({
           <button
             onClick={load}
             disabled={loading}
-            title="Reload"
+            title={t.emailsAdmin.shared.reload}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
           >
             {loading ? (
@@ -101,7 +109,7 @@ export function LogsDrawer({
           </button>
           <button
             onClick={onClose}
-            title="Close"
+            title={t.emailsAdmin.shared.close}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
           >
             <X className="size-4" strokeWidth={2} />
@@ -114,10 +122,10 @@ export function LogsDrawer({
           {error ? (
             <p className="text-red-600 dark:text-red-400">{error}</p>
           ) : loading && !logs ? (
-            <p className="text-muted-foreground">Loading logs…</p>
+            <p className="text-muted-foreground">{t.emailsAdmin.shared.loadingLogs}</p>
           ) : logs && logs.lines.length === 0 ? (
             <p className="text-muted-foreground italic">
-              No journal entries for this unit.
+              {t.emailsAdmin.shared.noJournal}
             </p>
           ) : (
             logs?.lines.map((line, i) => (

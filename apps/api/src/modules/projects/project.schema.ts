@@ -116,6 +116,46 @@ export const ListProjectsQuery = Type.Object({
 
 // ─── Request bodies ──────────────────────────────────────────────────────────
 
+/**
+ * Routing config parsed from the repo's `vercel.json` (rewrites/redirects/
+ * headers/cleanUrls/trailingSlash). Stored on the project and compiled to
+ * OpenResty at deploy. Values are re-validated + sanitized at compile time
+ * (`compileVercelRouting`) since they originate from arbitrary repos.
+ */
+const RoutingRuleSchema = Type.Object({
+  source: Type.String({ maxLength: 2000 }),
+  destination: Type.String({ maxLength: 2000 }),
+});
+const RoutingConfigSchema = Type.Object({
+  rewrites: Type.Optional(Type.Array(RoutingRuleSchema, { maxItems: 200 })),
+  redirects: Type.Optional(
+    Type.Array(
+      Type.Composite([
+        RoutingRuleSchema,
+        Type.Object({
+          permanent: Type.Optional(Type.Boolean()),
+          statusCode: Type.Optional(Type.Number({ minimum: 300, maximum: 399 })),
+        }),
+      ]),
+      { maxItems: 200 },
+    ),
+  ),
+  headers: Type.Optional(
+    Type.Array(
+      Type.Object({
+        source: Type.String({ maxLength: 2000 }),
+        headers: Type.Array(
+          Type.Object({ key: Type.String({ maxLength: 200 }), value: Type.String({ maxLength: 4000 }) }),
+          { maxItems: 50 },
+        ),
+      }),
+      { maxItems: 200 },
+    ),
+  ),
+  cleanUrls: Type.Optional(Type.Boolean()),
+  trailingSlash: Type.Optional(Type.Boolean()),
+});
+
 export const CreateProjectBody = Type.Object({
   name: Type.String({ minLength: 1, maxLength: 100 }),
   /** Override the auto-generated slug (used as free subdomain: slug.opsh.io) */
@@ -180,6 +220,8 @@ export const CreateProjectBody = Type.Object({
   monorepoSharedPaths: Type.Optional(
     Type.Union([Type.Null(), Type.Array(Type.String({ minLength: 1, maxLength: 200 }), { maxItems: 50 })]),
   ),
+  /** Routing config from the repo's vercel.json (see RoutingConfigSchema). */
+  routingConfig: Type.Optional(Type.Union([Type.Null(), RoutingConfigSchema])),
   /**
    * Rollback strategy applied to NEW deployments of this project.
    *   - "git"      → no artifact archive; rollback rebuilds at prior commit_sha

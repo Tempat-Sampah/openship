@@ -16,7 +16,7 @@ This starts all three services:
 
 | Service     | URL                   |
 | ----------- | --------------------- |
-| Web         | http://localhost:3000  |
+| Web         | http://localhost:3009  |
 | Dashboard   | http://localhost:3001  |
 | API         | http://localhost:4000  |
 
@@ -32,7 +32,7 @@ bun dev --filter @repo/web          # Web only
 
 ```
 apps/
-  web/            → Next.js marketing site (port 3000)
+  web/            → Next.js marketing site (port 3009)
   dashboard/      → Next.js deployment dashboard (port 3001)
   api/            → Hono API engine (port 4000)
   cli/            → CLI tool (`openship deploy`)

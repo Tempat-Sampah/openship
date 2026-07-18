@@ -9,9 +9,11 @@ import {
 } from "./general";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { useAnalyticsData } from "@/hooks/useProjectEndpoints";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 export const MonitoringTab = () => {
   const { id, selectedDomain } = useProjectSettings();
+  const { t } = useI18n();
   // Atomic analytics fetch — own state, own loading, no context coupling.
   // The hook backs onto the same module-level caches as OverviewTab so
   // both tabs share one network request per endpoint.
@@ -27,54 +29,61 @@ export const MonitoringTab = () => {
   const stats = analyticsData
     ? [
         {
-          label: "Server Requests",
+          label: t.projects.stats.serverRequests,
           value: formatNumber(analyticsData.summary?.uniqueRequests),
           icon: <Server className="size-4" />,
-          subtext: `${formatNumber(analyticsData.summary?.totalRequests)} total, ${analyticsData.summary?.avgRequestsPerHour}/hr avg`,
+          subtext: interpolate(t.projects.stats.requestsSubtext, {
+            total: formatNumber(analyticsData.summary?.totalRequests),
+            avg: String(analyticsData.summary?.avgRequestsPerHour),
+          }),
         },
         {
-          label: "Unique IPs",
+          label: t.projects.stats.uniqueIPs,
           value: formatNumber(analyticsData.summary?.uniqueIPs),
           icon: <Users className="size-4" />,
-          subtext: `${analyticsData.summary?.uniqueIPsPercentage}% of total`,
+          subtext: interpolate(t.projects.stats.uniqueIPsSubtext, {
+            pct: String(analyticsData.summary?.uniqueIPsPercentage),
+          }),
         },
         {
-          label: "Avg Response",
+          label: t.projects.stats.avgResponse,
           value: `${analyticsData.performance?.avgResponseTimeMs?.toFixed(2) || "N/A "}ms`,
           icon: <Gauge className="size-4" />,
-          subtext: "Response time",
+          subtext: t.projects.stats.responseTime,
         },
         {
-          label: "Bandwidth Out",
+          label: t.projects.stats.bandwidthOut,
           value: analyticsData.bandwidth?.totalOutFormatted || "N/A",
           icon: <ArrowUpDown className="size-4" />,
-          subtext: `${analyticsData.bandwidth?.totalInFormatted} in`,
+          subtext: interpolate(t.projects.stats.bandwidthInSubtext, {
+            value: analyticsData.bandwidth?.totalInFormatted,
+          }),
         },
       ]
     : [
         {
-          label: "Server Requests",
+          label: t.projects.stats.serverRequests,
           value: isLoadingAnalytics ? "..." : "0",
           icon: <Server className="size-4" />,
-          subtext: isLoadingAnalytics ? "Loading..." : "No traffic recorded yet",
+          subtext: isLoadingAnalytics ? t.projects.stats.loading : t.projects.stats.noTraffic,
         },
         {
-          label: "Unique IPs",
+          label: t.projects.stats.uniqueIPs,
           value: isLoadingAnalytics ? "..." : "0",
           icon: <Users className="size-4" />,
-          subtext: isLoadingAnalytics ? "Loading..." : "No visitors yet",
+          subtext: isLoadingAnalytics ? t.projects.stats.loading : t.projects.stats.noVisitors,
         },
         {
-          label: "Avg Response",
+          label: t.projects.stats.avgResponse,
           value: isLoadingAnalytics ? "..." : "N/A",
           icon: <Gauge className="size-4" />,
-          subtext: isLoadingAnalytics ? "Loading..." : "Waiting for requests",
+          subtext: isLoadingAnalytics ? t.projects.stats.loading : t.projects.stats.waitingRequests,
         },
         {
-          label: "Bandwidth",
+          label: t.projects.stats.bandwidth,
           value: isLoadingAnalytics ? "..." : "0 B",
           icon: <ArrowUpDown className="size-4" />,
-          subtext: isLoadingAnalytics ? "Loading..." : "No transfer yet",
+          subtext: isLoadingAnalytics ? t.projects.stats.loading : t.projects.stats.noTransfer,
         },
       ];
 
@@ -88,9 +97,9 @@ export const MonitoringTab = () => {
     <div className="space-y-5">
       {!isLoadingAnalytics && !hasAnalytics && (
         <div className="rounded-2xl border border-border/50 bg-card px-5 py-4">
-          <p className="text-sm font-medium text-foreground">No monitoring data yet</p>
+          <p className="text-sm font-medium text-foreground">{t.projects.monitoring.noDataTitle}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Analytics will appear here after the deployed app starts receiving traffic.
+            {t.projects.monitoring.noDataDescription}
           </p>
         </div>
       )}

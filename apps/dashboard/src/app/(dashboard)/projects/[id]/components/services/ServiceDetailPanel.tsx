@@ -43,6 +43,7 @@ import { ServiceSettingsForm } from "./ServiceSettingsForm";
 import { TerminalLogs } from "../logs/TerminalLogs";
 import EnvironmentVariables from "@/components/import-project/EnvironmentVariables";
 import { endpoints } from "@/lib/api/endpoints";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type ServiceTab = "overview" | "terminal" | "logs" | "env" | "settings" | "backup";
 const SERVICE_TAB_DEFS: TabDef<ServiceTab>[] = [
@@ -93,6 +94,7 @@ export function ServiceDetailPanel({
 }: ServiceDetailPanelProps) {
   const { baseDomain } = usePlatform();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const { resolvedTheme } = useTheme();
   const { projectData, servicesData } = useProjectSettings();
   const router = useRouter();
@@ -156,11 +158,11 @@ export function ServiceDetailPanel({
       const result = await servicesApi.update(projectId, service.id, {
         environment: envRecordFromRows(envRows),
       });
-      if (!result.success) throw new Error("Failed to save environment");
+      if (!result.success) throw new Error(t.projectDetail.services.detail.toast.envSaveFailed);
       await onRefresh();
-      showToast("Environment updated", "success", service.name);
+      showToast(t.projectDetail.services.detail.toast.envUpdated, "success", service.name);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to save environment", "error");
+      showToast(err instanceof Error ? err.message : t.projectDetail.services.detail.toast.envSaveFailed, "error");
     } finally {
       setEnvSaving(false);
     }
@@ -223,7 +225,7 @@ export function ServiceDetailPanel({
       const res = await backupsApi.runNow(backupPolicy.id);
       setActiveBackupRunId(res.data.runId);
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Backup run failed"));
+      window.alert(getApiErrorMessage(err, t.projectDetail.services.detail.toast.backupRunFailed));
     }
   };
 
@@ -281,7 +283,7 @@ export function ServiceDetailPanel({
   const handleDeployStart = async () => {
     const activeDeploymentId = projectData?.activeDeploymentId;
     if (!activeDeploymentId) {
-      showToast("Deploy the project first, then this service will start", "error", service.name);
+      showToast(t.projectDetail.services.detail.toast.deployFirstStart, "error", service.name);
       return;
     }
     setDeploying(true);
@@ -292,16 +294,16 @@ export function ServiceDetailPanel({
       const res = await deployApi.buildRedeploy(activeDeploymentId);
       if ((res as any)?.success === false) {
         setDeploying(false);
-        showToast((res as any)?.error || "Deploy failed", "error", service.name);
+        showToast((res as any)?.error || t.projectDetail.services.detail.toast.deployFailed, "error", service.name);
         return;
       }
-      showToast(`${service.name} is starting`, "success", "Service");
+      showToast(interpolate(t.projectDetail.services.detail.toast.serviceStarting, { name: service.name }), "success", t.projectDetail.services.detail.toast.serviceTitle);
       // Don't release `deploying` here - buildRedeploy returns immediately
       // while the deploy runs asynchronously on the backend. The polling
       // effect below releases the state once a container shows up.
     } catch (err) {
       setDeploying(false);
-      const msg = err instanceof Error ? err.message : "Deploy failed";
+      const msg = err instanceof Error ? err.message : t.projectDetail.services.detail.toast.deployFailed;
       showToast(msg, "error", service.name);
     }
   };
@@ -318,11 +320,11 @@ export function ServiceDetailPanel({
   const handleRedeployService = async () => {
     const activeDeploymentId = projectData?.activeDeploymentId;
     if (!activeDeploymentId) {
-      showToast("Deploy the project first, then you can redeploy this service", "error", service.name);
+      showToast(t.projectDetail.services.detail.toast.deployFirstRedeploy, "error", service.name);
       return;
     }
     if (!service.enabled) {
-      showToast("Enable the service before redeploying it", "error", service.name);
+      showToast(t.projectDetail.services.detail.toast.enableBeforeRedeploy, "error", service.name);
       return;
     }
     setRedeploying(true);
@@ -330,14 +332,14 @@ export function ServiceDetailPanel({
       const res = await deployApi.trigger({ projectId, serviceIds: [service.id] });
       if ((res as any)?.success === false) {
         setRedeploying(false);
-        showToast((res as any)?.error || "Redeploy failed", "error", service.name);
+        showToast((res as any)?.error || t.projectDetail.services.detail.toast.redeployFailed, "error", service.name);
         return;
       }
       const newId = res?.data?.deployment?.id;
       router.push(newId ? `/build/${newId}` : `/projects/${projectId}/deployments`);
     } catch (err) {
       setRedeploying(false);
-      showToast(err instanceof Error ? err.message : "Redeploy failed", "error", service.name);
+      showToast(err instanceof Error ? err.message : t.projectDetail.services.detail.toast.redeployFailed, "error", service.name);
     }
   };
 
@@ -362,7 +364,7 @@ export function ServiceDetailPanel({
       if (elapsed >= POLL_TIMEOUT) {
         clearInterval(interval);
         setDeploying(false);
-        showToast("Still starting - check the logs for progress", "error", service.name);
+        showToast(t.projectDetail.services.detail.toast.stillStarting, "error", service.name);
       }
     }, POLL_INTERVAL);
 
@@ -375,11 +377,11 @@ export function ServiceDetailPanel({
   const handleUpdateService = async (data: Partial<ServiceInput>) => {
     const result = await servicesApi.update(projectId, service.id, data);
     if (!result.success) {
-      throw new Error("Failed to update service");
+      throw new Error(t.projectDetail.services.detail.toast.updateFailed);
     }
 
     await onRefresh();
-    showToast("Service updated", "success", data.name ?? service.name);
+    showToast(t.projectDetail.services.detail.toast.serviceUpdated, "success", data.name ?? service.name);
   };
 
   const handleDeleteService = async () => {
@@ -387,14 +389,14 @@ export function ServiceDetailPanel({
     try {
       const result = await servicesApi.delete(projectId, service.id);
       if (!result.success) {
-        throw new Error("Failed to delete service");
+        throw new Error(t.projectDetail.services.detail.toast.deleteFailed);
       }
-      showToast("Service deleted", "success", service.name);
+      showToast(t.projectDetail.services.detail.toast.serviceDeleted, "success", service.name);
       setConfirmDelete(false);
       onDeleted?.();
       await onRefresh();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Failed to delete service", "error");
+      showToast(error instanceof Error ? error.message : t.projectDetail.services.detail.toast.deleteFailed, "error");
     } finally {
       setDeleting(false);
     }
@@ -410,7 +412,7 @@ export function ServiceDetailPanel({
           {canSwitchService ? (
             <DropdownMenu
               align="left"
-              triggerClassName="group inline-flex items-center gap-1.5 rounded-lg -ml-1.5 px-1.5 py-0.5 transition-colors hover:bg-muted/50"
+              triggerClassName="group inline-flex items-center gap-1.5 rounded-lg -ms-1.5 px-1.5 py-0.5 transition-colors hover:bg-muted/50"
               trigger={
                 <>
                   <span className="text-xl font-semibold tracking-tight text-foreground">{service.name}</span>
@@ -452,7 +454,11 @@ export function ServiceDetailPanel({
 
       {/* ── Tab strip ──────────────────────────────────────────── */}
       <Tabs
-        tabs={SERVICE_TAB_DEFS.map((t) => (t.key === "backup" ? { ...t, hidden: !supportsBackup } : t))}
+        tabs={SERVICE_TAB_DEFS.map((def) => ({
+          ...def,
+          label: t.projectDetail.services.detail.tabs[def.key],
+          ...(def.key === "backup" ? { hidden: !supportsBackup } : {}),
+        }))}
         value={activeTab}
         onChange={changeTab}
       />
@@ -463,20 +469,20 @@ export function ServiceDetailPanel({
           {/* Network */}
           {(container?.containerId || (service.ports && service.ports.length > 0)) && (
             <div className="bg-card rounded-2xl border border-border/50 p-5">
-              <SectionHeader title="Network" icon={Network} />
+              <SectionHeader title={t.projectDetail.services.detail.network} icon={Network} />
               <div className="space-y-3">
                 {service.ports && service.ports.length > 0 && (
-                  <InfoCard label="Ports" value={service.ports.join(", ")} onCopy={() => copy(service.ports!.join(", "), "ports")} copied={copied === "ports"} />
+                  <InfoCard label={t.projectDetail.services.detail.ports} value={service.ports.join(", ")} onCopy={() => copy(service.ports!.join(", "), "ports")} copied={copied === "ports"} />
                 )}
                 {container?.hostPort && (
-                  <InfoCard label="Host Port" value={String(container.hostPort)} onCopy={() => copy(String(container.hostPort), "hostPort")} copied={copied === "hostPort"} />
+                  <InfoCard label={t.projectDetail.services.detail.hostPort} value={String(container.hostPort)} onCopy={() => copy(String(container.hostPort), "hostPort")} copied={copied === "hostPort"} />
                 )}
                 {container?.ip && (
-                  <InfoCard label="Container IP" value={container.ip} mono onCopy={() => copy(container.ip!, "ip")} copied={copied === "ip"} />
+                  <InfoCard label={t.projectDetail.services.detail.containerIp} value={container.ip} mono onCopy={() => copy(container.ip!, "ip")} copied={copied === "ip"} />
                 )}
                 {container?.containerId && (
                   <InfoCard
-                    label={projectData?.deployTarget === "cloud" ? "Workspace ID" : "Container ID"}
+                    label={projectData?.deployTarget === "cloud" ? t.projectDetail.services.detail.workspaceId : t.projectDetail.services.detail.containerId}
                     // Docker ids are 64 chars — the 12-char short id is enough
                     // to `docker exec`. Cloud workspace ids are short/opaque, so
                     // show them in full (you need the whole thing to find it).
@@ -497,14 +503,14 @@ export function ServiceDetailPanel({
           {/* Configuration */}
           {(service.restart || service.command || (service.dependsOn && service.dependsOn.length > 0)) && (
             <div className="bg-card rounded-2xl border border-border/50 p-5">
-              <SectionHeader title="Configuration" icon={Settings} />
+              <SectionHeader title={t.projectDetail.services.detail.configuration} icon={Settings} />
               <div className="space-y-3">
-                {service.restart && <InfoCard label="Restart Policy" value={service.restart} />}
+                {service.restart && <InfoCard label={t.projectDetail.services.detail.restartPolicy} value={service.restart} />}
                 {service.command && (
-                  <InfoCard label="Command" value={service.command} mono onCopy={() => copy(service.command!, "cmd")} copied={copied === "cmd"} />
+                  <InfoCard label={t.projectDetail.services.detail.command} value={service.command} mono onCopy={() => copy(service.command!, "cmd")} copied={copied === "cmd"} />
                 )}
                 {service.dependsOn && service.dependsOn.length > 0 && (
-                  <InfoCard label="Depends On" value={service.dependsOn.join(", ")} />
+                  <InfoCard label={t.projectDetail.services.detail.dependsOn} value={service.dependsOn.join(", ")} />
                 )}
               </div>
             </div>
@@ -513,7 +519,7 @@ export function ServiceDetailPanel({
           {/* Volumes */}
           {service.volumes && service.volumes.length > 0 && (
             <div className="bg-card rounded-2xl border border-border/50 p-5">
-              <SectionHeader title="Volumes" icon={HardDrive} />
+              <SectionHeader title={t.projectDetail.services.detail.volumes} icon={HardDrive} />
               <div className="space-y-2">
                 {service.volumes.map((vol) => (
                   <div key={vol} className="flex items-center justify-between gap-3 group">
@@ -535,7 +541,7 @@ export function ServiceDetailPanel({
       {/* ── Terminal ───────────────────────────────────────────── */}
       {activeTab === "terminal" && (
         <div className="bg-card rounded-2xl border border-border/50 p-5">
-          <SectionHeader title="Terminal" icon={Terminal} />
+          <SectionHeader title={t.projectDetail.services.detail.terminal} icon={Terminal} />
           <div>
             {status === "running" ? (
               <div className="h-[460px]">
@@ -549,7 +555,7 @@ export function ServiceDetailPanel({
               </div>
             ) : (
               <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-border/40 bg-muted/20 text-sm text-muted-foreground">
-                Start the service to open a shell.
+                {t.projectDetail.services.detail.startShellHint}
               </div>
             )}
           </div>
@@ -592,7 +598,7 @@ export function ServiceDetailPanel({
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {envSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Save environment
+              {t.projectDetail.services.detail.saveEnvironment}
             </button>
           </div>
         </div>
@@ -609,12 +615,12 @@ export function ServiceDetailPanel({
                   <>
                     {status === "running" && (
                       <>
-                        <ActionButton icon={Square} label="Stop" loading={actionLoading === "stop"} onClick={() => handleContainerAction("stop")} variant="danger" />
-                        <ActionButton icon={RotateCw} label="Restart" loading={actionLoading === "restart"} onClick={() => handleContainerAction("restart")} variant="warning" />
+                        <ActionButton icon={Square} label={t.projectDetail.services.detail.stop} loading={actionLoading === "stop"} onClick={() => handleContainerAction("stop")} variant="danger" />
+                        <ActionButton icon={RotateCw} label={t.projectDetail.services.detail.restart} loading={actionLoading === "restart"} onClick={() => handleContainerAction("restart")} variant="warning" />
                       </>
                     )}
                     {status === "stopped" && (
-                      <ActionButton icon={Play} label="Start" loading={actionLoading === "start"} onClick={() => handleContainerAction("start")} variant="success" />
+                      <ActionButton icon={Play} label={t.projectDetail.services.detail.start} loading={actionLoading === "start"} onClick={() => handleContainerAction("start")} variant="success" />
                     )}
                   </>
                 ) : (
@@ -625,7 +631,7 @@ export function ServiceDetailPanel({
                   !service.enabled && (
                     <ActionButton
                       icon={Play}
-                      label={deploying ? "Starting…" : "Enable & start"}
+                      label={deploying ? t.projectDetail.services.detail.starting : t.projectDetail.services.detail.enableAndStart}
                       loading={deploying}
                       onClick={handleDeployStart}
                       variant="success"
@@ -637,7 +643,7 @@ export function ServiceDetailPanel({
                 {service.enabled && projectData?.activeDeploymentId && (
                   <ActionButton
                     icon={Rocket}
-                    label={redeploying ? "Redeploying…" : "Redeploy"}
+                    label={redeploying ? t.projectDetail.services.detail.redeploying : t.projectDetail.services.detail.redeploy}
                     loading={redeploying}
                     onClick={handleRedeployService}
                     variant="primary"
@@ -656,14 +662,14 @@ export function ServiceDetailPanel({
                   }`}
                 >
                   {saving ? <Loader2 className="size-4 animate-spin" /> : <Power className="size-4" />}
-                  {service.enabled ? "Disable Service" : "Enable Service"}
+                  {service.enabled ? t.projectDetail.services.detail.disableService : t.projectDetail.services.detail.enableService}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 ring-1 ring-red-500/10 transition-all"
                 >
                   <Trash2 className="size-4" />
-                  Delete
+                  {t.projectDetail.services.detail.delete}
                 </button>
               </div>
             </div>
@@ -677,11 +683,11 @@ export function ServiceDetailPanel({
       {activeTab === "backup" && supportsBackup && (
         <div className="bg-card rounded-2xl border border-border/50 p-5">
           <SectionHeader
-            title="Backup"
+            title={t.projectDetail.services.detail.backup}
             subtitle={
               backupPolicy
-                ? `${backupPolicy.payloadKind} · ${backupPolicy.cronExpression ? `cron ${backupPolicy.cronExpression}` : "manual only"}${backupPolicy.triggerOnPreDeploy ? " · pre-deploy" : ""}${backupPolicy.webhookToken ? " · webhook" : ""}`
-                : "No backup policy for this service"
+                ? `${backupPolicy.payloadKind} · ${backupPolicy.cronExpression ? interpolate(t.projectDetail.services.detail.backupSubtitle.cron, { expr: backupPolicy.cronExpression }) : t.projectDetail.services.detail.backupSubtitle.manualOnly}${backupPolicy.triggerOnPreDeploy ? ` · ${t.projectDetail.services.detail.backupSubtitle.preDeploy}` : ""}${backupPolicy.webhookToken ? ` · ${t.projectDetail.services.detail.backupSubtitle.webhook}` : ""}`
+                : t.projectDetail.services.detail.backupSubtitle.none
             }
             icon={DatabaseBackup}
           />
@@ -696,14 +702,14 @@ export function ServiceDetailPanel({
                     className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                   >
                     <PlayCircle className="size-3.5" />
-                    Backup now
+                    {t.projectDetail.services.detail.backupNow}
                   </button>
                   <button
                     onClick={() => setBackupEditorOpen(true)}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5 text-xs font-medium hover:bg-muted"
                   >
                     <Settings className="size-3.5" />
-                    Edit policy
+                    {t.projectDetail.services.detail.editPolicy}
                   </button>
                 </>
               ) : (
@@ -712,7 +718,7 @@ export function ServiceDetailPanel({
                   className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5 text-xs font-medium hover:bg-muted"
                 >
                   <Plus className="size-3.5" />
-                  Create policy
+                  {t.projectDetail.services.detail.createPolicy}
                 </button>
               )}
             </div>
@@ -743,9 +749,9 @@ export function ServiceDetailPanel({
             className="w-full max-w-md rounded-2xl border border-border/60 bg-card p-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-foreground">Delete service</h3>
+            <h3 className="text-base font-semibold text-foreground">{t.projectDetail.services.detail.deleteTitle}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              This removes "{service.name}" from the project and cleans up its active container and route.
+              {interpolate(t.projectDetail.services.detail.deleteBody, { name: service.name })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -753,7 +759,7 @@ export function ServiceDetailPanel({
                 disabled={deleting}
                 className="inline-flex h-10 items-center rounded-xl bg-foreground/[0.06] px-4 text-sm font-medium text-foreground transition-colors hover:bg-foreground/[0.1] disabled:opacity-50"
               >
-                Cancel
+                {t.projectDetail.services.detail.deleteCancel}
               </button>
               <button
                 onClick={handleDeleteService}
@@ -761,7 +767,7 @@ export function ServiceDetailPanel({
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
               >
                 {deleting && <Loader2 className="size-4 animate-spin" />}
-                Delete service
+                {t.projectDetail.services.detail.deleteConfirm}
               </button>
             </div>
           </div>
@@ -786,12 +792,14 @@ function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitl
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
+  const labels = t.projectDetail.services.detail.status;
   const map: Record<string, { dot: string; badge: string; label: string }> = {
-    running: { dot: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", label: "Running" },
-    stopped: { dot: "bg-muted-foreground/30", badge: "bg-muted/60 text-muted-foreground/70", label: "Stopped" },
-    disabled: { dot: "bg-muted-foreground/20", badge: "bg-muted/40 text-muted-foreground/50", label: "Disabled" },
-    failed: { dot: "bg-red-500", badge: "bg-red-500/10 text-red-600 dark:text-red-400", label: "Failed" },
-    starting: { dot: "bg-amber-500", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400", label: "Starting" },
+    running: { dot: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", label: labels.running },
+    stopped: { dot: "bg-muted-foreground/30", badge: "bg-muted/60 text-muted-foreground/70", label: labels.stopped },
+    disabled: { dot: "bg-muted-foreground/20", badge: "bg-muted/40 text-muted-foreground/50", label: labels.disabled },
+    failed: { dot: "bg-red-500", badge: "bg-red-500/10 text-red-600 dark:text-red-400", label: labels.failed },
+    starting: { dot: "bg-amber-500", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400", label: labels.starting },
   };
   const s = map[status] ?? map.stopped;
   return (

@@ -1,5 +1,5 @@
 /**
- * Open source - editorial magazine spread. Big headline left, AGPL-3
+ * Open source - editorial magazine spread. Big headline left, Apache 2.0
  * design moment + meta data right. No card grid, no install terminal.
  */
 export function OpenSource() {
@@ -21,7 +21,7 @@ export function OpenSource() {
             <div className="os-cta-row">
               <a
                 className="os-btn os-btn--primary"
-                href="https://github.com/openship/openship"
+                href="https://github.com/oblien/openship"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -29,7 +29,7 @@ export function OpenSource() {
               </a>
               <a
                 className="os-btn os-btn--ghost"
-                href="https://github.com/openship/openship"
+                href="https://github.com/oblien/openship"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -38,14 +38,14 @@ export function OpenSource() {
             </div>
           </div>
 
-          {/* Right - AGPL-3 design moment + meta */}
+          {/* Right - Apache 2.0 design moment + meta */}
           <aside className="os-side">
             <div className="os-license">
               <span className="os-license-eyebrow">Licensed under</span>
-              <span className="os-license-name">AGPL-3.0</span>
+              <span className="os-license-name">Apache 2.0</span>
               <p className="os-license-note">
-                Strong copyleft. The platform stays open for everyone who
-                deploys with it - including the people who fork it.
+                Permissive licensing. Yours to use, modify, and ship
+                anywhere - including in commercial and closed-source products.
               </p>
             </div>
 

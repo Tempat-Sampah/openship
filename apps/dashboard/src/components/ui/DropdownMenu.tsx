@@ -95,7 +95,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute z-50 mt-2 rounded-2xl border border-border/60 bg-popover/70 backdrop-blur-xl shadow-xl shadow-black/[0.08] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${align === "right" ? "right-0" : "left-0"
+          className={`absolute z-50 mt-2 rounded-2xl border border-border/60 bg-popover/70 backdrop-blur-xl shadow-xl shadow-black/[0.08] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${align === "right" ? "end-0" : "start-0"
             }`}
           style={{
             // Frosted-glass surface: `bg-popover/70` (Tailwind v4 color-mix) tints
@@ -117,7 +117,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
                   <button
                     onClick={() => handleActionClick(action)}
                     disabled={action.disabled}
-                    className={`w-full hover:bg-foreground/[0.06] active:bg-foreground/[0.1] px-3 py-2.5 text-left flex items-center gap-3 transition-all duration-200 rounded-xl ${action.disabled
+                    className={`w-full hover:bg-foreground/[0.06] active:bg-foreground/[0.1] px-3 py-2.5 text-start flex items-center gap-3 transition-all duration-200 rounded-xl ${action.disabled
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
                       }`}

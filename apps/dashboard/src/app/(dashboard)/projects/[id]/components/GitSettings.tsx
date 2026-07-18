@@ -22,6 +22,7 @@ import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { useGitHub } from "@/context/GitHubContext";
 import type { GitHubRepo } from "@/context/GitHubContext";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { formatDate } from "@/utils/date";
 import { projectsApi } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api/client";
@@ -32,6 +33,7 @@ export const GitSettings = () => {
   const { gitData, refreshGit, id, projectData, updateProjectData } = useProjectSettings();
   const github = useGitHub();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [isTogglingAutoDeploy, setIsTogglingAutoDeploy] = useState(false);
   const [isTogglingRollback, setIsTogglingRollback] = useState(false);
   const [savingRollbackWindow, setSavingRollbackWindow] = useState(false);
@@ -69,7 +71,7 @@ export const GitSettings = () => {
   const saveCloneToken = async () => {
     const trimmed = cloneTokenInput.trim();
     if (!trimmed) {
-      showToast("Paste a token before saving", "error", "Clone token");
+      showToast(t.projectSettings.git.toast.pasteToken, "error", t.projectSettings.git.toast.cloneTokenTitle);
       return;
     }
     setSavingCloneToken(true);
@@ -78,9 +80,9 @@ export const GitSettings = () => {
       setCloneToken(res);
       setCloneTokenInput("");
       setEditingCloneToken(false);
-      showToast("Project clone token saved", "success", "Clone token");
+      showToast(t.projectSettings.git.toast.tokenSaved, "success", t.projectSettings.git.toast.cloneTokenTitle);
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to save token"), "error", "Clone token");
+      showToast(getApiErrorMessage(error, t.projectSettings.git.toast.tokenSaveFailed), "error", t.projectSettings.git.toast.cloneTokenTitle);
     } finally {
       setSavingCloneToken(false);
     }
@@ -93,9 +95,9 @@ export const GitSettings = () => {
       setCloneToken(res);
       setCloneTokenInput("");
       setEditingCloneToken(false);
-      showToast("Project clone token cleared", "success", "Clone token");
+      showToast(t.projectSettings.git.toast.tokenCleared, "success", t.projectSettings.git.toast.cloneTokenTitle);
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to clear token"), "error", "Clone token");
+      showToast(getApiErrorMessage(error, t.projectSettings.git.toast.tokenClearFailed), "error", t.projectSettings.git.toast.cloneTokenTitle);
     } finally {
       setSavingCloneToken(false);
     }
@@ -114,14 +116,14 @@ export const GitSettings = () => {
       const newState = !gitData.autoDeployEnabled;
       const response = await projectsApi.setAutoDeploy(id, newState);
       if (response.success) {
-        showToast(newState ? "Auto-deploy enabled" : "Auto-deploy disabled", "success");
+        showToast(newState ? t.projectSettings.git.toast.autoDeployEnabled : t.projectSettings.git.toast.autoDeployDisabled, "success");
         await refreshGit();
       } else {
-        showToast(response.error || "Failed to toggle auto-deploy", "error");
+        showToast(response.error || t.projectSettings.git.toast.autoDeployFailed, "error");
         await refreshGit();
       }
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to toggle auto-deploy"), "error");
+      showToast(getApiErrorMessage(error, t.projectSettings.git.toast.autoDeployFailed), "error");
       await refreshGit();
     } finally {
       setIsTogglingAutoDeploy(false);
@@ -137,13 +139,13 @@ export const GitSettings = () => {
       await projectsApi.update(id, { defaultRollbackStrategy: next });
       showToast(
         next === "git"
-          ? "Rollback strategy: Git-driven (no snapshots)"
-          : "Rollback strategy: Snapshot (artifacts retained)",
+          ? t.projectSettings.git.toast.rollbackGit
+          : t.projectSettings.git.toast.rollbackSnapshot,
         "success",
       );
       await refreshGit();
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to update rollback strategy"), "error");
+      showToast(getApiErrorMessage(error, t.projectSettings.git.toast.rollbackStrategyFailed), "error");
     } finally {
       setIsTogglingRollback(false);
     }
@@ -158,11 +160,11 @@ export const GitSettings = () => {
       await projectsApi.update(id, { rollbackWindow: clamped });
       updateProjectData({ rollbackWindow: clamped });
       showToast(
-        `Keeping the last ${clamped} version${clamped === 1 ? "" : "s"} for rollback`,
+        interpolate(clamped === 1 ? t.projectSettings.git.toast.rollbackWindowOne : t.projectSettings.git.toast.rollbackWindowOther, { count: String(clamped) }),
         "success",
       );
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to update rollback history"), "error");
+      showToast(getApiErrorMessage(error, t.projectSettings.git.toast.rollbackHistoryFailed), "error");
     } finally {
       setSavingRollbackWindow(false);
     }
@@ -174,13 +176,13 @@ export const GitSettings = () => {
     try {
       const response = await projectsApi.setWebhookDomain(id, domain);
       if (response.success) {
-        showToast(domain ? `Webhook domain set to ${domain}` : "Webhook domain cleared", "success");
+        showToast(domain ? interpolate(t.projectSettings.git.toast.webhookDomainSet, { domain }) : t.projectSettings.git.toast.webhookDomainCleared, "success");
         await refreshGit();
       } else {
-        showToast(response.error || "Failed to set webhook domain", "error");
+        showToast(response.error || t.projectSettings.git.toast.webhookDomainFailed, "error");
       }
     } catch (error) {
-      showToast(getApiErrorMessage(error, "Failed to set webhook domain"), "error");
+      showToast(getApiErrorMessage(error, t.projectSettings.git.toast.webhookDomainFailed), "error");
     } finally {
       setIsSettingDomain(false);
     }
@@ -206,18 +208,18 @@ export const GitSettings = () => {
       try {
         const result = await projectsApi.linkRepo(id, { owner: ownerLogin, repo: repo.name });
         if (result.success) {
-          showToast(`Linked to ${ownerLogin}/${repo.name}`, "success");
+          showToast(interpolate(t.projectSettings.git.toast.linked, { repo: `${ownerLogin}/${repo.name}` }), "success");
           setShowPicker(false);
           await refreshGit();
         } else if (result.install_url) {
-          showToast(result.error || "GitHub App is not installed for this account", "error");
+          showToast(result.error || t.projectSettings.git.toast.appNotInstalled, "error");
           setShowPicker(false);
           window.open(result.install_url, "_blank", "noopener,noreferrer");
         } else {
-          showToast(result.error || "Failed to link repository", "error");
+          showToast(result.error || t.projectSettings.git.toast.linkFailed, "error");
         }
       } catch (error) {
-        showToast(getApiErrorMessage(error, "Failed to link repository"), "error");
+        showToast(getApiErrorMessage(error, t.projectSettings.git.toast.linkFailed), "error");
       } finally {
         setIsLinking(false);
       }
@@ -230,9 +232,9 @@ export const GitSettings = () => {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted/40">
             <Github className="size-6 text-muted-foreground/50" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-foreground">Connect GitHub first</h3>
+          <h3 className="mt-4 text-base font-semibold text-foreground">{t.projectSettings.git.connectFirst.title}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Link your GitHub account to connect a repository to this project.
+            {t.projectSettings.git.connectFirst.description}
           </p>
           <button
             onClick={() => void github.connect()}
@@ -240,7 +242,7 @@ export const GitSettings = () => {
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-[13px] font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
           >
             {github.connecting ? <Loader2 className="size-4 animate-spin" /> : <Github className="size-4" />}
-            {github.connecting ? "Connecting…" : "Connect GitHub"}
+            {github.connecting ? t.projectSettings.git.connectFirst.connecting : t.projectSettings.git.connectFirst.connect}
           </button>
         </div>
       );
@@ -253,16 +255,16 @@ export const GitSettings = () => {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
             <Github className="size-6 text-primary" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-foreground">Link a Repository</h3>
+          <h3 className="mt-4 text-base font-semibold text-foreground">{t.projectSettings.git.link.title}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Connect a GitHub repository to enable webhook-triggered deployments.
+            {t.projectSettings.git.link.description}
           </p>
           <button
             onClick={() => setShowPicker(true)}
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-[13px] font-medium text-background transition-colors hover:bg-foreground/90"
           >
             <Github className="size-4" />
-            Select Repository
+            {t.projectSettings.git.link.select}
           </button>
         </div>
 
@@ -276,13 +278,13 @@ export const GitSettings = () => {
           overflow="hidden"
         >
           <div className="px-5 py-4 border-b border-border/50">
-            <h2 className="text-base font-semibold text-foreground">Select a repository</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">Choose a repository to link to this project</p>
+            <h2 className="text-base font-semibold text-foreground">{t.projectSettings.git.picker.title}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t.projectSettings.git.picker.description}</p>
           </div>
           {isLinking && (
             <div className="flex items-center gap-2 px-5 py-2.5 bg-primary/5 border-b border-border/50 text-sm text-primary">
               <Loader2 className="size-4 animate-spin" />
-              Linking repository…
+              {t.projectSettings.git.picker.linking}
             </div>
           )}
           <div className="overflow-y-auto" style={{ maxHeight: "calc(80vh - 120px)" }}>
@@ -311,9 +313,9 @@ export const GitSettings = () => {
             <AlertTriangle className="size-4 text-amber-500" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-foreground">GitHub App not installed</h3>
+            <h3 className="text-[14px] font-semibold text-foreground">{t.projectSettings.git.appBanner.title}</h3>
             <p className="mt-0.5 text-[12px] text-muted-foreground">
-              Install the Openship GitHub App on your account or organization to enable auto-deploy and webhook-triggered deployments for cloud projects.
+              {t.projectSettings.git.appBanner.description}
             </p>
             <a
               href={gitData.installUrl}
@@ -322,7 +324,7 @@ export const GitSettings = () => {
               className="mt-3 inline-flex items-center gap-2 rounded-xl bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:bg-foreground/90"
             >
               <Download className="size-4" />
-              Install GitHub App
+              {t.projectSettings.git.appBanner.install}
             </a>
           </div>
         </div>
@@ -335,9 +337,9 @@ export const GitSettings = () => {
             <Globe className="size-4 text-blue-500" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-foreground">Enable auto-deploy</h3>
+            <h3 className="text-[14px] font-semibold text-foreground">{t.projectSettings.git.webhookBanner.title}</h3>
             <p className="mt-0.5 text-[12px] text-muted-foreground">
-              Auto-deploy needs a direct webhook endpoint. Expose this Openship API on a public URL or configure a verified webhook domain for direct delivery.
+              {t.projectSettings.git.webhookBanner.description}
             </p>
           </div>
         </div>
@@ -345,13 +347,13 @@ export const GitSettings = () => {
 
       <div className="space-y-5">
         <SectionCard
-          title="Source Repository"
-          description="Git integration, deployment triggers, and repository health"
+          title={t.projectSettings.git.source.title}
+          description={t.projectSettings.git.source.description}
           icon={Github}
           iconTone="primary"
         >
           <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
-            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70">Repository</div>
+            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70">{t.projectSettings.git.source.repository}</div>
             <div className="mt-2 flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-semibold text-foreground">{gitData.repository.name}</div>
@@ -367,7 +369,7 @@ export const GitSettings = () => {
                 className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-foreground/[0.06] px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1]"
               >
                 <ExternalLink className="size-3.5" />
-                Open
+                {t.projectSettings.git.source.open}
               </a>
             </div>
           </div>
@@ -386,11 +388,11 @@ export const GitSettings = () => {
                       <Globe className="size-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium text-foreground">Webhook Endpoint</p>
+                      <p className="text-[13px] font-medium text-foreground">{t.projectSettings.git.webhookEndpoint.title}</p>
                       <p className="mt-0.5 text-[12px] text-muted-foreground">
                         {gitData.webhookDomain
-                          ? "GitHub delivers push events directly to this domain"
-                          : "Choose a domain for direct webhook delivery"
+                          ? t.projectSettings.git.webhookEndpoint.descriptionSet
+                          : t.projectSettings.git.webhookEndpoint.descriptionUnset
                         }
                       </p>
                       <div className="relative mt-2">
@@ -398,34 +400,34 @@ export const GitSettings = () => {
                           type="button"
                           onClick={() => setShowDomainMenu(!showDomainMenu)}
                           disabled={isSettingDomain}
-                          className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-left text-[13px] transition-colors hover:border-border disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-start text-[13px] transition-colors hover:border-border disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <span className={gitData.webhookDomain ? "text-foreground" : "text-muted-foreground"}>
-                            {isSettingDomain ? "Updating..." : gitData.webhookDomain || "Select domain..."}
+                            {isSettingDomain ? t.projectSettings.git.webhookEndpoint.updating : gitData.webhookDomain || t.projectSettings.git.webhookEndpoint.select}
                           </span>
                           {isSettingDomain ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : <ChevronDown className="size-3.5 text-muted-foreground" />}
                         </button>
                         {showDomainMenu && (
-                          <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-border/60 bg-popover shadow-lg">
+                          <div className="absolute start-0 end-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-border/60 bg-popover shadow-lg">
                             {gitData.verifiedDomains.map((d) => (
                               <button
                                 key={d.hostname}
                                 type="button"
                                 onClick={() => handleSetWebhookDomain(d.hostname)}
-                                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors hover:bg-muted/50 ${gitData.webhookDomain === d.hostname ? "bg-primary/5 text-primary" : "text-foreground"}`}
+                                className={`flex w-full items-center gap-2 px-3 py-2 text-start text-[13px] transition-colors hover:bg-muted/50 ${gitData.webhookDomain === d.hostname ? "bg-primary/5 text-primary" : "text-foreground"}`}
                               >
                                 <Globe className="size-3.5 shrink-0" />
                                 {d.hostname}
-                                {d.ssl && <span className="ml-auto text-[11px] text-emerald-500">SSL</span>}
+                                {d.ssl && <span className="ms-auto text-[11px] text-emerald-500">SSL</span>}
                               </button>
                             ))}
                             {gitData.webhookDomain && (
                               <button
                                 type="button"
                                 onClick={() => handleSetWebhookDomain(null)}
-                                className="flex w-full items-center gap-2 border-t border-border/30 px-3 py-2 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted/50"
+                                className="flex w-full items-center gap-2 border-t border-border/30 px-3 py-2 text-start text-[13px] text-muted-foreground transition-colors hover:bg-muted/50"
                               >
-                                Clear selection
+                                {t.projectSettings.git.webhookEndpoint.clear}
                               </button>
                             )}
                           </div>
@@ -439,14 +441,14 @@ export const GitSettings = () => {
               <div className="grid gap-3 sm:grid-cols-2">
                 <InfoCard
                   icon={Zap}
-                  title="Auto Deploy"
-                  value={gitData.autoDeployEnabled ? "Enabled" : "Disabled"}
+                  title={t.projectSettings.git.autoDeployCard.title}
+                  value={gitData.autoDeployEnabled ? t.projectSettings.git.autoDeployCard.enabled : t.projectSettings.git.autoDeployCard.disabled}
                   description={
                     gitData.autoDeployEnabled
                       ? gitData.webhookStrategy === "domain"
-                          ? `Pushes deliver to ${gitData.webhookDomain}`
-                          : "Pushes trigger deployments automatically"
-                      : "Deployments must be started manually"
+                          ? interpolate(t.projectSettings.git.autoDeployCard.descDelivers, { domain: String(gitData.webhookDomain ?? "") })
+                          : t.projectSettings.git.autoDeployCard.descAuto
+                      : t.projectSettings.git.autoDeployCard.descManual
                   }
                   action={
                     <button
@@ -462,42 +464,42 @@ export const GitSettings = () => {
                           <Loader2 className="size-3.5 animate-spin text-background" />
                         </span>
                       ) : (
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${gitData.autoDeployEnabled ? "translate-x-6" : "translate-x-1"}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${gitData.autoDeployEnabled ? "translate-x-6 rtl:-translate-x-6" : "translate-x-1 rtl:-translate-x-1"}`} />
                       )}
                     </button>
                   }
                 />
                 <InfoCard
                   icon={Webhook}
-                  title="Webhook"
+                  title={t.projectSettings.git.webhookCard.title}
                   value={
                     gitData.webhookStrategy === "domain" && gitData.webhookActive
-                      ? "Direct"
+                      ? t.projectSettings.git.webhookCard.direct
                       : gitData.webhookActive
-                          ? "Active"
-                          : "Inactive"
+                          ? t.projectSettings.git.webhookCard.active
+                          : t.projectSettings.git.webhookCard.inactive
                   }
                   description={
                     gitData.webhookStrategy === "domain" && gitData.webhookActive
-                      ? `Events deliver directly via ${gitData.webhookDomain}`
+                      ? interpolate(t.projectSettings.git.webhookCard.descDirect, { domain: String(gitData.webhookDomain ?? "") })
                       : gitData.webhookActive
-                          ? "Repository events are reaching Openship"
-                          : "Webhook has not been configured or is not responding"
+                          ? t.projectSettings.git.webhookCard.descActive
+                          : t.projectSettings.git.webhookCard.descInactive
                   }
                   tone={gitData.webhookActive ? "success" : "neutral"}
                 />
                 <InfoCard
                   icon={RotateCcw}
-                  title="Rollback strategy"
+                  title={t.projectSettings.git.rollbackStrategy.title}
                   value={
                     (gitData.defaultRollbackStrategy ?? "git") === "git"
-                      ? "Rebuild (git)"
-                      : "Instant (snapshot)"
+                      ? t.projectSettings.git.rollbackStrategy.rebuild
+                      : t.projectSettings.git.rollbackStrategy.instant
                   }
                   description={
                     (gitData.defaultRollbackStrategy ?? "git") === "git"
-                      ? "Rollback re-clones & rebuilds the old commit — cheaper, but slower and can fail if that commit no longer builds."
-                      : "Keeps each version's build artifact on disk for rollback in seconds. Uses extra disk, capped by the history limit."
+                      ? t.projectSettings.git.rollbackStrategy.descRebuild
+                      : t.projectSettings.git.rollbackStrategy.descInstant
                   }
                   action={
                     <button
@@ -507,14 +509,14 @@ export const GitSettings = () => {
                       onClick={handleRollbackStrategyToggle}
                       disabled={isTogglingRollback}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${(gitData.defaultRollbackStrategy ?? "git") === "snapshot" ? "bg-primary" : "bg-muted"} ${isTogglingRollback ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-                      aria-label="Toggle snapshot retention"
+                      aria-label={t.projectSettings.git.rollbackStrategy.toggleAria}
                     >
                       {isTogglingRollback ? (
                         <span className="mx-auto">
                           <Loader2 className="size-3.5 animate-spin text-background" />
                         </span>
                       ) : (
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${(gitData.defaultRollbackStrategy ?? "git") === "snapshot" ? "translate-x-6" : "translate-x-1"}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${(gitData.defaultRollbackStrategy ?? "git") === "snapshot" ? "translate-x-6 rtl:-translate-x-6" : "translate-x-1 rtl:-translate-x-1"}`} />
                       )}
                     </button>
                   }
@@ -525,12 +527,12 @@ export const GitSettings = () => {
                   return (
                     <InfoCard
                       icon={RotateCcw}
-                      title="Rollback history"
-                      value={`${windowVal} version${windowVal === 1 ? "" : "s"}`}
+                      title={t.projectSettings.git.rollbackHistory.title}
+                      value={interpolate(windowVal === 1 ? t.projectSettings.git.rollbackHistory.valueOne : t.projectSettings.git.rollbackHistory.valueOther, { count: String(windowVal) })}
                       description={
                         isSnapshot
-                          ? "How many recent versions keep their build artifact for rollback. Older ones are pruned to reclaim disk."
-                          : "Applies only to Instant (snapshot) mode — Git mode keeps no artifacts to retain."
+                          ? t.projectSettings.git.rollbackHistory.descSnapshot
+                          : t.projectSettings.git.rollbackHistory.descGit
                       }
                       action={
                         <div className="flex items-center gap-1.5">
@@ -539,7 +541,7 @@ export const GitSettings = () => {
                             onClick={() => handleRollbackWindowChange(windowVal - 1)}
                             disabled={!isSnapshot || savingRollbackWindow || windowVal <= 0}
                             className="flex h-6 w-6 items-center justify-center rounded-md border border-border/60 text-foreground transition-colors enabled:hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="Decrease rollback history"
+                            aria-label={t.projectSettings.git.rollbackHistory.decreaseAria}
                           >
                             −
                           </button>
@@ -555,7 +557,7 @@ export const GitSettings = () => {
                             onClick={() => handleRollbackWindowChange(windowVal + 1)}
                             disabled={!isSnapshot || savingRollbackWindow || windowVal >= 20}
                             className="flex h-6 w-6 items-center justify-center rounded-md border border-border/60 text-foreground transition-colors enabled:hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="Increase rollback history"
+                            aria-label={t.projectSettings.git.rollbackHistory.increaseAria}
                           >
                             +
                           </button>
@@ -570,15 +572,15 @@ export const GitSettings = () => {
         </SectionCard>
 
         <SectionCard
-          title="Recent Commits"
-          description={`Latest commits on ${gitData.branch || 'main'}`}
+          title={t.projectSettings.git.commits.title}
+          description={interpolate(t.projectSettings.git.commits.subtitle, { branch: gitData.branch || 'main' })}
           icon={GitCommit}
           iconTone="orange"
         >
           {gitData.recentCommits.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border/60 bg-muted/15 px-4 py-5 text-center">
-              <p className="text-sm font-medium text-foreground">No commits found</p>
-              <p className="mt-1 text-sm text-muted-foreground">Push to your repository and recent commit activity will appear here.</p>
+              <p className="text-sm font-medium text-foreground">{t.projectSettings.git.commits.empty}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t.projectSettings.git.commits.emptyDesc}</p>
             </div>
           ) : (
             <>
@@ -616,7 +618,7 @@ export const GitSettings = () => {
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-primary transition-colors hover:text-primary/80"
               >
-                View all commits on GitHub
+                {t.projectSettings.git.commits.viewAll}
                 <ExternalLink className="size-3.5" />
               </a>
             </>
@@ -624,20 +626,20 @@ export const GitSettings = () => {
         </SectionCard>
 
         <SectionCard
-          title="Clone Token Override"
-          description="Project-scoped token used by the clone module before falling back to your global token or the GitHub App"
+          title={t.projectSettings.git.cloneToken.title}
+          description={t.projectSettings.git.cloneToken.description}
           icon={Key}
           iconTone="primary"
         >
           {cloneTokenLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
-              Loading…
+              {t.projectSettings.git.cloneToken.loading}
             </div>
           ) : (!cloneToken?.hasToken || editingCloneToken) ? (
             <div className="space-y-2.5">
               <p className="text-[13px] text-muted-foreground">
-                Paste a GitHub PAT here to use ONLY for this project. Highest priority in the clone chain - overrides your settings-level token and the GitHub App.
+                {t.projectSettings.git.cloneToken.explainer}
               </p>
               <div className="relative">
                 <input
@@ -647,13 +649,13 @@ export const GitSettings = () => {
                   placeholder="ghp_… or github_pat_…"
                   spellCheck={false}
                   autoComplete="off"
-                  className="h-10 w-full rounded-xl border border-border/50 bg-muted/20 px-3 pr-10 text-sm font-mono text-foreground outline-none transition-colors focus:border-primary/40"
+                  className="h-10 w-full rounded-xl border border-border/50 bg-muted/20 px-3 pe-10 text-sm font-mono text-foreground outline-none transition-colors focus:border-primary/40"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCloneToken((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
-                  aria-label={showCloneToken ? "Hide token" : "Show token"}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+                  aria-label={showCloneToken ? t.projectSettings.git.cloneToken.hide : t.projectSettings.git.cloneToken.show}
                 >
                   {showCloneToken ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                 </button>
@@ -666,7 +668,7 @@ export const GitSettings = () => {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3.5 py-2 text-[13px] font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-50"
                 >
                   {savingCloneToken ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-                  Save token
+                  {t.projectSettings.git.cloneToken.saveToken}
                 </button>
                 {editingCloneToken && (
                   <button
@@ -678,7 +680,7 @@ export const GitSettings = () => {
                     disabled={savingCloneToken}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-foreground/[0.06] px-3.5 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1]"
                   >
-                    Cancel
+                    {t.projectSettings.git.cloneToken.cancel}
                   </button>
                 )}
               </div>
@@ -686,9 +688,9 @@ export const GitSettings = () => {
           ) : (
             <div className="rounded-xl border border-border/50 bg-muted/15 p-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">Token saved for this project</p>
+                <p className="text-sm font-medium text-foreground">{t.projectSettings.git.cloneToken.savedTitle}</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Last updated {cloneToken.setAt ? new Date(cloneToken.setAt).toLocaleString() : "just now"}
+                  {interpolate(t.projectSettings.git.cloneToken.lastUpdated, { when: cloneToken.setAt ? new Date(cloneToken.setAt).toLocaleString() : t.projectSettings.git.cloneToken.justNow })}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -697,7 +699,7 @@ export const GitSettings = () => {
                   onClick={() => setEditingCloneToken(true)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-foreground/[0.06] px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-foreground/[0.1]"
                 >
-                  Replace
+                  {t.projectSettings.git.cloneToken.replace}
                 </button>
                 <button
                   type="button"
@@ -706,7 +708,7 @@ export const GitSettings = () => {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] font-medium text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400 disabled:opacity-50"
                 >
                   <Trash2 className="size-3" />
-                  Clear
+                  {t.projectSettings.git.cloneToken.clear}
                 </button>
               </div>
             </div>

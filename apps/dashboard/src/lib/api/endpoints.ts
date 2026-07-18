@@ -19,6 +19,7 @@ export const endpoints = {
     environments: (id: string | number) => `projects/${id}/environments`,
     options: (id: string | number) => `projects/${id}/options`,
     toggle: (id: string | number, action: "enable" | "disable") => `projects/${id}/${action}`,
+    retryRouting: (id: string | number) => `projects/${id}/routing/retry`,
     clearCache: (id: string | number) => `projects/${id}/clear-cache`,
     clearBuild: (id: string | number) => `projects/${id}/clear-build`,
     deploymentSession: (id: string | number) => `projects/${id}/deployment-session`,

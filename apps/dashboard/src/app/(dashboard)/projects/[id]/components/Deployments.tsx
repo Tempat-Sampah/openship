@@ -3,23 +3,47 @@
 import React from "react";
 import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { DeploymentsContent } from "@/app/(dashboard)/deployments/components";
-import { deployApi, projectsApi, isAbortError } from "@/lib/api";
+import { deployApi, projectsApi, isAbortError, getApiErrorMessage } from "@/lib/api";
 import { type Service } from "@/lib/api/services";
 import { useModal } from "@/context/ModalContext";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { useRouter } from "next/navigation";
 import { Rocket, ChevronDown, RefreshCw, Layers } from "lucide-react";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import WarningCallout from "@/components/shared/WarningCallout";
 
 export const Deployments = () => {
-  const { id, projectData, setActiveTab, servicesData, refreshServices, hasMultipleServices } =
+  const { id, projectData, setActiveTab, servicesData, refreshServices, hasMultipleServices, updateProjectData } =
     useProjectSettings();
+  const { t } = useI18n();
   const { showToast } = useToast();
   const { showModal, hideModal } = useModal();
   const router = useRouter();
 
   const [isRedeploying, setIsRedeploying] = React.useState(false);
+  const [isRetryingRoute, setIsRetryingRoute] = React.useState(false);
+
+  /** Re-run just the free .opsh.io edge-route sync (no rebuild). On success the
+   *  routing warning clears and the project flips back to Live; on failure the
+   *  same guidance is re-surfaced as an error toast. */
+  const handleRetryRouting = async () => {
+    if (!projectData?.id || isRetryingRoute) return;
+    setIsRetryingRoute(true);
+    try {
+      const res = await projectsApi.retryRouting(projectData.id);
+      if (res?.ok) {
+        updateProjectData({ routingUnsynced: false });
+        showToast(t.projects.routingRetry.success, "success", t.projects.routingRetry.title);
+      } else {
+        showToast(res?.warning || res?.error || t.projects.routingRetry.failed, "error", t.projects.routingRetry.title);
+      }
+    } catch (err) {
+      showToast(getApiErrorMessage(err) || t.projects.routingRetry.failed, "error", t.projects.routingRetry.title);
+    } finally {
+      setIsRetryingRoute(false);
+    }
+  };
 
   // "Project outdated" banner: branch HEAD vs the active deployment's commit.
   // Fetched on-demand; conservative (only shows when we positively know the
@@ -89,21 +113,21 @@ export const Deployments = () => {
       // slow to return the id — show the deployments list so it's visible rather
       // than stranding the user on an error.
       if (isAbortError(error)) {
-        showToast("Deploy started — taking longer than usual, opening deployments.", "success", "Deploying");
+        showToast(t.projects.redeploy.deployStartedLong, "success", t.projects.redeploy.deployingTitle);
         router.push(`/projects/${projectData.id}/deployments`);
         return;
       }
       console.error("Redeploy failed:", error);
       showToast(
         mode === "refresh"
-          ? "Could not refresh the deployment. Check the deployment log for details."
-          : "Could not start redeployment. Check the deployment log for details.",
+          ? t.projects.redeploy.couldNotRefresh
+          : t.projects.redeploy.couldNotRedeploy,
         "error",
-        "Error",
+        t.projects.redeploy.errorTitle,
       );
       setIsRedeploying(false); // success navigates away; only clear on failure
     }
-  }, [projectData?.id, router, showToast]);
+  }, [projectData?.id, router, showToast, t]);
 
   const handleRedeploy = async () => {
     if (!projectData?.id || isRedeploying) return;
@@ -120,15 +144,13 @@ export const Deployments = () => {
             customContent: (
               <div className="p-6">
                 <WarningCallout
-                  title="No public domain is connected"
-                  description={
-                    <>
-                      This project has {candidateServices.length} service
-                      {candidateServices.length !== 1 ? "s" : ""} with exposed ports, but none are
-                      configured with a reachable domain. If you deploy now, the stack can run
-                      internally, but users will not be able to access it from a public URL.
-                    </>
-                  }
+                  title={t.projects.redeploy.noPublicDomainTitle}
+                  description={interpolate(
+                    candidateServices.length === 1
+                      ? t.projects.redeploy.noPublicDomainDescOne
+                      : t.projects.redeploy.noPublicDomainDescOther,
+                    { count: String(candidateServices.length) },
+                  )}
                   actions={
                     <>
                       <button
@@ -139,7 +161,7 @@ export const Deployments = () => {
                           setActiveTab("services");
                         }}
                       >
-                        Open Services
+                        {t.projects.redeploy.openServices}
                       </button>
                       <button
                         type="button"
@@ -149,19 +171,19 @@ export const Deployments = () => {
                           await runRedeploy();
                         }}
                       >
-                        Deploy anyway
+                        {t.projects.redeploy.deployAnyway}
                       </button>
                     </>
                   }
                 >
                   <div className="mt-3 rounded-xl border border-border/50 bg-background/40 p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
-                      Suggested fix
+                      {t.projects.redeploy.suggestedFix}
                     </p>
-                    <ul className="mt-1.5 list-disc space-y-1 pl-5 text-[12px] text-muted-foreground">
-                      <li>Open the Services tab.</li>
-                      <li>Pick the service that should be public.</li>
-                      <li>Enable domain exposure and choose the public port.</li>
+                    <ul className="mt-1.5 list-disc space-y-1 ps-5 text-[12px] text-muted-foreground">
+                      <li>{t.projects.redeploy.fixStep1}</li>
+                      <li>{t.projects.redeploy.fixStep2}</li>
+                      <li>{t.projects.redeploy.fixStep3}</li>
                     </ul>
                   </div>
                 </WarningCallout>
@@ -178,7 +200,7 @@ export const Deployments = () => {
       await runRedeploy();
     } catch (error) {
       console.error("Error redeploying project:", error);
-      showToast("Failed to start redeployment", "error", "Error");
+      showToast(t.projects.redeploy.failedRedeploy, "error", t.projects.redeploy.errorTitle);
     } finally {
       setIsRedeploying(false);
     }
@@ -186,21 +208,41 @@ export const Deployments = () => {
 
   return (
     <div className="space-y-6">
+      {/* Routing-not-synced nudge — the release is live on the server but its
+          free .opsh.io edge route didn't sync. A dedicated Retry re-runs just
+          the edge sync (no rebuild); on success the warning clears. */}
+      {projectData.routingUnsynced && !projectData.awaitingDecision && (
+        <WarningCallout
+          title={t.projects.routingRetry.title}
+          description={t.projects.routingRetry.description}
+          actions={
+            <button
+              type="button"
+              onClick={handleRetryRouting}
+              disabled={isRetryingRoute}
+              className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-60"
+            >
+              {isRetryingRoute ? t.projects.routingRetry.retrying : t.projects.routingRetry.retry}
+            </button>
+          }
+        />
+      )}
+
       {/* Action-required nudge — the live release is a partial-failure deploy
           still awaiting a keep/reject decision. Links to the build screen where
           the decision (Keep / Retry / Reject) lives, so it stays reachable after
           navigating away. */}
       {projectData.awaitingDecision && projectData.activeDeploymentId && (
         <WarningCallout
-          title="Action required — some services failed"
-          description="This project's latest release deployed with failed services and is waiting for you to keep or reject it."
+          title={t.projects.redeploy.actionRequiredTitle}
+          description={t.projects.redeploy.actionRequiredDescription}
           actions={
             <button
               type="button"
               onClick={() => router.push(`/build/${projectData.activeDeploymentId}`)}
               className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-amber-700"
             >
-              Review deployment
+              {t.projects.redeploy.reviewDeployment}
             </button>
           }
         />
@@ -210,17 +252,17 @@ export const Deployments = () => {
           branch HEAD. Redeploy uses the same direct path as the button below. */}
       {commitStatus?.behind && (
         <WarningCallout
-          title="New commit available"
+          title={t.projects.redeploy.newCommitTitle}
           description={
             <>
               <span className="font-mono text-foreground/80">
                 {commitStatus.latestSha?.slice(0, 7)}
               </span>
-              {commitStatus.latestMessage ? ` · ${commitStatus.latestMessage}` : ""} on{" "}
+              {commitStatus.latestMessage ? ` · ${commitStatus.latestMessage}` : ""} {t.projects.redeploy.newCommitOn}{" "}
               <span className="font-mono text-foreground/80">{commitStatus.branch}</span>
               {commitStatus.deployedSha ? (
                 <>
-                  {" "}— you're deployed on{" "}
+                  {" "}{t.projects.redeploy.newCommitDeployedOn}{" "}
                   <span className="font-mono text-foreground/80">
                     {commitStatus.deployedSha.slice(0, 7)}
                   </span>
@@ -238,7 +280,7 @@ export const Deployments = () => {
               disabled={isRedeploying}
               className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
-              {isRedeploying ? "Deploying…" : "Redeploy latest"}
+              {isRedeploying ? t.projects.redeploy.deploying : t.projects.redeploy.redeployLatest}
             </button>
           }
         />
@@ -251,11 +293,11 @@ export const Deployments = () => {
               <Rocket className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Deploy Latest Changes</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t.projects.redeploy.deployLatestTitle}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 {hasMultipleServices
-                  ? "Pulls the latest commit and rebuilds only the services whose files changed since the last deploy."
-                  : "Pulls the latest commit and redeploys using the current configuration."}
+                  ? t.projects.redeploy.deployLatestMulti
+                  : t.projects.redeploy.deployLatestSingle}
               </p>
             </div>
           </div>
@@ -268,7 +310,7 @@ export const Deployments = () => {
               disabled={isRedeploying}
               className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/50"
             >
-              {isRedeploying ? "Deploying..." : "Redeploy Project"}
+              {isRedeploying ? t.projects.redeploy.deployingButton : t.projects.redeploy.redeployProject}
             </button>
             <DropdownMenu
               align="right"
@@ -278,7 +320,7 @@ export const Deployments = () => {
               actions={[
                 {
                   id: "refresh",
-                  label: "Refresh env",
+                  label: t.projects.redeploy.refreshEnv,
                   icon: <RefreshCw className="size-4" />,
                   onClick: () => runRedeploy("refresh"),
                 },
@@ -286,7 +328,7 @@ export const Deployments = () => {
                   ? [
                       {
                         id: "rebuild",
-                        label: "Rebuild all",
+                        label: t.projects.redeploy.rebuildAll,
                         icon: <Layers className="size-4" />,
                         onClick: () => runRedeploy("all"),
                       },

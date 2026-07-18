@@ -6,20 +6,20 @@ import { settingsApi } from "@/lib/api";
 import type { BuildMode } from "@/lib/api/settings";
 import { useToast } from "@/context/ToastContext";
 import { SettingsSection } from "./SettingsSection";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 const BUILD_MODES: {
   value: BuildMode;
-  label: string;
-  desc: string;
   icon: React.ElementType;
 }[] = [
-  { value: "auto", label: "Auto", desc: "Smart per-framework", icon: Zap },
-  { value: "server", label: "Server", desc: "Build on remote", icon: Server },
-  { value: "local", label: "Local", desc: "Build on machine", icon: Laptop },
+  { value: "auto", icon: Zap },
+  { value: "server", icon: Server },
+  { value: "local", icon: Laptop },
 ];
 
 export function BuildPreferences() {
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [buildMode, setBuildMode] = useState<BuildMode>("auto");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,10 +47,10 @@ export function BuildPreferences() {
     setSaving(true);
     try {
       await settingsApi.updateBuildMode(mode);
-      showToast(`Build mode set to ${mode}`, "success", "Settings");
+      showToast(interpolate(t.settings.buildPreferences.toast.setTo, { mode }), "success", t.settings.common.toast.settings);
     } catch {
       setBuildMode(prev);
-      showToast("Failed to update build mode", "error", "Settings");
+      showToast(t.settings.buildPreferences.toast.failed, "error", t.settings.common.toast.settings);
     } finally {
       setSaving(false);
     }
@@ -59,31 +59,32 @@ export function BuildPreferences() {
   return (
     <SettingsSection
       icon={Settings2}
-      title="Build Preferences"
-      description="Control how your projects are built and deployed"
+      title={t.settings.buildPreferences.title}
+      description={t.settings.buildPreferences.description}
       iconBg="bg-orange-500/10"
       iconColor="text-orange-500"
+      collapsible
+      defaultOpen={false}
     >
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
           <Loader2 className="size-4 animate-spin" />
-          Loading preferences…
+          {t.settings.buildPreferences.loading}
         </div>
       ) : (
         <>
           <p className="text-sm text-muted-foreground mb-4">
-            Choose the default build strategy for new deployments. Per-project
-            overrides are available in project settings.
+            {t.settings.buildPreferences.intro}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {BUILD_MODES.map(({ value, label, desc, icon: ModeIcon }) => {
+            {BUILD_MODES.map(({ value, icon: ModeIcon }) => {
               const active = buildMode === value;
               return (
                 <button
                   key={value}
                   onClick={() => handleChange(value)}
                   disabled={saving}
-                  className={`relative text-left rounded-xl border p-4 transition-all ${
+                  className={`relative text-start rounded-xl border p-4 transition-all ${
                     active
                       ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
                       : "border-border/50 bg-card hover:bg-muted/40 hover:border-border"
@@ -92,10 +93,10 @@ export function BuildPreferences() {
                   <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
                     <ModeIcon className="size-4 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium text-foreground">{label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                  <p className="text-sm font-medium text-foreground">{t.settings.buildPreferences.modes[value].label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t.settings.buildPreferences.modes[value].desc}</p>
                   {active && (
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 end-3">
                       <Check className="size-4 text-primary" />
                     </div>
                   )}

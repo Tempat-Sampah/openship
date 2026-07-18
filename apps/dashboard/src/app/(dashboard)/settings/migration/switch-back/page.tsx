@@ -33,6 +33,7 @@ import {
 import { migrationApi, api, getApiErrorMessage } from "@/lib/api";
 import type { SwitchBackResult } from "@/lib/api/migration";
 import { useToast } from "@/context/ToastContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 type TeamMode =
   | "single_user"
@@ -48,6 +49,15 @@ interface InstanceState {
 export default function SwitchBackPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useI18n();
+  const modeLabel = (mode: TeamMode) =>
+    mode === "self_hosted_remote"
+      ? t.settings.switchBack.modeServer
+      : mode === "cloud_hosted"
+        ? t.settings.switchBack.modeCloud
+        : mode === "tunneled"
+          ? t.settings.switchBack.modeTunnel
+          : mode;
   const [state, setState] = useState<InstanceState | null>(null);
   const [loading, setLoading] = useState(true);
   const [abandonRemote, setAbandonRemote] = useState(false);
@@ -66,13 +76,13 @@ export default function SwitchBackPage() {
         });
       })
       .catch((err) =>
-        showToast(getApiErrorMessage(err, "Failed to load state"), "error", "Switch back"),
+        showToast(getApiErrorMessage(err, t.settings.switchBack.toastLoadStateFailed), "error", t.settings.common.toast.switchBack),
       )
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [showToast]);
+  }, [showToast, t]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -83,12 +93,12 @@ export default function SwitchBackPage() {
       const apiErr = err as { status?: number };
       if (apiErr.status === 502 && !abandonRemote) {
         showToast(
-          "Remote unreachable. Tick \"don't pull remote data\" to switch back anyway.",
+          t.settings.switchBack.toastRemoteUnreachable,
           "error",
-          "Switch back",
+          t.settings.common.toast.switchBack,
         );
       } else {
-        showToast(getApiErrorMessage(err, "Switch back failed"), "error", "Switch back");
+        showToast(getApiErrorMessage(err, t.settings.switchBack.toastSwitchBackFailed), "error", t.settings.common.toast.switchBack);
       }
     } finally {
       setSubmitting(false);
@@ -112,10 +122,10 @@ export default function SwitchBackPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground">
-              Nothing to switch back
+              {t.settings.switchBack.nothingTitle}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              This instance is already in single-user mode.
+              {t.settings.switchBack.nothingBody}
             </p>
           </div>
           <button
@@ -123,7 +133,7 @@ export default function SwitchBackPage() {
             onClick={() => router.push("/")}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open dashboard
+            {t.settings.switchBack.openDashboard}
           </button>
         </div>
       </div>
@@ -138,12 +148,14 @@ export default function SwitchBackPage() {
             <CheckCircle2 className="size-6 text-emerald-500 shrink-0 mt-0.5" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                Back to single-user
+                {t.settings.switchBack.resultTitle}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {result.syncedFromRemote
-                  ? `Restored ${result.rowsRestored.toLocaleString()} rows from the remote (${result.previousMode}).`
-                  : `Local mode restored. ${result.previousMode === "tunneled" ? "Tunnel torn down — your data was never moved." : "Remote data left intact for the 30-day grace period."}`}
+                  ? interpolate(t.settings.switchBack.resultRestored, { rows: result.rowsRestored.toLocaleString(), mode: result.previousMode })
+                  : result.previousMode === "tunneled"
+                    ? t.settings.switchBack.resultLocalTunnel
+                    : t.settings.switchBack.resultLocalGrace}
               </p>
             </div>
           </div>
@@ -152,16 +164,18 @@ export default function SwitchBackPage() {
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-4 space-y-2">
               <div className="flex items-center gap-2 text-amber-500">
                 <AlertTriangle className="size-4" />
-                <p className="text-sm font-medium">Re-link credentials</p>
+                <p className="text-sm font-medium">{t.settings.switchBack.relinkTitle}</p>
               </div>
               <p className="text-xs text-muted-foreground">
-                Encrypted columns are stripped on cross-host moves. Re-link these
-                before they're needed again:
+                {t.settings.switchBack.relinkBody}
               </p>
               <ul className="space-y-1 text-xs">
                 {result.strippedEncryptedFields.map((f) => (
                   <li key={`${f.table}.${f.column}`} className="font-mono text-muted-foreground">
-                    • {f.table}.{f.column} ({f.rowsAffected} row{f.rowsAffected === 1 ? "" : "s"})
+                    {interpolate(
+                      f.rowsAffected === 1 ? t.settings.switchBack.relinkRowOne : t.settings.switchBack.relinkRowMany,
+                      { table: f.table, column: f.column, rows: String(f.rowsAffected) },
+                    )}
                   </li>
                 ))}
               </ul>
@@ -175,7 +189,7 @@ export default function SwitchBackPage() {
             }}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open dashboard
+            {t.settings.switchBack.openDashboard}
           </button>
         </div>
       </div>
@@ -192,8 +206,8 @@ export default function SwitchBackPage() {
           onClick={() => router.back()}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="size-4" />
-          Back
+          <ChevronLeft className="size-4 rtl:rotate-180" />
+          {t.settings.switchBack.back}
         </button>
 
         <div className="rounded-2xl border border-border/50 bg-card p-6 space-y-5">
@@ -203,33 +217,32 @@ export default function SwitchBackPage() {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-foreground">
-                Switch back to single-user
+                {t.settings.switchBack.heading}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Pull this instance out of {labelFor(state.teamMode)} and put it
-                back in solo mode on this machine.
+                {interpolate(t.settings.switchBack.intro, { mode: modeLabel(state.teamMode) })}
               </p>
             </div>
           </div>
 
           <div className="rounded-xl border border-border/50 px-4 py-3 space-y-1">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              Current
+              {t.settings.switchBack.current}
             </p>
             <p className="text-sm font-mono text-foreground break-all">
-              {state.migrationTargetUrl ?? "(no URL recorded)"}
+              {state.migrationTargetUrl ?? t.settings.switchBack.noUrl}
             </p>
           </div>
 
           <div className="rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4 space-y-2">
             <div className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="size-4" />
-              <p className="text-sm font-medium">Teammates lose access</p>
+              <p className="text-sm font-medium">{t.settings.switchBack.teammatesLoseAccess}</p>
             </div>
             <p className="text-xs text-muted-foreground">
               {isTunnel
-                ? "The tunnel will be torn down. Anyone using the public URL will get connection refused."
-                : "The remote keeps your data for 30 days as a grace period in case you change your mind."}
+                ? t.settings.switchBack.warnTunnel
+                : t.settings.switchBack.warnRemote}
             </p>
           </div>
 
@@ -243,10 +256,9 @@ export default function SwitchBackPage() {
                 className="mt-0.5"
               />
               <span className="text-sm text-foreground">
-                Don't pull remote data — keep whatever is on this machine right now.
+                {t.settings.switchBack.dontPull}
                 <span className="block text-xs text-muted-foreground mt-0.5">
-                  Use this when the remote is unreachable or you intentionally want to
-                  discard remote changes.
+                  {t.settings.switchBack.dontPullDesc}
                 </span>
               </span>
             </label>
@@ -259,7 +271,7 @@ export default function SwitchBackPage() {
               disabled={submitting}
               className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
             >
-              Cancel
+              {t.settings.common.cancel}
             </button>
             <button
               type="button"
@@ -270,9 +282,9 @@ export default function SwitchBackPage() {
               {submitting && <Loader2 className="size-4 animate-spin" />}
               {submitting
                 ? isTunnel
-                  ? "Tearing down..."
-                  : "Pulling data..."
-                : "Switch back"}
+                  ? t.settings.switchBack.tearingDown
+                  : t.settings.switchBack.pullingData
+                : t.settings.switchBack.switchBack}
             </button>
           </div>
         </div>

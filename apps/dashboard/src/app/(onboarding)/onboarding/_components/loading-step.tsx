@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { OnboardingState } from "@repo/onboarding";
+import { useI18n } from "@/components/i18n-provider";
 import { useOnboardingContext } from "../../providers";
 import { runLoadingFlow, type LoadingStatus } from "../_lib/loading-flow";
 
@@ -11,9 +12,10 @@ interface LoadingStepProps {
 }
 
 export function LoadingStep({ state, onBack }: LoadingStepProps) {
+  const { t } = useI18n();
   const { cloudAuthUrl } = useOnboardingContext();
-  const [title, setTitle] = useState("Connecting\u2026");
-  const [message, setMessage] = useState("Verifying your server");
+  const [title, setTitle] = useState(t.onboarding.loading.connecting);
+  const [message, setMessage] = useState(t.onboarding.loading.verifying);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const startedAttemptRef = useRef<number | null>(null);
@@ -33,13 +35,14 @@ export function LoadingStep({ state, onBack }: LoadingStepProps) {
       cloudAuthUrl,
       setStatus,
       isCancelled: () => cancelledRef.current,
+      labels: t.onboarding.loading,
     });
 
     if (!cancelledRef.current && !result.ok) {
       setStatus(result.status);
       setFailed(true);
     }
-  }, [cloudAuthUrl, setStatus, state]);
+  }, [cloudAuthUrl, setStatus, state, t]);
 
   useEffect(() => {
     // Reset cancellation flag on every mount - critical for React strict mode
@@ -73,13 +76,15 @@ export function LoadingStep({ state, onBack }: LoadingStepProps) {
                 setAttempt((n) => n + 1);
               }}
             >
-              Retry
+              {t.onboarding.loading.retry}
             </button>
             <button
               className="ob-loading-btn ob-loading-btn--text"
               onClick={onBack}
             >
-              &larr; Back
+              <span aria-hidden="true" className="rtl:hidden">&larr; </span>
+              <span aria-hidden="true" className="hidden rtl:inline">&rarr; </span>
+              {t.onboarding.common.back}
             </button>
           </div>
         )}

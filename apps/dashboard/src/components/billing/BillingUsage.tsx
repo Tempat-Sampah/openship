@@ -4,7 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, ArrowDownUp, ChevronDown, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { UsageChart } from "./UsageChart";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import type { BillingState } from "@/lib/api/billing";
+import type { Dictionary } from "@/i18n";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -187,7 +189,10 @@ interface BreakdownRow {
  * We display the metered units and a proportional share of total
  * credits so the table still rolls up to the period spend.
  */
-function buildBreakdownRows(totals: UsageTotals | null): BreakdownRow[] {
+function buildBreakdownRows(
+  totals: UsageTotals | null,
+  resources: Dictionary["billing"]["usage"]["resources"],
+): BreakdownRow[] {
   if (!totals) return [];
 
   // Use a proxy weight so each row gets a slice of the total credit
@@ -195,11 +200,11 @@ function buildBreakdownRows(totals: UsageTotals | null): BreakdownRow[] {
   // distribute a single attributable "credits" number across resources
   // for display. Sum of weights does not have to match credits 1:1; we
   // normalise below.
-  const rawRows: Array<{ key: string; label: string; units: string; unitsValue: number; weight: number }> = [
-    { key: "cpu", label: "CPU time", units: "vCPU-hours", unitsValue: totals.vcpu_hours, weight: totals.vcpu_hours },
-    { key: "memory", label: "Memory", units: "GB-hours", unitsValue: totals.gb_hours, weight: totals.gb_hours },
-    { key: "disk", label: "Disk IO", units: "GB", unitsValue: totals.disk_io_gb, weight: totals.disk_io_gb },
-    { key: "network", label: "Network", units: "GB", unitsValue: totals.network_gb, weight: totals.network_gb },
+  const rawRows: Array<{ key: keyof typeof resources; unitsValue: number; weight: number }> = [
+    { key: "cpu", unitsValue: totals.vcpu_hours, weight: totals.vcpu_hours },
+    { key: "memory", unitsValue: totals.gb_hours, weight: totals.gb_hours },
+    { key: "disk", unitsValue: totals.disk_io_gb, weight: totals.disk_io_gb },
+    { key: "network", unitsValue: totals.network_gb, weight: totals.network_gb },
   ];
 
   const totalWeight = rawRows.reduce((acc, r) => acc + r.weight, 0);
@@ -207,8 +212,8 @@ function buildBreakdownRows(totals: UsageTotals | null): BreakdownRow[] {
 
   return rawRows.map((r) => ({
     key: r.key,
-    label: r.label,
-    units: r.units,
+    label: resources[r.key].label,
+    units: resources[r.key].units,
     unitsValue: r.unitsValue,
     credits: totalWeight > 0 ? (r.weight / totalWeight) * totalCredits : 0,
   }));
@@ -219,6 +224,7 @@ function buildBreakdownRows(totals: UsageTotals | null): BreakdownRow[] {
 /* ------------------------------------------------------------------ */
 
 export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
+  const { t } = useI18n();
   /* --- Date range (default → current billing period) -------------- */
   const periodStart = toDate(state.currentPeriod.start);
   const periodEnd = toDate(state.currentPeriod.end);
@@ -259,7 +265,7 @@ export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
         if (!cancelled) setUsage(res.data.usage);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load usage");
+          setError(err instanceof Error ? err.message : t.billing.usage.loadError);
           setUsage(null);
         }
       } finally {
@@ -287,10 +293,10 @@ export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
   );
 
   const breakdownRows = useMemo(() => {
-    const rows = buildBreakdownRows(usage?.totals ?? null);
+    const rows = buildBreakdownRows(usage?.totals ?? null, t.billing.usage.resources);
     rows.sort((a, b) => (sortDir === "desc" ? b.credits - a.credits : a.credits - b.credits));
     return rows;
-  }, [usage, sortDir]);
+  }, [usage, sortDir, t]);
 
   const totalCredits = usage?.totals.credits ?? 0;
 
@@ -319,24 +325,24 @@ export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
       {/* ── KPI strip ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Balance"
+          label={t.billing.usage.kpi.balance}
           value={formatCredits(state.balance.quotaRemaining)}
-          suffix={`of ${formatCredits(state.balance.quotaLimit)} credits`}
+          suffix={interpolate(t.billing.usage.kpi.balanceSuffix, { limit: formatCredits(state.balance.quotaLimit) })}
         />
         <KpiCard
-          label="Consumed this period"
+          label={t.billing.usage.kpi.consumed}
           value={formatCredits(state.balance.quotaUsed)}
-          suffix="credits"
+          suffix={t.billing.usage.kpi.credits}
         />
         <KpiCard
-          label="Burn rate"
+          label={t.billing.usage.kpi.burnRate}
           value={formatCredits(burnRate)}
-          suffix="credits/day (last 7d)"
+          suffix={t.billing.usage.kpi.burnRateSuffix}
         />
         <KpiCard
-          label="Projected end-of-period"
+          label={t.billing.usage.kpi.projected}
           value={projection === null ? "—" : formatCredits(projection)}
-          suffix={projection === null ? "no period set" : "credits"}
+          suffix={projection === null ? t.billing.usage.kpi.noPeriod : t.billing.usage.kpi.credits}
         />
       </div>
 
@@ -344,9 +350,9 @@ export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
       <div className="rounded-2xl border border-border/50 bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Usage over time</h2>
+            <h2 className="text-base font-semibold text-foreground">{t.billing.usage.chart.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Stacked metered units per {granularity}.
+              {interpolate(t.billing.usage.chart.subtitle, { unit: t.billing.usage.granularity[granularity] })}
             </p>
           </div>
         </div>
@@ -369,36 +375,36 @@ export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
       <div className="rounded-2xl border border-border/50 bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Resource breakdown</h2>
+            <h2 className="text-base font-semibold text-foreground">{t.billing.usage.breakdown.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Credits attributed proportionally to metered resource usage in the selected range.
+              {t.billing.usage.breakdown.subtitle}
             </p>
           </div>
         </div>
         <div className="overflow-hidden rounded-xl border border-border/50">
           <table className="w-full text-sm">
             <thead className="bg-muted/30">
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Resource</th>
-                <th className="px-4 py-3 font-medium">Units</th>
+              <tr className="text-start text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-3 font-medium">{t.billing.usage.breakdown.resource}</th>
+                <th className="px-4 py-3 font-medium">{t.billing.usage.breakdown.units}</th>
                 <th className="px-4 py-3 font-medium">
                   <button
                     type="button"
                     onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
                     className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    Credits
+                    {t.billing.usage.breakdown.credits}
                     <ArrowDownUp className="size-3" />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right font-medium">% of total</th>
+                <th className="px-4 py-3 text-end font-medium">{t.billing.usage.breakdown.percentOfTotal}</th>
               </tr>
             </thead>
             <tbody>
               {breakdownRows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    {loading ? "Loading…" : "No usage in the selected range."}
+                    {loading ? t.billing.usage.breakdown.loading : t.billing.usage.breakdown.empty}
                   </td>
                 </tr>
               ) : (
@@ -413,7 +419,7 @@ export const BillingUsage: React.FC<BillingUsageProps> = ({ state }) => {
                       <td className="px-4 py-3 tabular-nums text-foreground">
                         {formatCredits(row.credits)}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                      <td className="px-4 py-3 text-end tabular-nums text-muted-foreground">
                         {pct.toFixed(1)}%
                       </td>
                     </tr>
@@ -449,20 +455,21 @@ function UsageToolbar({
   onFromChange,
   onToChange,
 }: UsageToolbarProps) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border/50 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
       {/* Workspace filter — disabled stub for v1.0 */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Workspace
+          {t.billing.usage.toolbar.workspace}
         </span>
         <button
           type="button"
           disabled
-          title="Per-workspace breakdown coming in v1.1"
+          title={t.billing.usage.toolbar.workspaceTooltip}
           className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5 text-sm font-medium text-muted-foreground opacity-70"
         >
-          All workspaces
+          {t.billing.usage.toolbar.allWorkspaces}
           <ChevronDown className="size-3.5" />
         </button>
       </div>
@@ -483,7 +490,7 @@ function UsageToolbar({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {opt}
+                {t.billing.usage.granularity[opt]}
               </button>
             );
           })}
@@ -496,7 +503,7 @@ function UsageToolbar({
             onChange={(e) => onFromChange(e.target.value)}
             className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
-          <span className="text-muted-foreground">to</span>
+          <span className="text-muted-foreground">{t.billing.usage.toolbar.to}</span>
           <input
             type="date"
             value={toIsoDateInput(to)}
@@ -545,9 +552,10 @@ function ChartErrorState({ message }: { message: string }) {
 }
 
 function ChartEmptyState() {
+  const { t } = useI18n();
   return (
     <div className="flex h-[360px] w-full items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20">
-      <p className="text-sm text-muted-foreground">No usage data for the selected range.</p>
+      <p className="text-sm text-muted-foreground">{t.billing.usage.empty}</p>
     </div>
   );
 }

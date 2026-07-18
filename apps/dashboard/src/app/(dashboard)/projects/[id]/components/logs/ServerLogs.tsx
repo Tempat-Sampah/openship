@@ -8,6 +8,7 @@ import { useProjectSettings } from "@/context/ProjectSettingsContext";
 import { getApiBaseUrl, api } from "@/lib/api";
 import { endpoints } from "@/lib/api/endpoints";
 import { DomainSwitcher } from "@/components/routing/DomainSwitcher";
+import { useI18n } from "@/components/i18n-provider";
 
 interface ServerLog {
   id: string;
@@ -41,6 +42,7 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
 }) => {
   const { serverLogsData, addServerLog, mergeServerLogs, setServerLogs, domain, domainsData } =
     useProjectSettings();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -156,13 +158,13 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
       if (me.data) {
         try {
           const d = JSON.parse(me.data);
-          setError(d.error || "Stream error");
+          setError(d.error || t.projectDetail.logs.server.streamError);
         } catch {
           setError(me.data);
         }
       }
       if (es?.readyState === EventSource.CLOSED) {
-        setError("Connection to log stream lost");
+        setError(t.projectDetail.logs.server.connectionLost);
       }
       setIsLoading(false);
     };
@@ -204,7 +206,7 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
         };
       } catch {
         if (!cancelled) {
-          setError("Failed to connect to log stream");
+          setError(t.projectDetail.logs.server.connectFailed);
           setIsLoading(false);
         }
       }
@@ -297,7 +299,7 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <AlertCircle className="w-10 h-10 text-destructive/60" />
           <p className="text-sm font-medium text-destructive">{error}</p>
-          <p className="text-xs text-muted-foreground">Make sure the server has analytics scripts deployed</p>
+          <p className="text-xs text-muted-foreground">{t.projectDetail.logs.server.errorHint}</p>
         </div>
       );
     }
@@ -305,7 +307,7 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-2">
         <Server className="w-10 h-10 text-muted-foreground/30" />
-        <p className="text-sm text-muted-foreground">Waiting for incoming requests…</p>
+        <p className="text-sm text-muted-foreground">{t.projectDetail.logs.server.waiting}</p>
       </div>
     );
   };
@@ -316,7 +318,7 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
         <div className="flex items-center gap-2.5">
           <Server className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">HTTP Request Logs</h3>
+          <h3 className="text-sm font-medium text-foreground">{t.projectDetail.logs.server.title}</h3>
         </div>
         <div className="flex items-center gap-3">
           {domains.length > 1 && (
@@ -329,7 +331,7 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
           {!error && (
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs text-muted-foreground">Live</span>
+              <span className="text-xs text-muted-foreground">{t.projectDetail.logs.server.live}</span>
             </div>
           )}
         </div>
@@ -351,11 +353,11 @@ export const ServerLogs: React.FC<ServerLogsProps> = ({
                   <span className={`w-10 shrink-0 text-center px-1.5 py-0.5 rounded-md text-[11px] font-bold tabular-nums ${getStatusColor(log.statusCode)}`}>
                     {log.statusCode}
                   </span>
-                  <span className="w-16 shrink-0 text-right text-[11px] text-muted-foreground/70 font-mono tabular-nums">
+                  <span className="w-16 shrink-0 text-end text-[11px] text-muted-foreground/70 font-mono tabular-nums">
                     {log.responseTime}ms
                   </span>
                 </div>
-                <div className="flex items-center gap-3 mt-1 pl-[60px] text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-3 mt-1 ps-[60px] text-[11px] text-muted-foreground">
                   <span className="flex items-center gap-1 shrink-0">
                     <Clock className="w-3 h-3" />
                     <span className="font-mono tabular-nums">{new Date(log.timestamp).toLocaleTimeString()}</span>

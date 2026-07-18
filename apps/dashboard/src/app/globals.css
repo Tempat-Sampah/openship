@@ -37,6 +37,12 @@
 .is-desktop [data-app-topinset] {
   padding-top: var(--titlebar-h);
 }
+/* The dashboard sidebar's logo sits at the top-left — exactly where macOS
+ * inlays the traffic lights. Pad the header down in the desktop app so the
+ * logo clears them (the extra 0.75rem gives breathing room below the strip). */
+.is-desktop .app-sidebar-header {
+  padding-top: calc(var(--titlebar-h) + 0.75rem);
+}
 
 /*
  * Expose shadcn bridge vars as Tailwind utilities.

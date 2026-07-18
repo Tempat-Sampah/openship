@@ -130,7 +130,7 @@ export function renderOgImage({
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             <span
               style={{
-                display: "inline-block",
+                display: "flex",
                 width: 10,
                 height: 10,
                 borderRadius: 999,

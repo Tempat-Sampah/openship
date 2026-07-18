@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Rocket, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface DeploymentHeaderProps {
   stats: {
@@ -16,6 +17,7 @@ interface DeploymentHeaderProps {
 }
 
 export const DeploymentHeader: React.FC<DeploymentHeaderProps> = ({ stats, projectCount }) => {
+  const { t } = useI18n();
   const failureCount = (stats.failed || 0) + (stats.canceled || 0);
   const successRate = stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0;
   const activeCount = (stats.building || 0) + (stats.pending || 0);
@@ -29,12 +31,17 @@ export const DeploymentHeader: React.FC<DeploymentHeaderProps> = ({ stats, proje
             <Rocket className="size-4 text-primary" />
           </div>
           <div>
-            <span className="text-sm text-muted-foreground">Total</span>
+            <span className="text-sm text-muted-foreground">{t.deployments.stats.total}</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-semibold text-foreground">{stats.total}</span>
               {projectCount !== undefined && (
                 <span className="text-[10px] text-muted-foreground">
-                  {projectCount} project{projectCount !== 1 ? "s" : ""}
+                  {interpolate(
+                    projectCount === 1
+                      ? t.deployments.stats.projectCountOne
+                      : t.deployments.stats.projectCountOther,
+                    { count: String(projectCount) },
+                  )}
                 </span>
               )}
             </div>
@@ -47,7 +54,7 @@ export const DeploymentHeader: React.FC<DeploymentHeaderProps> = ({ stats, proje
             <CheckCircle2 className="size-4 text-emerald-500" />
           </div>
           <div>
-            <span className="text-sm text-muted-foreground">Success</span>
+            <span className="text-sm text-muted-foreground">{t.deployments.stats.success}</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-semibold text-foreground">{stats.success}</span>
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -63,7 +70,7 @@ export const DeploymentHeader: React.FC<DeploymentHeaderProps> = ({ stats, proje
             <XCircle className="size-4 text-red-500" />
           </div>
           <div>
-            <span className="text-sm text-muted-foreground">Failed</span>
+            <span className="text-sm text-muted-foreground">{t.deployments.stats.failed}</span>
             <p className="text-lg font-semibold text-foreground">{failureCount}</p>
           </div>
         </div>
@@ -74,11 +81,11 @@ export const DeploymentHeader: React.FC<DeploymentHeaderProps> = ({ stats, proje
             <Loader2 className={`size-4 text-amber-500${activeCount > 0 ? " animate-spin" : ""}`} />
           </div>
           <div>
-            <span className="text-sm text-muted-foreground">In Progress</span>
+            <span className="text-sm text-muted-foreground">{t.deployments.stats.inProgress}</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-semibold text-foreground">{activeCount}</span>
               {activeCount > 0 && (
-                <span className="text-[10px] text-muted-foreground">building now</span>
+                <span className="text-[10px] text-muted-foreground">{t.deployments.stats.buildingNow}</span>
               )}
             </div>
           </div>

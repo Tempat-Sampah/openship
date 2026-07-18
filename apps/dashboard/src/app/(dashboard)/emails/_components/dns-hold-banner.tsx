@@ -18,6 +18,7 @@ import { Globe, Loader2, Sparkles, ChevronRight, ArrowLeft } from "lucide-react"
 import type { DnsRecords } from "@/lib/api";
 import { useModal } from "@/context/ModalContext";
 import { DnsRecordsView } from "@/components/shared/DnsRecordsView";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface DnsHoldBannerProps {
   records: DnsRecords;
@@ -42,54 +43,17 @@ interface Provider {
   label: string;
   /** simpleicons.org slug - fetched as `https://cdn.simpleicons.org/{slug}`. */
   slug: string;
-  description: string;
   /** Brand colour as the SVG tint (simpleicons official-color URL suffix). */
   color: string;
 }
 
 const PROVIDERS: Provider[] = [
-  {
-    id: "cloudflare",
-    label: "Cloudflare",
-    slug: "cloudflare",
-    color: "F38020",
-    description: "Free DNS, fast propagation. Most common choice.",
-  },
-  {
-    id: "hostinger",
-    label: "Hostinger",
-    slug: "hostinger",
-    color: "673DE6",
-    description: "If you bought the domain through Hostinger.",
-  },
-  {
-    id: "route53",
-    label: "AWS Route 53",
-    slug: "amazonwebservices",
-    color: "FF9900",
-    description: "AWS-hosted DNS zones.",
-  },
-  {
-    id: "digitalocean",
-    label: "DigitalOcean",
-    slug: "digitalocean",
-    color: "0080FF",
-    description: "DigitalOcean-managed zones.",
-  },
-  {
-    id: "namecheap",
-    label: "Namecheap",
-    slug: "namecheap",
-    color: "DE3910",
-    description: "Default Namecheap DNS.",
-  },
-  {
-    id: "google",
-    label: "Google Cloud DNS",
-    slug: "googlecloud",
-    color: "4285F4",
-    description: "Google-managed zones.",
-  },
+  { id: "cloudflare", label: "Cloudflare", slug: "cloudflare", color: "F38020" },
+  { id: "hostinger", label: "Hostinger", slug: "hostinger", color: "673DE6" },
+  { id: "route53", label: "AWS Route 53", slug: "amazonwebservices", color: "FF9900" },
+  { id: "digitalocean", label: "DigitalOcean", slug: "digitalocean", color: "0080FF" },
+  { id: "namecheap", label: "Namecheap", slug: "namecheap", color: "DE3910" },
+  { id: "google", label: "Google Cloud DNS", slug: "googlecloud", color: "4285F4" },
 ];
 
 // ─── Banner ──────────────────────────────────────────────────────────────────
@@ -103,21 +67,23 @@ export function DnsHoldBanner({
   acknowledging,
   onAcknowledge,
 }: DnsHoldBannerProps) {
+  const { t } = useI18n();
   const { showModal, hideModal } = useModal();
 
-  const heading = title ?? "Publish DNS records before continuing";
+  const heading = title ?? t.emails.dns.heading;
   const body =
     description ??
     (resumeStep !== undefined ? (
       <>
-        Mail delivery breaks without these. Add them at your DNS provider, then
-        click <strong>I've set the records - continue</strong> below. The
-        install resumes from step {resumeStep} (SSL certificate).
+        {t.emails.dns.bodyBefore}
+        <strong>{t.emails.dns.action}</strong>
+        {interpolate(t.emails.dns.bodyAfterResume, { resumeStep: String(resumeStep) })}
       </>
     ) : (
       <>
-        Mail delivery breaks without these. Add them at your DNS provider, then
-        click <strong>I've set the records - continue</strong> below.
+        {t.emails.dns.bodyBefore}
+        <strong>{t.emails.dns.action}</strong>
+        {t.emails.dns.bodyAfter}
       </>
     ));
 
@@ -163,7 +129,7 @@ export function DnsHoldBanner({
           className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 transition-colors"
         >
           <Sparkles className="size-4" />
-          Auto-configure DNS
+          {t.emails.dns.autoConfigure}
         </button>
         <button
           onClick={onAcknowledge}
@@ -175,7 +141,7 @@ export function DnsHoldBanner({
           ) : (
             <Globe className="size-4" />
           )}
-          I've set the records - continue
+          {t.emails.dns.action}
         </button>
       </div>
     </div>
@@ -190,6 +156,7 @@ export function DnsHoldBanner({
  * need to know about provider selection.
  */
 function AutoConfigureModal({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<Provider | null>(null);
 
   if (selected) {
@@ -208,12 +175,11 @@ function AutoConfigureModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-2.5 mb-1">
           <Sparkles className="size-4 text-amber-500" />
           <h3 className="text-base font-semibold text-foreground">
-            Auto-configure DNS
+            {t.emails.dns.autoConfigure}
           </h3>
         </div>
         <p className="text-xs text-muted-foreground/80 leading-relaxed">
-          Pick the provider hosting your domain's DNS. We'll push the records
-          for you using their API.
+          {t.emails.dns.autoConfigureDesc}
         </p>
       </div>
 
@@ -225,7 +191,7 @@ function AutoConfigureModal({ onClose }: { onClose: () => void }) {
 
       <button
         onClick={onClose}
-        className="w-full mt-3 px-4 py-3 rounded-xl text-left hover:bg-muted/40 transition-colors border border-dashed border-border/60"
+        className="w-full mt-3 px-4 py-3 rounded-xl text-start hover:bg-muted/40 transition-colors border border-dashed border-border/60"
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
@@ -233,10 +199,10 @@ function AutoConfigureModal({ onClose }: { onClose: () => void }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-foreground">
-              Other / set manually
+              {t.emails.dns.otherManual}
             </div>
             <div className="text-xs text-muted-foreground/70 mt-0.5">
-              Copy each record from the banner and paste into your provider's UI
+              {t.emails.dns.otherManualDesc}
             </div>
           </div>
         </div>
@@ -252,10 +218,12 @@ function ProviderRow({
   provider: Provider;
   onSelect: () => void;
 }) {
+  const { t } = useI18n();
+  const description = (t.emails.dns.providers as Record<string, string>)[provider.id] ?? "";
   return (
     <button
       onClick={onSelect}
-      className="w-full px-4 py-3 rounded-xl text-left hover:bg-muted/40 transition-colors group"
+      className="w-full px-4 py-3 rounded-xl text-start hover:bg-muted/40 transition-colors group"
     >
       <div className="flex items-center gap-3">
         <ProviderLogo provider={provider} />
@@ -264,10 +232,10 @@ function ProviderRow({
             {provider.label}
           </div>
           <div className="text-xs text-muted-foreground/70 mt-0.5">
-            {provider.description}
+            {description}
           </div>
         </div>
-        <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors shrink-0" />
+        <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors shrink-0 rtl:rotate-180" />
       </div>
     </button>
   );
@@ -302,6 +270,7 @@ function ProviderComingSoon({
   onBack: () => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="p-6">
       <div className="mb-5">
@@ -309,8 +278,8 @@ function ProviderComingSoon({
           onClick={onBack}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground/70 hover:text-foreground transition-colors mb-3"
         >
-          <ArrowLeft className="size-3.5" />
-          Pick another provider
+          <ArrowLeft className="size-3.5 rtl:rotate-180" />
+          {t.emails.dns.pickAnother}
         </button>
         <div className="flex items-center gap-3">
           <ProviderLogo provider={provider} />
@@ -322,13 +291,12 @@ function ProviderComingSoon({
 
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 mb-5">
         <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-          {provider.label} integration - coming soon
+          {interpolate(t.emails.dns.comingSoon, { provider: provider.label })}
         </p>
         <p className="text-xs text-amber-900/80 dark:text-amber-100/80 mt-1.5 leading-relaxed">
-          Direct API integration with this provider isn't shipped yet. For now,
-          copy each record from the banner and paste it into your DNS provider's
-          UI. Once that's done, click{" "}
-          <strong>I've set the records - continue</strong>.
+          {t.emails.dns.comingSoonBefore}
+          <strong>{t.emails.dns.action}</strong>
+          {t.emails.dns.comingSoonAfter}
         </p>
       </div>
 
@@ -337,7 +305,7 @@ function ProviderComingSoon({
           onClick={onClose}
           className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors"
         >
-          Got it
+          {t.emails.dns.gotIt}
         </button>
       </div>
     </div>

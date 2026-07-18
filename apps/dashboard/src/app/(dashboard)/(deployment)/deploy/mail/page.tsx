@@ -29,6 +29,7 @@ import {
 import { PageContainer } from "@/components/ui/PageContainer";
 import { OptionCard } from "../[slug]/components/DeployTargetStep";
 import { useToast } from "@/context/ToastContext";
+import { useI18n } from "@/components/i18n-provider";
 import {
   mailApi,
   type MailSetupStatus,
@@ -40,6 +41,8 @@ export default function DeployMailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
+  const tm = t.deploy.mail;
   const mailServerId = searchParams.get("serverId") ?? "";
 
   const [status, setStatus] = useState<MailSetupStatus | null>(null);
@@ -119,9 +122,9 @@ export default function DeployMailPage() {
       router.push(`/build/${deploymentId}`);
     } catch (err) {
       toast.showToast(
-        getApiErrorMessage(err, "Failed to start deploy"),
+        getApiErrorMessage(err, tm.deployFailed),
         "error",
-        "Deploy failed",
+        tm.deployFailedTitle,
       );
       setSubmitting(false);
     }
@@ -131,15 +134,15 @@ export default function DeployMailPage() {
     return (
       <PageContainer>
         <div className="bg-card rounded-2xl border border-border/50 p-8 text-center">
-          <p className="text-sm text-foreground font-medium">Missing mail server</p>
+          <p className="text-sm text-foreground font-medium">{tm.missingServerTitle}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Open this page from the mail overview.
+            {tm.missingServerBody}
           </p>
           <Link
             href="/emails"
             className="mt-3 text-sm font-medium text-primary hover:underline inline-block"
           >
-            Back to mail
+            {tm.backToMail}
           </Link>
         </div>
       </PageContainer>
@@ -158,29 +161,29 @@ export default function DeployMailPage() {
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Deploy webmail
+            {tm.title}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Stand up a self-hosted webmail at the domain you choose.
+            {tm.subtitle}
           </p>
         </div>
         <Link
           href="/emails"
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
         >
-          <ArrowLeft className="size-3.5" /> Back to mail
+          <ArrowLeft className="size-3.5 rtl:rotate-180" /> {tm.backToMail}
         </Link>
       </div>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6">
         <div className="space-y-6">
           <Section
-            title="Deploy to"
-            hint="Webmail can live on this mail server, on another openship-managed host, or on Opshcloud."
+            title={tm.deployToTitle}
+            hint={tm.deployToHint}
           >
             {!bootReady ? (
               <div className="rounded-xl border border-border/50 bg-card px-4 py-6 text-sm text-muted-foreground flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" /> Loading targets…
+                <Loader2 className="size-4 animate-spin" /> {tm.loadingTargets}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -204,7 +207,7 @@ export default function DeployMailPage() {
                       label={t.label}
                       description={
                         t.description ||
-                        (t.disabled ? t.disabledReason || "Not available" : "")
+                        (t.disabled ? t.disabledReason || tm.notAvailable : "")
                       }
                       className="h-full"
                     />
@@ -215,13 +218,13 @@ export default function DeployMailPage() {
           </Section>
 
           <Section
-            title="Domain"
+            title={tm.domainTitle}
             hint={
               isCloudProxyVariant
-                ? "Your mail server already owns this hostname - we'll proxy it through your mail VPS to the Opshcloud workload. No DNS changes needed."
+                ? tm.domainHintProxy
                 : selectedTarget?.kind === "opshcloud"
-                  ? "Point a CNAME at the *.opsh.io URL we provision (you'll see it after deploy)."
-                  : "The URL operators will visit. DNS must point at the deploy target."
+                  ? tm.domainHintCloud
+                  : tm.domainHintDefault
             }
           >
             <input
@@ -239,12 +242,12 @@ export default function DeployMailPage() {
         <aside className="lg:sticky lg:top-6 h-fit space-y-4">
           <div className="bg-card rounded-xl border border-border/50 p-4 space-y-3">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Summary
+              {tm.summary}
             </p>
-            <SummaryRow label="Target" value={selectedTarget?.label ?? "-"} />
-            <SummaryRow label="Domain" value={domain || "-"} />
+            <SummaryRow label={tm.summaryTarget} value={selectedTarget?.label ?? "-"} />
+            <SummaryRow label={tm.summaryDomain} value={domain || "-"} />
             {mailHostnameFromStatus && (
-              <SummaryRow label="Mail server" value={mailHostnameFromStatus} />
+              <SummaryRow label={tm.summaryMailServer} value={mailHostnameFromStatus} />
             )}
           </div>
           <button
@@ -255,12 +258,12 @@ export default function DeployMailPage() {
           >
             {submitting ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Starting…
+                <Loader2 className="size-4 animate-spin" /> {tm.starting}
               </>
             ) : (
               <>
-                Deploy webmail
-                <ArrowRight className="size-4" />
+                {tm.deployButton}
+                <ArrowRight className="size-4 rtl:rotate-180" />
               </>
             )}
           </button>

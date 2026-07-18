@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import type { BuildMode } from "@repo/onboarding";
 import type { StepProps } from "./step-props";
 
@@ -12,7 +13,7 @@ const GearIcon = () => (
   </svg>
 );
 const BackIcon = () => (
-  <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+  <svg className="rtl:rotate-180" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
   </svg>
 );
@@ -51,14 +52,15 @@ type PrefOption = {
   icon: () => React.JSX.Element;
 };
 
-const OPTIONS: PrefOption[] = [
-  { id: "auto", title: "Auto", desc: "We pick the best option per framework", icon: BoxIcon },
-  { id: "server", title: "Remote", desc: "Build on the deployment server directly", icon: CloudIcon },
-  { id: "local", title: "Local", desc: "Build on this Mac, then push to the server", icon: MonitorIcon },
-];
-
 export function PreferencesStep({ state, onUpdate, onNext, onBack }: StepProps) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<BuildMode>(state.buildMode);
+
+  const OPTIONS: PrefOption[] = [
+    { id: "auto", title: t.onboarding.preferences.options.auto.title, desc: t.onboarding.preferences.options.auto.desc, icon: BoxIcon },
+    { id: "server", title: t.onboarding.preferences.options.server.title, desc: t.onboarding.preferences.options.server.desc, icon: CloudIcon },
+    { id: "local", title: t.onboarding.preferences.options.local.title, desc: t.onboarding.preferences.options.local.desc, icon: MonitorIcon },
+  ];
 
   function handleContinue() {
     onUpdate({ buildMode: selected });
@@ -69,7 +71,7 @@ export function PreferencesStep({ state, onUpdate, onNext, onBack }: StepProps) 
     <div className="ob-screen">
       <div className="ob-screen-inner">
         {onBack && (
-          <button className="ob-btn-back" aria-label="Go back" onClick={onBack}>
+          <button className="ob-btn-back" aria-label={t.onboarding.common.goBack} onClick={onBack}>
             <BackIcon />
           </button>
         )}
@@ -78,10 +80,10 @@ export function PreferencesStep({ state, onUpdate, onNext, onBack }: StepProps) 
           <GearIcon />
         </div>
 
-        <h2>Build Preferences</h2>
+        <h2>{t.onboarding.preferences.title}</h2>
         <p className="ob-subtitle">
-          Choose how your projects are built when deploying.<br/>
-          You can change this later in settings.
+          {t.onboarding.preferences.subtitleLine1}<br/>
+          {t.onboarding.preferences.subtitleLine2}
         </p>
 
         <div className="ob-pref-cards">
@@ -108,11 +110,11 @@ export function PreferencesStep({ state, onUpdate, onNext, onBack }: StepProps) 
         </div>
 
         <p className="ob-pref-hint">
-          Git push deployments always build on the server - this only applies to manual deploys.
+          {t.onboarding.preferences.hint}
         </p>
 
         <button className="ob-btn-primary" onClick={handleContinue}>
-          Continue
+          {t.onboarding.common.continue}
         </button>
       </div>
     </div>

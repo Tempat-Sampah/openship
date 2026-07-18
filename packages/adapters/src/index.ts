@@ -26,6 +26,9 @@ export type {
   ContainerInfo,
   ResourceUsage,
   RouteConfig,
+  RouteProxyLocation,
+  RouteRedirect,
+  RouteHeaderRule,
   SslResult,
   SshConfig,
   CommandExecutor,
@@ -84,6 +87,17 @@ export { resolveDockerfileCandidates } from "./runtime/docker-paths";
 // ─── Infrastructure layer ────────────────────────────────────────────────────
 export type { RoutingProvider, SslProvider } from "./infra/types";
 export { NginxProvider, type NginxProviderOptions, type RateLimitConfig } from "./infra/nginx";
+export {
+  compileVercelRouting,
+  sourceToLocation,
+  type CompiledRouting,
+  type CompiledRedirect,
+  type CompiledHeaderRule,
+} from "./infra/vercel-routing";
+export {
+  compileRoutingToOblien,
+  type OblienRoutingContext,
+} from "./runtime/oblien-routing";
 export { CloudInfraProvider } from "./infra/cloud";
 export { NoopInfraProvider } from "./infra/noop";
 export {

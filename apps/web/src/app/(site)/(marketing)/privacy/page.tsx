@@ -108,7 +108,7 @@ export default function PrivacyPage() {
             <p className="legal-meta">
               Last updated <time dateTime="2026-05-18">May&nbsp;18, 2026</time>
               <span className="legal-meta-sep">·</span>
-              <a href="https://github.com/openship/openship/commits/main/PRIVACY.md" className="legal-meta-link" target="_blank" rel="noreferrer">
+              <a href="https://github.com/oblien/openship/commits/main/PRIVACY.md" className="legal-meta-link" target="_blank" rel="noreferrer">
                 Version history on GitHub
               </a>
             </p>

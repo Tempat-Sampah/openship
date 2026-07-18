@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { BarChart3, TrendingUp } from "lucide-react";
 import { generateIcon } from "@/utils/icons";
 import { SlidingToggle } from "@/components/ui/SlidingToggle";
+import { useI18n } from "@/components/i18n-provider";
 
 interface TrafficData {
   hour: number;
@@ -22,6 +23,7 @@ export const TrafficChart: React.FC<Props> = ({
   dateRange,
   totalRequests,
 }) => {
+  const { t } = useI18n();
   const [chartType, setChartType] = useState<'bar' | 'area'>('area');
   const hasAnalytics = typeof totalRequests === "number";
   const displayData = trafficData.length > 0
@@ -41,8 +43,8 @@ export const TrafficChart: React.FC<Props> = ({
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           {generateIcon('chart%204%20line-5-1666004410.png', 24, 'hsl(var(--primary))')}
           <div className="min-w-0">
-            <h3 className="text-sm sm:text-lg font-semibold text-foreground truncate">Traffic Overview</h3>
-            <p className="text-[10px] sm:text-sm text-muted-foreground/70 truncate">{dateRange || 'Last 24 hours'}</p>
+            <h3 className="text-sm sm:text-lg font-semibold text-foreground truncate">{t.projectDetail.general.traffic.title}</h3>
+            <p className="text-[10px] sm:text-sm text-muted-foreground/70 truncate">{dateRange || t.projectDetail.general.traffic.last24Hours}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -52,12 +54,12 @@ export const TrafficChart: React.FC<Props> = ({
               {
                 value: 'bar',
                 icon: <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />,
-                label: 'Bar',
+                label: t.projectDetail.general.traffic.bar,
               },
               {
                 value: 'area',
                 icon: <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />,
-                label: 'Area',
+                label: t.projectDetail.general.traffic.area,
               },
             ]}
             value={chartType}
@@ -76,13 +78,13 @@ export const TrafficChart: React.FC<Props> = ({
       {/* Traffic Chart */}
       {isLoading ? (
         <div className="flex items-center justify-center flex-1">
-          <div className="text-sm text-muted-foreground/70">Loading analytics...</div>
+          <div className="text-sm text-muted-foreground/70">{t.projectDetail.general.traffic.loading}</div>
         </div>
       ) : !hasAnalytics ? (
         <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-muted/20">
           <div className="text-center">
-            <p className="text-sm font-medium text-foreground">No traffic data yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">This chart will populate after the app receives requests.</p>
+            <p className="text-sm font-medium text-foreground">{t.projectDetail.general.traffic.noDataTitle}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t.projectDetail.general.traffic.noDataBody}</p>
           </div>
         </div>
       ) : (

@@ -7,24 +7,19 @@ import {
   Github,
   Lock,
   Globe,
-  Plus,
-  Link2,
   BookOpen,
   Zap,
   GitBranch,
-  Sparkles,
   Cloud,
   Terminal,
   Shield,
 } from "lucide-react";
 import type { GitHubRepo, GitHubConnectionState } from "@/context/GitHubContext";
-
-type Tab = "folder" | "repositories" | "url" | "template";
+import { useI18n } from "@/components/i18n-provider";
 
 interface LibrarySidebarProps {
   selectedOwner: string;
   repos: GitHubRepo[];
-  onSwitchTab: (tab: Tab) => void;
   /** Self-hosted or desktop instance — drives the dual-source UI. */
   selfHosted: boolean;
   /** Canonical GitHub connection state — the only thing this card needs. */
@@ -37,11 +32,11 @@ interface LibrarySidebarProps {
 export function LibrarySidebar({
   selectedOwner,
   repos,
-  onSwitchTab,
   selfHosted,
   state,
   cloudConnected,
 }: LibrarySidebarProps) {
+  const { t } = useI18n();
   const connected = state.primary !== null;
   const publicCount = repos.filter((r) => !r.private).length;
   const privateCount = repos.filter((r) => r.private).length;
@@ -71,7 +66,7 @@ export function LibrarySidebar({
         <div className="bg-card rounded-2xl border border-border/50 p-5">
           <div className="flex items-center gap-2 mb-4">
             <BookOpen className="size-4 text-muted-foreground" />
-            <h3 className="font-semibold text-foreground text-sm">Overview</h3>
+            <h3 className="font-semibold text-foreground text-sm">{t.library.sidebar.overview}</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -79,7 +74,7 @@ export function LibrarySidebar({
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <GitBranch className="size-4 text-primary" />
                 </div>
-                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-sm text-muted-foreground">{t.library.sidebar.total}</span>
               </div>
               <span className="text-lg font-semibold text-foreground">{repos.length}</span>
             </div>
@@ -88,7 +83,7 @@ export function LibrarySidebar({
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
                   <Globe className="size-4 text-blue-500" />
                 </div>
-                <span className="text-sm text-muted-foreground">Public</span>
+                <span className="text-sm text-muted-foreground">{t.library.sidebar.public}</span>
               </div>
               <span className="text-lg font-semibold text-foreground">{publicCount}</span>
             </div>
@@ -97,7 +92,7 @@ export function LibrarySidebar({
                 <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
                   <Lock className="size-4 text-orange-500" />
                 </div>
-                <span className="text-sm text-muted-foreground">Private</span>
+                <span className="text-sm text-muted-foreground">{t.library.sidebar.private}</span>
               </div>
               <span className="text-lg font-semibold text-foreground">{privateCount}</span>
             </div>
@@ -109,43 +104,13 @@ export function LibrarySidebar({
       <div className="bg-gradient-to-br from-primary/5 via-primary/3 to-transparent rounded-2xl border border-primary/10 p-5">
         <div className="flex items-center gap-2 mb-3">
           <Zap className="size-4 text-primary" />
-          <h3 className="font-semibold text-foreground text-sm">Quick Tip</h3>
+          <h3 className="font-semibold text-foreground text-sm">{t.library.sidebar.quickTip}</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Select any repository to deploy it instantly. Configure automatic deployments on every push.
+          {t.library.sidebar.quickTipDesc}
         </p>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-card rounded-2xl border border-border/50 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Plus className="size-4 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground text-sm">Quick Actions</h3>
-        </div>
-        <div className="space-y-2">
-          <button
-            onClick={() => onSwitchTab("repositories")}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] transition-colors"
-          >
-            <Github className="size-4 text-muted-foreground" />
-            Import from GitHub
-          </button>
-          <button
-            onClick={() => onSwitchTab("url")}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
-          >
-            <Link2 className="size-4" />
-            Import from URL
-          </button>
-          <button
-            onClick={() => onSwitchTab("template")}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
-          >
-            <Sparkles className="size-4" />
-            Start from Template
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -163,20 +128,21 @@ function SaasConnectionCard({
   state: GitHubConnectionState;
   selectedOwner: string;
 }) {
+  const { t } = useI18n();
   const connected = state.sources.openshipApp.connected;
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-5">
       <div className="flex items-center gap-2 mb-4">
         <Github className="size-4 text-muted-foreground" />
-        <h3 className="font-semibold text-foreground text-sm">Connection</h3>
+        <h3 className="font-semibold text-foreground text-sm">{t.library.sidebar.connection}</h3>
       </div>
       <SourceRow
         icon={Github}
-        label="Openship GitHub App"
+        label={t.library.sidebar.openshipGithubApp}
         sublabel={
           connected
-            ? state.sources.openshipApp.login ?? selectedOwner ?? "Connected"
-            : "Not connected"
+            ? state.sources.openshipApp.login ?? selectedOwner ?? t.library.sidebar.connected
+            : t.library.sidebar.notConnected
         }
         connected={connected}
       />
@@ -200,6 +166,7 @@ function SelfHostedConnectionCard({
   cloudConnected: boolean;
   selectedOwner: string;
 }) {
+  const { t } = useI18n();
   const cliConnected = state.sources.ghCli.available;
   const cliLogin = state.sources.ghCli.login;
 
@@ -232,24 +199,24 @@ function SelfHostedConnectionCard({
 
   const appSublabel =
     appStatus === null
-      ? "Checking…"
+      ? t.library.sidebar.checking
       : appStatus.connected
-        ? appStatus.login ? `@${appStatus.login}` : "Connected"
-        : "Not connected — manage in Settings";
+        ? appStatus.login ? `@${appStatus.login}` : t.library.sidebar.connected
+        : t.library.sidebar.notConnectedManage;
 
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-5">
       <div className="flex items-center gap-2 mb-4">
         <Github className="size-4 text-muted-foreground" />
-        <h3 className="font-semibold text-foreground text-sm">Connection</h3>
+        <h3 className="font-semibold text-foreground text-sm">{t.library.sidebar.connection}</h3>
       </div>
 
       <div className="space-y-2.5">
         {/* PRIMARY: gh CLI */}
         <SourceRow
           icon={Terminal}
-          label="gh CLI"
-          sublabel={cliConnected ? `@${cliLogin}` : "Run `gh auth login`"}
+          label={t.library.sidebar.ghCli}
+          sublabel={cliConnected ? `@${cliLogin}` : t.library.sidebar.runGhAuth}
           connected={cliConnected}
           tone="primary"
         />
@@ -258,7 +225,7 @@ function SelfHostedConnectionCard({
             /github/status probe above — accurate without blocking the library. */}
         <SourceRow
           icon={Cloud}
-          label="Openship Cloud App"
+          label={t.library.sidebar.openshipCloudApp}
           sublabel={appSublabel}
           connected={appStatus?.connected ?? false}
           tone="secondary"
@@ -269,13 +236,12 @@ function SelfHostedConnectionCard({
       <div className="mt-4 flex items-start gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2.5">
         <Shield className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          gh CLI drives the library locally. For remote deploys, the Openship
-          Cloud App mints short-lived tokens —{" "}
+          {t.library.sidebar.footnote}{" "}
           <Link
             href="/settings"
             className="font-medium text-foreground hover:underline"
           >
-            manage GitHub in Settings
+            {t.library.sidebar.manageGithubSettings}
           </Link>
           .
         </p>
@@ -297,6 +263,7 @@ function SourceRow({
   connected: boolean;
   tone?: "primary" | "secondary";
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
@@ -317,8 +284,8 @@ function SourceRow({
           <p className="text-sm font-medium text-foreground truncate">
             {label}
             {tone === "secondary" && (
-              <span className="ml-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                Optional
+              <span className="ms-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                {t.library.sidebar.optional}
               </span>
             )}
           </p>
@@ -337,7 +304,7 @@ function SourceRow({
             connected ? "bg-emerald-500" : "bg-muted-foreground/40"
           }`}
         />
-        {connected ? "Connected" : "—"}
+        {connected ? t.library.sidebar.connected : "—"}
       </span>
     </div>
   );

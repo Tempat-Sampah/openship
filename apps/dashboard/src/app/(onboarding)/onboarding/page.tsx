@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, Suspense } from "react";
+import { useI18n } from "@/components/i18n-provider";
 import type { OnboardingStep, OnboardingState } from "@repo/onboarding";
 import { nextStep, prevStep } from "@repo/onboarding";
 import { ChooseStep } from "./_components/choose-step";
@@ -20,6 +21,7 @@ const GitHubIcon = () => (
 );
 
 function OnboardingInner() {
+  const { t } = useI18n();
   const [step, setStep] = useState<OnboardingStep>("choose");
   const [state, setState] = useState<OnboardingState>({
     buildMode: "auto",
@@ -64,10 +66,10 @@ function OnboardingInner() {
           <span className="ob-logo-text">Openship</span>
         </div>
         <div className="ob-top-bar-links">
-          <a className="ob-top-bar-link" href="https://openship.io" target="_blank" rel="noopener noreferrer" title="Website">
+          <a className="ob-top-bar-link" href="https://openship.io" target="_blank" rel="noopener noreferrer" title={t.onboarding.topBar.website}>
             <GlobeIcon />
           </a>
-          <a className="ob-top-bar-link" href="https://github.com/oblien/openship" target="_blank" rel="noopener noreferrer" title="GitHub">
+          <a className="ob-top-bar-link" href="https://github.com/oblien/openship" target="_blank" rel="noopener noreferrer" title={t.onboarding.topBar.github}>
             <GitHubIcon />
           </a>
         </div>

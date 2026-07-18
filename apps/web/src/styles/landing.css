@@ -1379,7 +1379,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   OPEN SOURCE - magazine spread, AGPL-3 design moment
+   OPEN SOURCE - magazine spread, Apache 2.0 design moment
    ═══════════════════════════════════════════════════════════════ */
 .os-section {
   position: relative;
@@ -1447,7 +1447,7 @@
 }
 .os-btn--ghost:hover { border-color: var(--th-bd-strong); }
 
-/* Right side - AGPL-3 callout + meta */
+/* Right side - Apache 2.0 callout + meta */
 .os-side {
   display: flex;
   flex-direction: column;

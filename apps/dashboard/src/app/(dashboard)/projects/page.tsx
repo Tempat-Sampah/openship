@@ -13,7 +13,7 @@ import {
 import EmptyState from "@/components/overview/EmptyState";
 import { projectsApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { useI18n } from "@/components/i18n-provider";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 import { Plus, Search, Server } from "lucide-react";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { usePlatform } from "@/context/PlatformContext";
@@ -53,7 +53,7 @@ export default function ProjectsPage() {
   // Local). Show the filter card once there's more than one group to pick
   // from; the right column also carries a "connect a server" CTA when none of
   // the projects deploy to a server, so it's never empty.
-  const filterOptions = useMemo(() => buildProjectFilterOptions(projects), [projects]);
+  const filterOptions = useMemo(() => buildProjectFilterOptions(projects, t), [projects, t]);
   const showFilterCard = filterOptions.length > 1;
   const hasServers = projects.some((p) => p.deployTarget === "server");
 
@@ -76,7 +76,12 @@ export default function ProjectsPage() {
               {t.dashboard.pages.projects.title}
             </h1>
             <p className="text-sm text-muted-foreground/70 mt-1">
-              {isLoading ? "Loading..." : `${projects.length} project${projects.length !== 1 ? "s" : ""}`}
+              {isLoading
+                ? t.projects.list.loading
+                : interpolate(
+                    projects.length === 1 ? t.projects.list.countOne : t.projects.list.countOther,
+                    { count: String(projects.length) },
+                  )}
             </p>
           </div>
           <Link
@@ -111,13 +116,13 @@ export default function ProjectsPage() {
                 with the list, not the search box. */}
             {projects.length > 3 && (
               <div className="relative max-w-md mb-4">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   placeholder={t.dashboard.pages.projects.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-card border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/20 transition-all text-foreground placeholder:text-muted-foreground"
+                  className="w-full ps-10 pe-4 py-2.5 bg-card border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/20 transition-all text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             )}
@@ -136,7 +141,7 @@ export default function ProjectsPage() {
                     <p className="text-sm text-muted-foreground">
                       {searchQuery
                         ? t.dashboard.pages.projects.noResultsFound.replace("{query}", searchQuery)
-                        : "No projects deployed to this target yet."}
+                        : t.projects.list.noTargetProjects}
                     </p>
                   </div>
                 )}
@@ -154,11 +159,10 @@ export default function ProjectsPage() {
                       <Server className="size-[18px] text-blue-500" />
                     </div>
                     <h3 className="font-semibold text-foreground text-sm mb-1">
-                      Deploy to your own server
+                      {t.projects.serverCta.title}
                     </h3>
                     <p className="text-xs text-muted-foreground/70 mb-3 leading-relaxed">
-                      Connect a server over SSH to run projects on your own infrastructure
-                      alongside Openship Cloud.
+                      {t.projects.serverCta.description}
                     </p>
                     {/* SSH servers are a self-hosted/desktop capability — the SaaS
                         can't connect one, so send cloud users to the download page
@@ -169,7 +173,7 @@ export default function ProjectsPage() {
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted/50 text-foreground text-[13px] font-medium transition-colors hover:bg-muted"
                       >
                         <Plus className="size-3.5" />
-                        Connect a server
+                        {t.projects.serverCta.button}
                       </Link>
                     ) : (
                       <a
@@ -179,7 +183,7 @@ export default function ProjectsPage() {
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-muted/50 text-foreground text-[13px] font-medium transition-colors hover:bg-muted"
                       >
                         <Plus className="size-3.5" />
-                        Connect a server
+                        {t.projects.serverCta.button}
                       </a>
                     )}
                   </div>

@@ -10,6 +10,7 @@ import {
   type BackupDestinationSummary,
   type BackupPolicy,
 } from "@/lib/api";
+import { useI18n, interpolate } from "@/components/i18n-provider";
 
 interface Props {
   projectId: string;
@@ -20,14 +21,6 @@ interface Props {
   onSaved: () => void;
 }
 
-const CRON_PRESETS = [
-  { label: "Hourly", value: "7 * * * *" },
-  { label: "Daily (03:17)", value: "17 3 * * *" },
-  { label: "Weekly (Sun 03:17)", value: "17 3 * * 0" },
-  { label: "Monthly (1st 03:17)", value: "17 3 1 * *" },
-  { label: "Manual only", value: "" },
-];
-
 export function PolicyEditor({
   projectId,
   serviceId,
@@ -36,6 +29,15 @@ export function PolicyEditor({
   onClose,
   onSaved,
 }: Props): React.JSX.Element {
+  const { t } = useI18n();
+  const w = t.widgets.backup.policyEditor;
+  const CRON_PRESETS = [
+    { label: w.presetHourly, value: "7 * * * *" },
+    { label: w.presetDaily, value: "17 3 * * *" },
+    { label: w.presetWeekly, value: "17 3 * * 0" },
+    { label: w.presetMonthly, value: "17 3 1 * *" },
+    { label: w.presetManual, value: "" },
+  ];
   const [destinations, setDestinations] = useState<BackupDestinationSummary[]>([]);
   const [destinationId, setDestinationId] = useState(existing?.destinationId ?? "");
   const [cronExpression, setCronExpression] = useState(existing?.cronExpression ?? "");
@@ -65,7 +67,7 @@ export function PolicyEditor({
 
   const submit = async () => {
     if (!destinationId) {
-      window.alert("Select a destination");
+      window.alert(w.selectDestinationAlert);
       return;
     }
     setBusy(true);
@@ -89,7 +91,7 @@ export function PolicyEditor({
       }
       onSaved();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Failed to save policy"));
+      window.alert(getApiErrorMessage(err, w.failedSave));
     } finally {
       setBusy(false);
     }
@@ -97,13 +99,13 @@ export function PolicyEditor({
 
   const rotateToken = async () => {
     if (!existing) return;
-    if (!window.confirm("Rotate webhook token? The current URL will stop working.")) return;
+    if (!window.confirm(w.rotateConfirm)) return;
     setBusy(true);
     try {
       await backupsApi.updatePolicy(existing.id, { rotateWebhookToken: true });
       onSaved();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Failed to rotate token"));
+      window.alert(getApiErrorMessage(err, w.failedRotate));
     } finally {
       setBusy(false);
     }
@@ -114,26 +116,26 @@ export function PolicyEditor({
       <div className="relative max-h-[90vh] w-[600px] max-w-[95vw] overflow-y-auto rounded-2xl border border-border/50 bg-card p-6 shadow-xl">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
+          className="absolute end-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted"
         >
           <X className="size-4" />
         </button>
 
         <h2 className="text-lg font-semibold text-foreground">
-          {existing ? "Edit backup policy" : "Create backup policy"}
+          {existing ? w.editTitle : w.createTitle}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {serviceName ? `Service: ${serviceName}` : "Project-level policy"}
+          {serviceName ? interpolate(w.serviceLabel, { name: serviceName }) : w.projectLevel}
         </p>
 
         <div className="mt-6 space-y-5">
-          <Field label="Destination">
+          <Field label={w.destination}>
             <select
               value={destinationId}
               onChange={(e) => setDestinationId(e.target.value)}
               className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm"
             >
-              <option value="">— select —</option>
+              <option value="">{w.selectOption}</option>
               {destinations.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name} ({d.kind})
@@ -142,7 +144,7 @@ export function PolicyEditor({
             </select>
           </Field>
 
-          <Field label="Schedule">
+          <Field label={w.schedule}>
             <div className="space-y-2">
               <div className="flex gap-2 flex-wrap">
                 {CRON_PRESETS.map((p) => (
@@ -162,14 +164,14 @@ export function PolicyEditor({
               <input
                 value={cronExpression}
                 onChange={(e) => setCronExpression(e.target.value)}
-                placeholder="Custom cron (5 fields), or leave blank for manual-only"
+                placeholder={w.cronPlaceholder}
                 className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 font-mono text-xs"
               />
             </div>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Retain count" hint="Keep N most recent succeeded runs">
+            <Field label={w.retainCount} hint={w.retainCountHint}>
               <input
                 type="number"
                 value={retainCount}
@@ -180,7 +182,7 @@ export function PolicyEditor({
                 className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Retain days" hint="Drop runs older than N days">
+            <Field label={w.retainDays} hint={w.retainDaysHint}>
               <input
                 type="number"
                 value={retainDays}
@@ -197,7 +199,7 @@ export function PolicyEditor({
             label={
               <span className="flex items-center gap-2">
                 <Calendar className="size-3.5" />
-                Pre-deploy trigger
+                {w.preDeployTrigger}
               </span>
             }
           >
@@ -209,9 +211,9 @@ export function PolicyEditor({
                 className="mt-0.5"
               />
               <span className="text-sm text-foreground/80">
-                Automatically back up before each new deployment lands
+                {w.preDeployLabel}
                 <span className="block text-xs text-muted-foreground">
-                  Fires on every successful build, just before the new code goes live.
+                  {w.preDeployHint}
                 </span>
               </span>
             </label>
@@ -221,7 +223,7 @@ export function PolicyEditor({
             label={
               <span className="flex items-center gap-2">
                 <Globe className="size-3.5" />
-                Webhook trigger
+                {w.webhookTrigger}
               </span>
             }
           >
@@ -233,10 +235,9 @@ export function PolicyEditor({
                 className="mt-0.5"
               />
               <span className="text-sm text-foreground/80">
-                Enable inbound webhook URL
+                {w.webhookLabel}
                 <span className="block text-xs text-muted-foreground">
-                  Generates a per-policy token. POST to the URL from any external
-                  trigger (GitHub Actions, monitoring, your own scheduler).
+                  {w.webhookHint}
                 </span>
               </span>
             </label>
@@ -246,14 +247,14 @@ export function PolicyEditor({
                 <button
                   onClick={() => navigator.clipboard.writeText(webhookUrl)}
                   className="rounded p-1 hover:bg-background"
-                  title="Copy URL"
+                  title={w.copyUrl}
                 >
                   <Copy className="size-3" />
                 </button>
                 <button
                   onClick={rotateToken}
                   className="rounded p-1 hover:bg-background"
-                  title="Rotate token"
+                  title={w.rotateToken}
                 >
                   <RefreshCw className="size-3" />
                 </button>
@@ -265,10 +266,10 @@ export function PolicyEditor({
             label={
               <span className="flex items-center gap-2">
                 <Clock className="size-3.5" />
-                Pre-hook (runs before snapshot)
+                {w.preHook}
               </span>
             }
-            hint="Common for DBs: pg_dump > /tmp/dump.sql. Failure aborts the run."
+            hint={w.preHookHint}
           >
             <textarea
               value={preHook}
@@ -279,7 +280,7 @@ export function PolicyEditor({
             />
           </Field>
 
-          <Field label="Post-hook (runs after upload)" hint="Cleanup; failures logged but don't fail the run.">
+          <Field label={w.postHook} hint={w.postHookHint}>
             <textarea
               value={postHook}
               onChange={(e) => setPostHook(e.target.value)}
@@ -295,7 +296,7 @@ export function PolicyEditor({
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
             />
-            Policy enabled
+            {w.policyEnabled}
           </label>
         </div>
 
@@ -305,14 +306,14 @@ export function PolicyEditor({
             disabled={busy}
             className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
           >
-            Cancel
+            {w.cancel}
           </button>
           <button
             onClick={submit}
             disabled={busy || !destinationId}
             className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {busy ? "Saving…" : existing ? "Save changes" : "Create policy"}
+            {busy ? w.saving : existing ? w.saveChanges : w.createPolicy}
           </button>
         </div>
       </div>

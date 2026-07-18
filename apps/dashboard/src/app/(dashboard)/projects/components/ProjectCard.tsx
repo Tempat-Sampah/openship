@@ -1,34 +1,41 @@
+"use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, GitBranch, Globe, Server, FolderOpen, Cloud, HardDrive } from "lucide-react";
 import { type Project } from "@/constants/mock";
 import { getFrameworkConfig } from "@/components/import-project/Frameworks";
-import { getProjectStatus, PROJECT_STATUS_META } from "@/utils/project-status";
+import { getProjectStatus, PROJECT_STATUS_META, projectStatusLabel } from "@/utils/project-status";
 import { usePlatform } from "@/context/PlatformContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import type { Dictionary } from "@/i18n";
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, t: Dictionary): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t.projects.time.justNow;
+  if (mins < 60) return interpolate(t.projects.time.minutesAgo, { count: String(mins) });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return interpolate(t.projects.time.hoursAgo, { count: String(hrs) });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
+  if (days < 30) return interpolate(t.projects.time.daysAgo, { count: String(days) });
+  return interpolate(t.projects.time.monthsAgo, { count: String(Math.floor(days / 30)) });
 }
 
 function getHostingLabel(
-  deployTarget?: string | null,
-  serverName?: string | null,
+  deployTarget: string | null | undefined,
+  serverName: string | null | undefined,
+  t: Dictionary,
 ): { icon: React.ReactNode; label: string } | null {
   if (!deployTarget) return null;
-  if (deployTarget === "cloud") return { icon: <Cloud className="size-3.5" />, label: "Cloud" };
+  if (deployTarget === "cloud")
+    return { icon: <Cloud className="size-3.5" />, label: t.projects.hosting.cloud };
   if (deployTarget === "server")
-    return { icon: <Server className="size-3.5" />, label: serverName || "Server" };
-  if (deployTarget === "local") return { icon: <HardDrive className="size-3.5" />, label: "Local" };
+    return { icon: <Server className="size-3.5" />, label: serverName || t.projects.hosting.server };
+  if (deployTarget === "local")
+    return { icon: <HardDrive className="size-3.5" />, label: t.projects.hosting.local };
   return null;
 }
 
@@ -40,6 +47,7 @@ interface Props {
 
 const ProjectCard: React.FC<Props> = ({ project }) => {
   const router = useRouter();
+  const { t } = useI18n();
   const { baseDomain } = usePlatform();
   const status = getProjectStatus(project);
   const statusMeta = PROJECT_STATUS_META[status];
@@ -54,7 +62,7 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
   const hasMultipleServices =
     project.hasMultipleServices === true || Number(project.serviceCount ?? 0) > 1;
 
-  const hosting = getHostingLabel(project.deployTarget, project.serverName);
+  const hosting = getHostingLabel(project.deployTarget, project.serverName, t);
   const hasFavicon = !!project.favicon && !faviconError;
   const clickTarget = `/projects/${project.id}`;
 
@@ -78,13 +86,13 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
       </div>
 
       {/* Name + domain */}
-      <div className="min-w-0 flex-shrink-0 w-44 lg:w-56">
+      <div className="min-w-0 flex-shrink-0 w-44 lg:w-56 text-start">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
           {project.activeVersion != null && (
             <span
               className="shrink-0 rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground"
-              title={`Live version v${project.activeVersion}`}
+              title={interpolate(t.projects.card.liveVersion, { version: String(project.activeVersion) })}
             >
               v{project.activeVersion}
             </span>
@@ -112,7 +120,7 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
         {isLocal ? (
           <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
             <FolderOpen className="size-3.5" />
-            <span className="truncate max-w-[140px]">Local</span>
+            <span className="truncate max-w-[140px]">{t.projects.card.sourceLocal}</span>
           </span>
         ) : repoSlug ? (
           <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
@@ -125,17 +133,17 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
         {hasMultipleServices ? (
           <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
             <Server className="size-3.5" />
-            Services
+            {t.projects.card.services}
           </span>
         ) : project.hasServer === false ? (
           <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
             <Globe className="size-3.5" />
-            Static
+            {t.projects.card.static}
           </span>
         ) : project.productionMode === "standalone" ? (
           <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
             <Server className="size-3.5" />
-            Standalone
+            {t.projects.card.standalone}
           </span>
         ) : null}
       </div>
@@ -144,7 +152,7 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
       <div className="flex items-center gap-3 shrink-0">
         {/* Time */}
         <span className="hidden lg:block text-xs text-muted-foreground">
-          {timeAgo(project.updatedAt || project.createdAt)}
+          {timeAgo(project.updatedAt || project.createdAt, t)}
         </span>
 
         {/* Status pill */}
@@ -152,10 +160,10 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
           className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${statusMeta.badge}`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} />
-          {statusMeta.label}
+          {projectStatusLabel(status, t)}
         </span>
 
-        <ArrowRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+        <ArrowRight className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors rtl:rotate-180" />
       </div>
     </div>
   );

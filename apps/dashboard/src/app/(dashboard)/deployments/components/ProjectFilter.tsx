@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Layers, Check } from "lucide-react";
+import { useI18n } from "@/components/i18n-provider";
 import type { Project } from "../types";
 
 interface ProjectFilterProps {
@@ -15,12 +16,13 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
   selectedProjectId,
   onProjectChange,
 }) => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedProject = selectedProjectId === "all" 
-    ? { id: "all", name: "All Projects" }
-    : projects.find(p => p.id === selectedProjectId) || { id: "all", name: "All Projects" };
+  const selectedProject = selectedProjectId === "all"
+    ? { id: "all", name: t.deployments.projectFilter.allProjects }
+    : projects.find(p => p.id === selectedProjectId) || { id: "all", name: t.deployments.projectFilter.allProjects };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -49,14 +51,14 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-border/50 bg-popover overflow-hidden">
+        <div className="absolute top-full start-0 z-50 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-border/50 bg-popover overflow-hidden">
           {/* All Projects Option */}
           <button
             onClick={() => {
               onProjectChange("all");
               setIsOpen(false);
             }}
-            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+            className={`flex w-full items-center gap-3 px-4 py-3 text-start text-sm transition-colors ${
               selectedProjectId === "all"
                 ? "bg-primary/10 text-primary font-semibold"
                 : "text-foreground/80 hover:bg-muted/40"
@@ -65,9 +67,9 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Layers className="size-4 text-primary" />
             </div>
-            <span>All Projects</span>
+            <span>{t.deployments.projectFilter.allProjects}</span>
             {selectedProjectId === "all" && (
-              <div className="ml-auto">
+              <div className="ms-auto">
                 <Check className="size-4 text-primary" />
               </div>
             )}
@@ -84,7 +86,7 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
                 onProjectChange(project.id);
                 setIsOpen(false);
               }}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+              className={`flex w-full items-center gap-3 px-4 py-3 text-start text-sm transition-colors ${
                 selectedProjectId === project.id
                   ? "bg-primary/10 text-primary font-semibold"
                   : "text-foreground/80 hover:bg-muted/40"

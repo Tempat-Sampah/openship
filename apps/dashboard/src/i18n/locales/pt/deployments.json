@@ -1,0 +1,173 @@
+{
+  "time": {
+    "secondsAgo": "há {n}s",
+    "minutesAgo": "há {n}min",
+    "hoursAgo": "há {n}h",
+    "daysAgo": "há {n}d",
+    "monthsAgo": "há {n}mês",
+    "yearsAgo": "há {n}a"
+  },
+  "header": {
+    "title": "Implantações",
+    "loading": "A carregar…",
+    "countProjectOne": "{count} implantação",
+    "countProjectOther": "{count} implantações",
+    "countAllOne": "{deployments} no total em {projects} projeto",
+    "countAllOther": "{deployments} no total em {projects} projetos"
+  },
+  "filters": {
+    "searchPlaceholder": "Pesquisar implantações...",
+    "all": "Todas",
+    "success": "Sucesso",
+    "failed": "Falhou",
+    "building": "A construir",
+    "canceled": "Cancelada"
+  },
+  "projectFilter": {
+    "allProjects": "Todos os projetos"
+  },
+  "sidebar": {
+    "overview": {
+      "title": "Visão geral",
+      "total": "Total",
+      "successful": "Bem-sucedidas",
+      "failed": "Falhadas",
+      "inProgress": "Em curso"
+    },
+    "autoDeploy": {
+      "title": "Implantação automática",
+      "description": "Ative a implantação automática para acionar implantações automaticamente sempre que enviar código para a sua branch principal.",
+      "cta": "Ir para as definições do projeto"
+    },
+    "getStarted": {
+      "title": "Começar",
+      "description": "Importe um repositório Git ou use um modelo para criar a sua primeira implantação.",
+      "cta": "Implantar um projeto"
+    },
+    "recent": {
+      "title": "Recentes",
+      "empty": "As suas implantações aparecerão aqui",
+      "unknown": "Desconhecido"
+    }
+  },
+  "stats": {
+    "total": "Total",
+    "projectCountOne": "{count} projeto",
+    "projectCountOther": "{count} projetos",
+    "success": "Sucesso",
+    "failed": "Falhou",
+    "inProgress": "Em curso",
+    "buildingNow": "a construir agora"
+  },
+  "status": {
+    "deployed": "Implantada",
+    "failed": "Falhou",
+    "canceled": "Cancelada",
+    "building": "A construir",
+    "deploying": "A implantar",
+    "partial": "Parcial",
+    "rejected": "Rejeitada",
+    "verifying": "A verificar",
+    "pending": "Pendente"
+  },
+  "serviceStatus": {
+    "deployed": "Implantado",
+    "failed": "Falhou",
+    "cancelled": "Cancelado",
+    "skipped": "Ignorado",
+    "building": "A construir",
+    "deploying": "A implantar",
+    "running": "Em execução",
+    "removedOnHost": "Removido no anfitrião",
+    "verifying": "A verificar",
+    "pending": "Pendente"
+  },
+  "card": {
+    "unknownProject": "Projeto desconhecido",
+    "versionTitle": "Versão {version}",
+    "active": "Ativa",
+    "activeTitle": "Esta é a implantação que serve atualmente o projeto",
+    "pinned": "Fixada",
+    "pinnedTitle": "Fixada — isenta da limpeza de retenção. Permanece restaurável por reversão indefinidamente.",
+    "snapshotted": "Com instantâneo",
+    "snapshottedTitle": "Artefacto arquivado — esta versão está disponível para reversão",
+    "manualDeploy": "Implantação manual",
+    "serviceTitle": "{name}: {label}",
+    "serviceTitleReason": "{name}: {label} ({reason})"
+  },
+  "empty": {
+    "filtered": {
+      "title": "Nenhuma implantação encontrada",
+      "description": "Tente ajustar os seus filtros ou limpar a sua pesquisa."
+    },
+    "none": {
+      "title": "Ainda não há implantações",
+      "description": "Implante o seu primeiro projeto e ele aparecerá aqui com o estado da construção, detalhes do commit e métricas de desempenho.",
+      "deployButton": "Implantar projeto",
+      "browseButton": "Explorar modelos"
+    }
+  },
+  "modal": {
+    "title": "Detalhes do commit",
+    "project": "Projeto",
+    "unknownProject": "Projeto desconhecido",
+    "domain": "Domínio",
+    "noDomain": "Sem domínio",
+    "status": "Estado",
+    "environment": "Ambiente",
+    "statusName": {
+      "success": "Sucesso",
+      "failed": "Falhou",
+      "building": "A construir",
+      "deploying": "A implantar",
+      "canceled": "Cancelada",
+      "pending": "Pendente"
+    },
+    "changedFiles": "Ficheiros alterados ({count})",
+    "fileTypes": {
+      "added": "+ Adicionado",
+      "modified": "~ Modificado",
+      "removed": "- Removido"
+    },
+    "viewOnGithub": "Ver no GitHub",
+    "visitSite": "Visitar o site",
+    "manual": {
+      "title": "Implantação manual",
+      "description": "Esta implantação foi acionada manualmente e não tem informação de commit.",
+      "deploymentId": "ID da implantação",
+      "created": "Criada",
+      "type": "Tipo",
+      "typeManual": "Manual"
+    }
+  },
+  "menu": {
+    "openDeployment": "Abrir implantação",
+    "viewRepository": "Ver repositório",
+    "copyDomainUrl": "Copiar URL do domínio",
+    "copyBuildId": "Copiar ID da construção",
+    "cancelDeployment": "Cancelar implantação",
+    "rollback": "Reverter para esta versão",
+    "rollbackTitle": {
+      "enabled": "Restaurar o projeto para esta versão (apenas o código — os dados não são alterados)",
+      "active": "Esta já é a versão ativa",
+      "pruned": "O artefacto de reversão foi removido. Use 'Reimplantar este commit' para reconstruir a partir da fonte.",
+      "notReady": "Só é possível reverter para implantações prontas"
+    },
+    "redeploy": "Reimplantar este commit",
+    "redeployTitle": "Reconstruir este commit exato a partir da fonte. Mais lento do que a reversão, mas funciona após o artefacto ter sido removido.",
+    "pin": "Fixar",
+    "unpin": "Desafixar",
+    "pinTitle": {
+      "pin": "Manter esta implantação restaurável por reversão indefinidamente (limite: 10 fixadas por projeto)",
+      "unpin": "Permitir que esta implantação seja removida quando a retenção exceder o limite",
+      "pruned": "Não é possível fixar — o artefacto já foi removido"
+    },
+    "deleteDeployment": "Eliminar implantação",
+    "confirmRollback": "Reverter para esta versão?\n\nIsto restaura apenas o código da aplicação. Os dados da base de dados e dos volumes não são alterados.",
+    "rollbackFailed": "A reversão falhou",
+    "confirmRedeploy": "Reimplantar o commit {hash}?\n\nReconstrói este commit exato a partir da fonte. Mais lento do que a reversão (a construção completa é executada novamente), mas funciona mesmo após o artefacto de reversão ter sido removido. Uma nova implantação aparecerá na lista.",
+    "redeployFailed": "A reimplantação falhou",
+    "pinFailed": "Falha ao fixar a implantação",
+    "unpinFailed": "Falha ao desafixar a implantação"
+  }
+}
