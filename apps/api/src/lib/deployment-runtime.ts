@@ -29,6 +29,13 @@ export interface DeploymentMeta {
   runtimeMode?: RuntimeMode;
   serverId?: string;
   /**
+   * Release/dist-source deploy: the semver version this deployment shipped
+   * (no leading "v"). Captured in the snapshot by `applyReleaseSourceToSnapshot`
+   * and promoted to the `deployment.release_version` column onSuccess — the
+   * drift banner's `current` anchor.
+   */
+  releaseVersion?: string;
+  /**
    * "local" | "server" — where the build runs. A local build targeting cloud
    * keeps the project LOCAL-canonical and uploads the output to a cloud
    * workspace (no promote/transfer); see resolveEffectiveTarget.
@@ -36,6 +43,48 @@ export interface DeploymentMeta {
   buildStrategy?: "local" | "server";
   /** Cloud workspace this deployment provisioned (cloud target only). */
   workspaceId?: string;
+  /**
+   * Advisory post-deploy port probe — one entry per exposed port (single-app)
+   * or exposed service (compose). Point-in-time; never gates the deploy. The
+   * dashboard raises a skippable "is that the right port?" modal for any entry
+   * that is `checked && !listening`.
+   */
+  portCheck?: PortCheckResult[];
+  /**
+   * Ports (single-app) or service ids (compose) the operator dismissed from the
+   * port advisory, so it doesn't re-nag after a refresh.
+   */
+  portCheckSkipped?: (number | string)[];
+}
+
+/** One exposed port's advisory probe outcome (persisted in `deployment.meta`). */
+export interface PortCheckResult {
+  /** The exposed/public port that was probed. */
+  port: number;
+  /** True if a listener was found inside the instance. */
+  listening: boolean;
+  /** False = probe inconclusive (runtime can't exec inside / probe errored) — no advisory. */
+  checked: boolean;
+  /** Compose only: which service this result belongs to. */
+  serviceId?: string;
+  serviceName?: string;
+  /** Set when the probe was intentionally not run for this target. */
+  skippedReason?: "not-exposed" | "no-exec" | "no-port";
+}
+
+/** Advisory static-output audit result — the file-side counterpart to
+ *  PortCheckResult. `path` is the routed targetPath ("/" or "/foo"). */
+export interface OutputCheckResult {
+  path: string;
+  /** The resolved on-disk/served location that was probed. */
+  servedPath?: string;
+  /** The served path exists. */
+  found: boolean;
+  /** A servable index is present (file, or dir with index.html). */
+  hasIndex: boolean;
+  /** False = probe inconclusive (runtime can't exec / errored) — no advisory. */
+  checked: boolean;
+  skippedReason?: "no-exec" | "no-output-dir";
 }
 
 export interface ResolvedDeploymentPlatform {

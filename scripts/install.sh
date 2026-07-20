@@ -75,8 +75,9 @@ cat <<EOF
 
 $(printf '\033[32m✔\033[0m') Openship installed.
 
-  openship up         # run Openship locally (API + dashboard)
-  openship install    # or install the desktop app
+  $(printf '\033[1mopenship\033[0m')            # set up + deploy Openship (interactive)
+
+  openship up         # or launch directly with defaults
   openship --help     # all commands
 
 If 'openship' isn't found, add Bun's global bin to your PATH:
