@@ -18,13 +18,7 @@
  * resolved in parallel). The Health tab refreshes on demand.
  */
 
-import {
-  resolve4,
-  resolve6,
-  resolveMx,
-  resolveTxt,
-  reverse,
-} from "node:dns/promises";
+import { resolve4, resolve6, resolveMx, resolveTxt, reverse } from "node:dns/promises";
 import { sshManager } from "../../../lib/ssh-manager";
 import { readState } from "../mail-state";
 import { safeErrorMessage } from "@repo/core";
@@ -87,10 +81,7 @@ export interface DnsScanResult {
  *     those test the shared `mail.<installDomain>` host, which the primary
  *     scan already covers, and additional domains never carry them.
  */
-export async function scanDns(
-  serverId: string,
-  domain?: string,
-): Promise<DnsScanResult> {
+export async function scanDns(serverId: string, domain?: string): Promise<DnsScanResult> {
   const state = await sshManager.withExecutor(serverId, (exec) => readState(exec));
   if (!state || !state.domain) {
     return { domain: "", scannedAt: Date.now(), checks: [] };
@@ -167,10 +158,7 @@ async function checkA(domain: string, exp?: ExpectedRecord): Promise<DnsCheck | 
   }
 }
 
-async function checkAaaa(
-  domain: string,
-  exp?: ExpectedRecord,
-): Promise<DnsCheck | null> {
+async function checkAaaa(domain: string, exp?: ExpectedRecord): Promise<DnsCheck | null> {
   if (!exp?.value) return null;
   const name = exp.name || `mail.${domain}`;
   try {
@@ -209,10 +197,7 @@ async function checkAaaa(
   }
 }
 
-async function checkMx(
-  domain: string,
-  exp?: ExpectedRecord,
-): Promise<DnsCheck | null> {
+async function checkMx(domain: string, exp?: ExpectedRecord): Promise<DnsCheck | null> {
   if (!exp?.value) return null;
   try {
     const mxs = await resolveMx(domain);
@@ -239,9 +224,7 @@ async function checkMx(
       recordType: "MX",
       status: match ? "pass" : "warn",
       expected: wanted,
-      actual: mxs
-        .map((m) => `${trimDot(m.exchange)} (priority ${m.priority})`)
-        .join(", "),
+      actual: mxs.map((m) => `${trimDot(m.exchange)} (priority ${m.priority})`).join(", "),
       message: match
         ? "MX record points at the mail server."
         : `MX records exist but none point at ${wanted}. Mail will be delivered elsewhere.`,
@@ -251,14 +234,12 @@ async function checkMx(
   }
 }
 
-async function checkSpf(
-  domain: string,
-  exp?: ExpectedRecord,
-): Promise<DnsCheck | null> {
+async function checkSpf(domain: string, exp?: ExpectedRecord): Promise<DnsCheck | null> {
   if (!exp?.value) return null;
   try {
     const txt = (await resolveTxt(domain)).map((parts) => parts.join(""));
-    const spf = txt.find((t) => /^v=spf1\b/i.test(t));
+    const spfRecords = txt.filter((t) => /^v=spf1\b/i.test(t));
+    const spf = spfRecords[0];
     if (!spf) {
       return {
         key: "spf",
@@ -271,6 +252,20 @@ async function checkSpf(
         actual: "",
         message:
           "No SPF record found. Outbound mail will be marked as suspicious by most receivers.",
+      };
+    }
+    if (spfRecords.length > 1) {
+      return {
+        key: "spf",
+        label: "SPF record",
+        description: "Lets receivers verify this server is authorised to send for the domain.",
+        queriedName: domain,
+        recordType: "TXT",
+        status: "fail",
+        expected: exp.value,
+        actual: spfRecords.join(" | "),
+        message:
+          "Multiple SPF records found. A domain must publish exactly one v=spf1 TXT record or receivers treat SPF as invalid.",
       };
     }
     // We can't do a strict equality - operators sometimes add their own
@@ -295,10 +290,7 @@ async function checkSpf(
   }
 }
 
-async function checkDkim(
-  domain: string,
-  exp?: ExpectedRecord,
-): Promise<DnsCheck | null> {
+async function checkDkim(domain: string, exp?: ExpectedRecord): Promise<DnsCheck | null> {
   if (!exp?.value) return null;
   const name = exp.name || `dkim._domainkey.${domain}`;
   try {
@@ -336,10 +328,7 @@ async function checkDkim(
   }
 }
 
-async function checkDmarc(
-  domain: string,
-  exp?: ExpectedRecord,
-): Promise<DnsCheck | null> {
+async function checkDmarc(domain: string, exp?: ExpectedRecord): Promise<DnsCheck | null> {
   if (!exp?.value) return null;
   const name = exp.name || `_dmarc.${domain}`;
   try {
@@ -424,8 +413,7 @@ async function checkPtr(
         status: "fail",
         expected: expectedHost,
         actual: "",
-        message:
-          "No PTR record set. Configure it at your VPS provider's panel.",
+        message: "No PTR record set. Configure it at your VPS provider's panel.",
       };
     }
     return missing("ptr", "PTR (reverse DNS)", aRecord.value, "PTR", expectedHost, err);
