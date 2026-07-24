@@ -10,6 +10,8 @@ const { mockEnv, mockRuntimeTarget } = vi.hoisted(() => ({
 vi.mock("../../src/config/env", () => ({
   env: mockEnv,
   runtimeTarget: mockRuntimeTarget,
+  // public-url.ts reads localDashboardUrl for resolveDashboardPublicUrl's fallback.
+  localDashboardUrl: mockRuntimeTarget.dashboard,
 }));
 
 import {
@@ -56,12 +58,14 @@ describe("resolveAuthBaseUrl (Better Auth baseURL)", () => {
     expect(resolveAuthBaseUrl()).toBe("http://localhost:4000");
   });
 
-  it("is a dynamic config allow-listing the public host, with a loopback fallback", () => {
+  it("is the static public URL when configured (stable OAuth issuer for discovery)", () => {
+    // PR #63: resolveAuthBaseUrl returns a stable string, not a dynamic
+    // {allowedHosts,fallback} config. Better Auth materialises the OAuth
+    // discovery handlers once at startup with no request in scope, so the
+    // dynamic base resolved to "" → null discovery body + a 500. A static
+    // baseURL is the fix (and RFC 8414 requires a stable issuer).
     mockEnv.OPENSHIP_PUBLIC_URL = "https://ops.example.com";
-    expect(resolveAuthBaseUrl()).toEqual({
-      allowedHosts: ["ops.example.com"],
-      fallback: "http://localhost:4000",
-    });
+    expect(resolveAuthBaseUrl()).toBe("https://ops.example.com");
   });
 });
 

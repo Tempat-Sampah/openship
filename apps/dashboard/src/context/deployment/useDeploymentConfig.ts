@@ -168,7 +168,11 @@ function buildSingleAppEndpoints(
 }
 
 function buildPreparedOptions(response: PrepareProjectResponse): DeploymentConfig["options"] {
-  const hasServer = !!response.startCommand;
+  // Declared productionMode wins: "static" is serverless; "host"/"standalone"
+  // always run a server. Absent → derive from the detected start command.
+  const hasServer = response.productionMode
+    ? response.productionMode !== "static"
+    : !!response.startCommand;
   const hasBuild = !!response.buildCommand;
 
   return {
@@ -182,6 +186,30 @@ function buildPreparedOptions(response: PrepareProjectResponse): DeploymentConfi
     hasServer,
     hasBuild,
   };
+}
+
+/**
+ * Map a declared `resources` block (openship.json) to the deploy config's cloud
+ * tier fields. A named tier maps straight through; explicit cpu/mem/disk becomes
+ * the "custom" tier (missing values fall back to low-tier defaults). Returns an
+ * empty object when nothing is declared, so the config keeps its default tier.
+ */
+function resolveCloudResources(
+  resources: PrepareProjectResponse["resources"],
+): Partial<Pick<DeploymentConfig, "cloudResourceTier" | "cloudResourceCustom">> {
+  if (!resources) return {};
+  if (resources.tier) return { cloudResourceTier: resources.tier };
+  if (resources.cpuCores != null || resources.memoryMb != null || resources.diskMb != null) {
+    return {
+      cloudResourceTier: "custom",
+      cloudResourceCustom: {
+        cpuCores: resources.cpuCores ?? 1,
+        memoryMb: resources.memoryMb ?? 1024,
+        diskMb: resources.diskMb ?? 16384,
+      },
+    };
+  }
+  return {};
 }
 
 function buildComposeDefaults(
@@ -377,6 +405,25 @@ function resolvePreparedRoutingState(
     };
   }
 
+  // Declared domains (openship.json) seed the single-app endpoints, unless the
+  // project was already saved with its own (a config edit shouldn't be clobbered).
+  if (response.publicEndpoints?.length && !mapStoredPublicEndpoints(project)?.length) {
+    return {
+      effectiveHasServer,
+      primaryPort,
+      hasStoredPort,
+      publicEndpoints: response.publicEndpoints.map((e) =>
+        createPublicEndpoint({
+          domain: e.domain ?? "",
+          customDomain: e.customDomain ?? "",
+          domainType: e.domainType ?? (e.customDomain ? "custom" : "free"),
+          port: e.port != null ? String(e.port) : effectiveHasServer ? primaryPort : "",
+          targetPath: e.targetPath ?? (effectiveHasServer ? "" : "/"),
+        }),
+      ),
+    };
+  }
+
   return {
     effectiveHasServer,
     primaryPort,
@@ -504,11 +551,15 @@ export function useDeploymentConfig() {
     });
   }, [normalizeConfig]);
 
-  /** Resolve initial buildStrategy: user global pref > stack default > "server" */
+  /** Resolve initial buildStrategy: user global pref > stack default > "local".
+   *  App stacks already ship defaultBuildStrategy:"local"; the fallback covers
+   *  stacks with no explicit default so an untouched server/local deploy is
+   *  consistently local build (docker/services are coerced to "server" in
+   *  normalizeBuildStrategy below; cloud is forced to "server" downstream). */
   const resolveInitialStrategy = useCallback((stackDef: StackDefinition | undefined): BuildStrategy => {
     const pref = userBuildPref.current;
     if (pref === "server" || pref === "local") return pref;
-    return stackDef?.defaultBuildStrategy ?? "server";
+    return stackDef?.defaultBuildStrategy ?? "local";
   }, []);
 
   const normalizeBuildStrategy = useCallback(
@@ -597,7 +648,13 @@ export function useDeploymentConfig() {
             ? project.runtimeMode
             : projectId
               ? "docker"
-              : normalizeRuntimeMode(preparedContext.projectType),
+              // Brand-new deploy: honor a declared runtime (openship.json) for a
+              // single app; services/docker stay pinned to "docker" by normalize.
+              : response.runtimeMode &&
+                  preparedContext.projectType !== "services" &&
+                  preparedContext.projectType !== "docker"
+                ? response.runtimeMode
+                : normalizeRuntimeMode(preparedContext.projectType),
         packageManager: runtimeConfig.packageManager,
         buildImage: runtimeConfig.buildImage,
         branch,
@@ -608,6 +665,8 @@ export function useDeploymentConfig() {
         productionPortTouched: routingState.hasStoredPort,
         lastAutoDetectedEnvPort: null,
         options: runtimeConfig.options,
+        // Declared cloud sizing (openship.json). Absent → keep the default tier.
+        ...resolveCloudResources(response.resources),
       }, resolvePreparedSingleModeDefaults(
         preparedContext,
         normalizeBuildStrategy,

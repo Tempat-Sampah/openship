@@ -12,6 +12,14 @@
  *   bun scripts/release.ts <explicit>     # set to literal "0.2.0-beta.3"
  *   bun scripts/release.ts --dry-run patch
  *
+ *   bun scripts/release.ts docker [tag]   # publish Docker images ONLY (GHCR),
+ *                                         # via the docker-images workflow. A
+ *                                         # test/prerelease image build: NO version
+ *                                         # bump, NO git tag, NO GitHub release, NO
+ *                                         # npm/desktop, and it never moves :latest.
+ *                                         # Omit [tag] → images tagged with the short
+ *                                         # SHA. `--ref=<branch>` builds that branch.
+ *
  * What it does:
  *   1. Refuse if working tree is dirty
  *   2. Refuse if not on main (override with --force-branch)
@@ -36,6 +44,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const ROOT_PKG = join(ROOT, "package.json");
 const API_PKG = join(ROOT, "apps/api/package.json");
+// The upgrade-prompt gate. A release ships SILENTLY unless `publish` writes an
+// advisory here for the new version (see release-advisories.json's $comment).
+const ADVISORIES = join(ROOT, "release-advisories.json");
 // Every package.json whose version should track the release. API is the
 // operative source the next version is computed from; the rest are synced to
 // match so the desktop app (forge reads apps/desktop/package.json), web,
@@ -54,8 +65,30 @@ const SYNCED_PKGS = [
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const forceBranch = args.includes("--force-branch");
-if (args.includes("--help") || args.includes("-h")) usageAndExit();
-const cmd = args.find((a) => !a.startsWith("--"));
+if (args.includes("--help") || args.includes("-h")) usageAndExit(0);
+
+// `publish` is the announcement switch. Without it a release ships SILENTLY —
+// no in-app banner (users still see "vX available" in Settings → Updates and the
+// home Updates block). WITH it, we write a release advisory for this version
+// into release-advisories.json (committed + pinned to the tag), which is the
+// ONLY thing that raises the update banner for users below this version.
+//   bun run release patch            → silent
+//   bun run release patch publish    → announced (recommended)
+//   bun run release patch publish --critical            → critical (always shown)
+//   bun run release patch publish --message="…"         → custom banner body
+const publish = args.includes("publish");
+const critical = args.includes("--critical");
+const message = args.find((a) => a.startsWith("--message="))?.slice("--message=".length);
+// The bump is the first positional that ISN'T the `publish` switch.
+const cmd = args.find((a) => !a.startsWith("--") && a !== "publish");
+
+// `docker` is a SEPARATE path: publish container images ONLY (via the
+// docker-images workflow) — no version bump, no git tag, no GitHub release.
+// Branch out here, before any version/semver handling treats "docker" as a bump.
+if (cmd === "docker") {
+  releaseDocker();
+  process.exit(0);
+}
 
 type BumpKind = "patch" | "minor" | "major" | "rc" | "current" | "literal";
 // No arg (or "current") → release the version already in package.json as-is,
@@ -92,10 +125,21 @@ if (currentApi !== currentRoot) {
 const next = computeNext(currentApi, bump);
 const tag = `v${next}`;
 
+if (publish && tag.includes("-")) {
+  console.error(
+    `Refusing: "publish" announces a STABLE release, but ${tag} is a prerelease ` +
+      `(rc/beta). Clients only pull advisories from the latest STABLE release, so a ` +
+      `prerelease announcement is never seen. Drop "publish" for the rc, or promote to ` +
+      `stable and publish that.`,
+  );
+  process.exit(1);
+}
+
 log(`Current version (apps/api): ${currentApi}`);
 log(`Next version:               ${next}`);
 log(`Tag:                        ${tag}`);
 log(`Prerelease:                 ${tag.includes("-") ? "yes" : "no"}`);
+log(`Announcement:               ${publish ? `yes (${critical ? "critical" : "recommended"} advisory)` : "no — silent release"}`);
 log(``);
 
 if (dryRun) {
@@ -105,6 +149,10 @@ if (dryRun) {
     log(`[dry-run] would update:`);
     for (const p of SYNCED_PKGS) log(`  - ${p}`);
     log(`[dry-run] would commit + push, then tag + push ${tag}`);
+  }
+  if (publish) {
+    log(`[dry-run] would write an announcement advisory to release-advisories.json:`);
+    log(JSON.stringify(buildAdvisory(next, { critical, message }), null, 2));
   }
   log(`[dry-run] no files written, no git ops executed.`);
   process.exit(0);
@@ -122,31 +170,48 @@ if (tagExists(tag)) {
 
 /* ─── Apply ─────────────────────────────────────────────────────────── */
 
-if (bump.kind === "current") {
-  // No version change — release exactly what's committed.
-  git("push", "origin", `refs/heads/${currentBranch()}`);
-  log(`✓ pushed ${currentBranch()} (releasing current version, no bump)`);
-} else {
+// Files to stage into the (single) release commit. Version bumps + the
+// announcement advisory both ride the SAME commit so the advisory is pinned to
+// the tag clients pull.
+const staged: string[] = [];
+
+if (bump.kind !== "current") {
   for (const p of SYNCED_PKGS) writeVersion(p, next);
   log(`✓ updated ${SYNCED_PKGS.length} package.json files`);
+  staged.push(...SYNCED_PKGS);
+}
 
-  git("add", ...SYNCED_PKGS);
-  // Only commit if the version actually changed. Re-releasing the version you're
-  // already on (e.g. after a failed tag push) writes no diff, and `git commit`
-  // would abort with "nothing to commit" and kill the release. Skip the commit
-  // in that case and ship the already-committed version as-is.
+if (publish) {
+  const { entry, replaced } = writeAdvisory(next, { critical, message });
+  log(`✓ wrote announcement advisory "${entry.id}" (${entry.severity})`);
+  if (replaced.length) {
+    log(`  replaced previous advisory(ies): ${replaced.join(", ")}`);
+  }
+  staged.push(ADVISORIES);
+}
+
+if (staged.length > 0) {
+  git("add", ...staged);
+  // Only commit if something actually changed. Re-releasing the version you're
+  // already on (no bump, no publish diff) writes no diff, and `git commit` would
+  // abort with "nothing to commit" and kill the release — ship as-is instead.
   const nothingStaged =
     spawnSync("git", ["diff", "--cached", "--quiet"], { cwd: ROOT }).status === 0;
   if (nothingStaged) {
-    log(`Version already ${next} — no bump commit needed, releasing as-is.`);
+    log(`No changes to commit — releasing as-is.`);
   } else {
-    git("commit", "-m", `Bump to ${tag}`);
+    const msg = publish
+      ? bump.kind === "current"
+        ? `Announce ${tag}`
+        : `Bump to ${tag} + announce`
+      : `Bump to ${tag}`;
+    git("commit", "-m", msg);
     log(`✓ committed`);
   }
-
-  git("push", "origin", `refs/heads/${currentBranch()}`);
-  log(`✓ pushed ${currentBranch()}`);
 }
+
+git("push", "origin", `refs/heads/${currentBranch()}`);
+log(`✓ pushed ${currentBranch()}${bump.kind === "current" && !publish ? " (releasing current version, no bump)" : ""}`);
 
 git("tag", tag);
 // Fully-qualified refspec: a BRANCH sharing the tag's name (e.g. a leftover
@@ -173,10 +238,11 @@ watchCi(tag, actionsUrl);
 
 /* ─── Helpers ──────────────────────────────────────────────────────── */
 
-function usageAndExit(): never {
-  console.error(
+function usageAndExit(code = 1): never {
+  const out = code === 0 ? console.log : console.error;
+  out(
     [
-      "Usage: bun scripts/release.ts [current|patch|minor|major|rc|x.y.z[-rc.N]] [--dry-run] [--force-branch]",
+      "Usage: bun run release [current|patch|minor|major|rc|x.y.z[-rc.N]] [publish [--critical] [--message=…]] [--dry-run] [--force-branch]",
       "",
       "  (no arg)       release the current version as-is (no bump)",
       "  current        same as no arg",
@@ -188,15 +254,34 @@ function usageAndExit(): never {
       "                 0.1.1-rc.2 → 0.1.1   (rc → stable promotion)",
       "  <literal>      explicit semver string",
       "",
-      "  --dry-run      print the plan, don't touch anything",
+      "  docker [tag]   publish Docker images ONLY (GHCR) via the docker-images",
+      "                 workflow — no version bump / git tag / GitHub release, and",
+      "                 never moves :latest. Omit [tag] → images tagged short SHA.",
+      "                 `--ref=<branch>` builds that branch (default: current).",
+      "                 e.g.  bun run release docker 0.0.0-rc.1",
+      "",
+      "  publish        ANNOUNCE this release: write a release advisory so the in-app",
+      "                 update banner prompts users below this version. WITHOUT it the",
+      "                 release ships SILENTLY (still shown quietly in Settings → Updates",
+      "                 and the home Updates block). Refused for prereleases.",
+      "    --critical   make the announcement critical (always shown, even if muted)",
+      "    --message=…  custom banner body (default points at the release notes)",
+      "",
+      "  e.g.  bun run release patch                    # silent patch",
+      "        bun run release minor publish            # announced (recommended)",
+      "        bun run release patch publish --critical # announced (critical)",
+      "",
+      "  --dry-run      print the plan, don't touch anything (with `publish`, also",
+      "                 prints the exact advisory JSON that would be written)",
       "  --force-branch run from a non-main branch (default refuses)",
+      "  --help, -h     show this help",
       "",
       "In every case CI builds installers for macOS (arm64 + x64), Windows,",
       "and Linux and publishes them to the GitHub release. Live build status",
       "streams here after the tag is pushed (needs the `gh` CLI, logged in).",
     ].join("\n"),
   );
-  process.exit(1);
+  process.exit(code);
 }
 
 /** True if the tag already exists locally or on origin. */
@@ -257,6 +342,104 @@ function watchCi(t: string, fallbackUrl: string): void {
   spawnSync("gh", ["run", "watch", runId, "--interval", "6"], { cwd: ROOT, stdio: "inherit" });
   log(``);
   spawnSync("gh", ["run", "view", runId], { cwd: ROOT, stdio: "inherit" });
+}
+
+/* ─── Docker image release (GHCR-only, via workflow_dispatch) ────────── */
+
+/** owner/repo parsed from origin, or null when origin isn't a GitHub remote. */
+function ghOwnerRepo(): { owner: string; repo: string } | null {
+  const url = git("remote", "get-url", "origin", { capture: true }).trim();
+  const m = url.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+  return m ? { owner: m[1], repo: m[2] } : null;
+}
+
+/**
+ * `bun release docker [tag]` — trigger the docker-images workflow to publish the
+ * openship-api/dashboard/edge images to GHCR. This is the DOCKER-ONLY path: it
+ * dispatches the workflow (no version bump, no git tag, no GitHub release, no
+ * npm/desktop) and the dispatch run never moves `:latest`. Untracked/dirty tree
+ * is fine — it builds whatever is on the pushed `--ref` branch, not your working
+ * copy. Requires the `gh` CLI (or use the Actions UI → "Docker images").
+ */
+function releaseDocker(): void {
+  const positionals = args.filter((a) => !a.startsWith("--") && a !== "publish");
+  const dockerTag = positionals[1]; // `release docker [tag]`
+  const ref = args.find((a) => a.startsWith("--ref="))?.slice("--ref=".length) || currentBranch();
+
+  const runArgs = ["workflow", "run", "docker-images.yml", "--ref", ref];
+  if (dockerTag) runArgs.push("-f", `tag=${dockerTag}`);
+
+  log(`Docker image publish (GHCR-only)`);
+  log(`  workflow: docker-images.yml`);
+  log(`  ref:      ${ref}`);
+  log(`  tag:      ${dockerTag ?? "(short SHA)"}`);
+  log(`  scope:    images ONLY — no git tag / GitHub release / npm / desktop; :latest untouched`);
+  log(``);
+
+  if (dryRun) {
+    log(`[dry-run] gh ${runArgs.join(" ")}`);
+    log(`[dry-run] nothing dispatched.`);
+    return;
+  }
+
+  if (spawnSync("gh", ["--version"], { encoding: "utf8" }).status !== 0) {
+    console.error(
+      `Refusing: the \`gh\` CLI is required for \`release docker\`. Install it + \`gh auth login\`,\n` +
+        `or trigger it in the UI: Actions → "Docker images" → Run workflow.`,
+    );
+    process.exit(1);
+  }
+
+  const res = spawnSync("gh", runArgs, { cwd: ROOT, stdio: "inherit" });
+  if (res.status !== 0) {
+    console.error(
+      `\ngh workflow run failed. Most common cause: docker-images.yml isn't on the repo's\n` +
+        `DEFAULT branch yet — workflow_dispatch only works once the workflow file is on it.\n` +
+        `Push the workflow to the default branch, then retry.`,
+    );
+    process.exit(res.status ?? 1);
+  }
+  log(`✓ dispatched docker-images.yml (${ref})`);
+
+  watchDispatch();
+
+  const or = ghOwnerRepo();
+  const shown = dockerTag ?? "<short-sha>";
+  log(``);
+  log(`Verify when green:`);
+  if (or) {
+    log(`  docker manifest inspect ghcr.io/${or.owner}/openship-edge:${shown}   # amd64 + arm64`);
+    log(`  docker pull ghcr.io/${or.owner}/openship-api:${shown}`);
+    log(`  Packages: https://github.com/orgs/${or.owner}/packages?repo_name=${or.repo}`);
+  }
+}
+
+/** Poll for + stream the just-dispatched docker-images run (newest dispatch run). */
+function watchDispatch(): void {
+  if (spawnSync("gh", ["--version"], { encoding: "utf8" }).status !== 0) return;
+  log(`Waiting for the run to register on GitHub…`);
+  let runId = "";
+  for (let i = 0; i < 15 && !runId; i++) {
+    Bun.sleepSync(4000);
+    const out = spawnSync(
+      "gh",
+      ["run", "list", "--workflow", "docker-images.yml", "--event", "workflow_dispatch",
+        "--limit", "1", "--json", "databaseId", "--jq", ".[0].databaseId"],
+      { cwd: ROOT, encoding: "utf8" },
+    );
+    if (out.status === 0) {
+      const id = (out.stdout ?? "").trim();
+      if (id && id !== "null") runId = id;
+    }
+  }
+  if (!runId) {
+    log(`Couldn't locate the run automatically — check: gh run list --workflow docker-images.yml`);
+    return;
+  }
+  log(``);
+  log(`▼ live build status (Ctrl-C to stop watching — the build keeps running):`);
+  log(``);
+  spawnSync("gh", ["run", "watch", runId, "--interval", "6"], { cwd: ROOT, stdio: "inherit" });
 }
 
 function preflight(): void {
@@ -408,4 +591,49 @@ function git(...args: (string | { capture: true })[]): string {
 
 function log(msg: string): void {
   console.log(msg);
+}
+
+interface AdvisoryEntry {
+  id: string;
+  severity: "critical" | "recommended";
+  affects: string;
+  title: string;
+  message: string;
+  action: { label: string; kind: "update" };
+}
+
+/** The advisory entry for a published release. `affects: "<version"` means
+ *  everyone BELOW this version sees the banner; users on it (or newer) don't. */
+function buildAdvisory(
+  version: string,
+  opts: { critical?: boolean; message?: string },
+): AdvisoryEntry {
+  return {
+    id: `update-${version}`,
+    severity: opts.critical ? "critical" : "recommended",
+    affects: `<${version}`,
+    title: `Update to Openship ${version}`,
+    message:
+      opts.message ??
+      `Openship ${version} is available. See the release notes for what's new — updating is recommended.`,
+    action: { label: "Update now", kind: "update" },
+  };
+}
+
+/** Write the single announcement advisory into release-advisories.json,
+ *  preserving the file's $comment gate. One active announcement at a time (the
+ *  newest published version); returns any prior advisory ids it replaced. */
+function writeAdvisory(
+  version: string,
+  opts: { critical?: boolean; message?: string },
+): { entry: AdvisoryEntry; replaced: string[] } {
+  const raw = JSON.parse(readFileSync(ADVISORIES, "utf8")) as {
+    $comment?: string;
+    advisories?: Array<{ id?: string }>;
+  };
+  const replaced = (raw.advisories ?? []).map((a) => a.id ?? "").filter(Boolean);
+  const entry = buildAdvisory(version, opts);
+  const nextDoc = { ...raw, advisories: [entry] };
+  writeFileSync(ADVISORIES, JSON.stringify(nextDoc, null, 2) + "\n");
+  return { entry, replaced };
 }

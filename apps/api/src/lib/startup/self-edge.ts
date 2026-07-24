@@ -21,6 +21,9 @@ export interface SelfEdgeInfraProgress {
 export interface SelfEdgeInfraResult {
   ok: boolean;
   reason?: string;
+  /** When reason === "edge_conflict": what holds 80/443 and how many sites it serves. */
+  occupants?: string;
+  siteCount?: number;
 }
 
 export interface SelfEdgeOptions {
@@ -60,6 +63,17 @@ async function runEnsure(
     else console.log(`[edge] ${message}`);
   };
 
+  // Docker-edge (compose): the edge runs as the `openship-edge` container bound
+  // to host :80/:443 via host networking — there is NO host OpenResty to
+  // apt-install, and a `LocalExecutor` here would target the api CONTAINER, not
+  // the host. The route + cert are still applied through the containerized edge
+  // by the normal pipeline (DockerEdgeExecutor). Freeing a foreign proxy off
+  // :80/:443 is handled by `openship up` on the host, not from inside here.
+  if (process.env.OPENSHIP_EDGE_MODE === "docker") {
+    log("docker edge mode — edge runs as a container; skipping host OpenResty install.");
+    return { ok: true };
+  }
+
   if (process.platform !== "linux") {
     log("managed edge needs a Linux host — skipping (use a reverse proxy in front).", "warn");
     return { ok: false, reason: "not_linux" };
@@ -72,9 +86,8 @@ async function runEnsure(
   const {
     createExecutor,
     SystemManager,
-    probeEdge,
-    scanImportableSites,
-    canImportProxy,
+    foreignProxyOnEdge,
+    importSites,
     runEdgeTakeover,
   } = await import("@repo/adapters");
   const executor = createExecutor(); // LocalExecutor — this same machine
@@ -83,12 +96,8 @@ async function runEnsure(
   // self-app's own route is added AFTER by the pipeline (reapplyProjectLiveRoutes),
   // not here — so no extraRoutes.
   if (options?.edgeMigrate) {
-    const status = await probeEdge(executor);
-    const proxy = status.occupants.find((o) => o.proxy)?.proxy;
-    const scan =
-      proxy && canImportProxy(proxy)
-        ? await scanImportableSites(executor, proxy)
-        : { sites: [], warnings: [] };
+    const { status } = await foreignProxyOnEdge(executor);
+    const scan = await importSites(executor, status);
     const res = await runEdgeTakeover(
       executor,
       { status, sites: scan.sites, acmeEmail: env.OPENSHIP_ACME_EMAIL, extraRoutes: [] },
@@ -98,9 +107,32 @@ async function runEnsure(
     return { ok: true };
   }
 
+  // Halt + report: with no pre-authorized takeover, if a foreign proxy already
+  // holds 80/443, do NOT install (OpenResty couldn't bind, and we never blind-kill
+  // someone's proxy). Report what's there — and how many sites it serves — so the
+  // operator re-runs with migrate/take-over, instead of a bare downstream cert error.
+  if (!options?.edgeTakeover) {
+    const { status, blocked, owner } = await foreignProxyOnEdge(executor);
+    if (blocked) {
+      let siteCount = 0;
+      try {
+        siteCount = (await importSites(executor, status)).sites.length;
+      } catch {
+        /* best-effort site count only */
+      }
+      const sitesNote = siteCount > 0 ? ` serving ${siteCount} site${siteCount === 1 ? "" : "s"}` : "";
+      log(
+        `An existing proxy (${owner})${sitesNote} is using ports 80 and 443. Openship needs its own ` +
+          `load balancer (OpenResty) there for managed HTTPS — left it running. Re-run setup and choose ` +
+          `migrate or take-over to continue.`,
+        "warn",
+      );
+      return { ok: false, reason: "edge_conflict", occupants: owner, siteCount };
+    }
+  }
+
   // Install OpenResty + certbot (idempotent). edgeTakeover authorizes reclaiming
-  // 80/443 from an existing proxy; without it an occupied edge throws instead of
-  // blind-killing.
+  // 80/443 from an existing proxy without prompting.
   const installerConfig = options?.edgeTakeover
     ? { edgePolicy: { mode: "takeover" as const, stopTargets: [] } }
     : undefined;

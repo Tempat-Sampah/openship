@@ -6,7 +6,7 @@
  * routing configs, and SSL results.
  */
 
-import type { BuildStrategy } from "@repo/core";
+import type { BuildStrategy, ProxySettings } from "@repo/core";
 import type { Readable, Duplex } from "node:stream";
 export type { BuildStrategy } from "@repo/core";
 
@@ -201,6 +201,12 @@ export interface DeployConfig {
   environment: string;
   /** Port the application listens on */
   port: number;
+  /**
+   * Pinned LOOPBACK host port to publish (docker: `127.0.0.1:<hostPort>:<port>`)
+   * under the loopback-port route strategy. When unset, docker falls back to a
+   * random loopback host port. Ignored by bare (the app owns 127.0.0.1:<port>).
+   */
+  hostPort?: number;
   /** Shell command to start the application (e.g. "npm start", "node server.js") */
   startCommand?: string;
   /** Detected framework / stack (e.g. "nextjs", "express") */
@@ -378,6 +384,11 @@ interface BaseRouteConfig {
   redirects?: RouteRedirect[];
   /** Response-header rules (vercel.json `headers`) → `add_header`. */
   headerRules?: RouteHeaderRule[];
+  /** Curated reverse-proxy tunables (client_max_body_size, proxy/body timeouts,
+   *  buffering, gzip) rendered at server scope. Effective merge of the
+   *  server default < project < service settings; persists in the route sidecar
+   *  so cert re-registration reproduces it. */
+  proxy?: ProxySettings;
 }
 
 export interface ProxyRouteConfig extends BaseRouteConfig {

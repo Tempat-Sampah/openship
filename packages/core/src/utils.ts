@@ -24,8 +24,8 @@ export function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^\w\s-]/g, "")
     .replace(/[\s_]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 100);
+    .slice(0, 100)
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
@@ -47,9 +47,9 @@ export function normalizeCustomHostname(raw: string): string {
  * True when `host` (already run through normalizeCustomHostname) is a plausible
  * public DNS hostname. Rejects the shapes a bare hostname must never contain —
  * embedded path / port / scheme leftovers / whitespace, IPv4 literals,
- * localhost, and single-label names. The same shape gate the single-app custom
- * domain flow enforces, so service custom domains can't store a bogus host that
- * later becomes an unservable vhost.
+ * localhost, single-label names, and labels longer than the 63-octet DNS limit.
+ * The same shape gate the single-app custom domain flow enforces, so service
+ * custom domains can't store a bogus host that later becomes an unservable vhost.
  */
 export function isValidCustomHostname(host: string): boolean {
   if (!host || host.length > 253) return false;
@@ -59,7 +59,9 @@ export function isValidCustomHostname(host: string): boolean {
   if (host.startsWith(".") || host.endsWith(".") || host.includes("..")) return false;
   const labels = host.split(".");
   if (labels.length < 2) return false; // must be multi-label (has a dot)
-  return labels.every((label) => /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(label));
+  return labels.every(
+    (label) => label.length <= 63 && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(label),
+  );
 }
 
 /** Generate a prefixed unique ID (e.g. "proj_abc123...") */
@@ -72,10 +74,10 @@ export function generateId(prefix?: string): string {
 
 /** Format bytes to human-readable string */
 export function formatBytes(bytes: number, decimals = 2): string {
-  if (bytes === 0) return "0 B";
+  if (bytes <= 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const i = Math.min(Math.max(Math.floor(Math.log(bytes) / Math.log(k)), 0), sizes.length - 1);
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(decimals))} ${sizes[i]}`;
 }
 
@@ -90,4 +92,27 @@ export function formatDuration(seconds: number): string {
 /** Sleep for a given number of milliseconds */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Race a promise against a timeout, rejecting with `Error(message)` after `ms`.
+ * `ms` of 0/undefined disables the timeout (returns the promise as-is). Clears
+ * the timer on settle so it never leaks. One shared impl — callers pass their
+ * own message so prior error contracts are preserved.
+ */
+export function withTimeout<T>(promise: Promise<T>, ms: number | undefined, message: string): Promise<T> {
+  if (!ms) return promise;
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
 }

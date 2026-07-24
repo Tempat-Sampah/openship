@@ -4,6 +4,8 @@ import { endpoints } from "./endpoints";
 export type BuildMode = "auto" | "server" | "local";
 export type DefaultDeployTarget = "local" | "server" | "cloud";
 export type CloneStrategyPreference = "prompt" | "local" | "remote-with-token";
+/** How the edge reaches an app's upstream. See settings.service RouteStrategyPref. */
+export type RouteStrategy = "auto" | "loopback-port" | "container-ip";
 
 export interface CloneCredentialsState {
   /** True when the user has a global clone token saved. Token never echoed back. */
@@ -20,6 +22,7 @@ export interface UserSettingsResponse {
   defaultServerId: string | null;
   cloneToken: CloneCredentialsState;
   cloneStrategyPreference: CloneStrategyPreference;
+  routeStrategy: RouteStrategy;
 }
 
 export interface DeployDefaultsResponse {
@@ -39,6 +42,10 @@ export const settingsApi = {
   updateBuildMode: (buildMode: BuildMode) =>
     api.patch<UserSettingsResponse>(endpoints.settings.buildMode, { buildMode }),
 
+  /** Update only the default edge→app route strategy */
+  updateRouteStrategy: (routeStrategy: RouteStrategy) =>
+    api.patch<{ routeStrategy: RouteStrategy }>(endpoints.settings.routeStrategy, { routeStrategy }),
+
   /**
    * Update (or clear) the default deploy target.
    * Pass `defaultDeployTarget: null` to clear. When target='server',
@@ -56,10 +63,10 @@ export const settingsApi = {
    *   - asDefault         → whether `resolveCloneToken` should use it
    */
   updateCloneCredentials: (data: { token?: string | null; asDefault?: boolean }) =>
-    api.patch<CloneCredentialsState & { cloneStrategyPreference: CloneStrategyPreference }>(
-      endpoints.settings.cloneCredentials,
-      data,
-    ),
+    api.patch<{
+      cloneToken: CloneCredentialsState;
+      cloneStrategyPreference: CloneStrategyPreference;
+    }>(endpoints.settings.cloneCredentials, data),
 
   /** Save the first-time-deploy nudge choice. */
   updateCloneStrategyPreference: (preference: CloneStrategyPreference) =>

@@ -461,13 +461,29 @@ export class DockerRuntime implements RuntimeAdapter {
   /** Ping the Docker daemon - useful for connection testing */
   async ping(): Promise<boolean> {
     try {
-      await this.ensureDockerFeature();
-      await this.transport.preflight();
-      await this.docker.ping();
+      await this.assertReachable();
       return true;
-    } catch {
+    } catch (err) {
+      // Collapsed to a boolean for liveness callers — but LOG the detailed
+      // reason so it isn't lost. Paths that must show the user WHY it failed
+      // should call assertReachable() and surface the thrown message instead.
+      console.warn(`[docker] daemon unreachable: ${safeErrorMessage(err)}`);
       return false;
     }
+  }
+
+  /**
+   * Assert the Docker daemon is reachable, RETHROWING the transport's detailed
+   * diagnostic instead of collapsing it to false. For the SSH transport,
+   * `preflight()` (verifyDockerSshBridge) builds a rich message — socket path,
+   * streamlocal/permission hints, and remote diagnostics — which `ping()`
+   * otherwise swallows. Use on user-facing paths (e.g. the migration scan) so
+   * the real cause reaches the user instead of a generic "not reachable".
+   */
+  async assertReachable(): Promise<void> {
+    await this.ensureDockerFeature();
+    await this.transport.preflight();
+    await this.docker.ping();
   }
 
   private async ensureDockerFeature(logger?: BuildLogger): Promise<void> {
@@ -1052,6 +1068,38 @@ export class DockerRuntime implements RuntimeAdapter {
     }
   }
 
+  /**
+   * Confirm a just-built image actually exists before handing its tag back
+   * as the deploy artifact.
+   *
+   * For SSH-transport builds, verify over the SAME pooled SSH exec channel
+   * the `docker build` command itself just ran on — not `this.docker`
+   * (dockerode), which for SSH transport talks over a SEPARATE, independently
+   * -tunneled streamlocal bridge connection (see docker-ssh-agent.ts). That
+   * second connection has proven unreliable in practice: it can hang
+   * indefinitely or report the image missing even though `docker images` on
+   * the box confirms it built successfully seconds earlier. Reusing the
+   * already-proven-live exec channel avoids standing up a second, flakier
+   * connection just to ask a question the first connection already knows
+   * the answer to.
+   *
+   * For local-socket/TCP transports there is no separate bridge — `this.docker`
+   * talks directly to the daemon — so the original dockerode check is fine
+   * and stays as the fallback.
+   */
+  private async verifyImageBuilt(tag: string): Promise<void> {
+    const executor = this.transport.kind === "ssh" ? this.connectionOptions?.executor : null;
+    try {
+      if (executor) {
+        await executor.exec(`docker image inspect ${sq(tag)} >/dev/null`);
+      } else {
+        await this.docker.getImage(tag).inspect();
+      }
+    } catch (cause) {
+      throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
+    }
+  }
+
   async build(config: BuildConfig, logger?: BuildLogger): Promise<BuildResult> {
     const log = logger ?? new BuildLogger();
     const startTime = Date.now();
@@ -1092,11 +1140,7 @@ export class DockerRuntime implements RuntimeAdapter {
           sshExecutor.exec(`rm -rf ${sq(remoteContextDir)}`).catch(() => { /* best effort */ });
         }
 
-        try {
-          await this.docker.getImage(tag).inspect();
-        } catch (cause) {
-          throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
-        }
+        await this.verifyImageBuilt(tag);
         log.log(`Image ${tag} is ready.\n`);
         log.step("build", "completed", `Finalizing image ${tag}`);
         return { sessionId: config.sessionId, status: "deploying", imageRef: tag, durationMs: Date.now() - startTime };
@@ -1165,11 +1209,7 @@ export class DockerRuntime implements RuntimeAdapter {
         await this.buildViaDockerode(config, buildContext, tag, log);
       }
 
-      try {
-        await this.docker.getImage(tag).inspect();
-      } catch (cause) {
-        throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
-      }
+      await this.verifyImageBuilt(tag);
 
       log.log(`Image ${tag} is ready.\n`);
       log.log(`[build] ✓ Image ${tag} ready`);
@@ -1346,11 +1386,7 @@ export class DockerRuntime implements RuntimeAdapter {
             await this.streamDockerodeBuild(stream, spec.logger);
           }
 
-          try {
-            await this.docker.getImage(tag).inspect();
-          } catch (cause) {
-            throw new Error(`Docker build finished but the image ${tag} was not created`, { cause });
-          }
+          await this.verifyImageBuilt(tag);
 
           spec.logger.log(`Image ${tag} is ready.\n`);
           const result: BuildResult = {
@@ -1448,9 +1484,16 @@ export class DockerRuntime implements RuntimeAdapter {
         RestartPolicy: restartPolicy,
         Memory: config.resources.memoryMb * 1024 * 1024,
         CpuShares: Math.round(config.resources.cpuCores * 1024),
-        // Expose port for Nginx upstream routing or direct access
+        // Publish on the LOOPBACK interface only — the edge (host process, or a
+        // host-net OpenResty container) reaches it at 127.0.0.1:<hostPort>, and
+        // it never faces the network. Binding 0.0.0.0 here would expose every
+        // app directly, bypassing the edge's SSL/rate-limit/rules (and Docker's
+        // iptables bypass ufw). A pinned `config.hostPort` (loopback-port route
+        // strategy) is stable across redeploys; otherwise a random loopback port.
         PortBindings: {
-          [`${config.port}/tcp`]: [{ HostPort: "" }], // random host port
+          [`${config.port}/tcp`]: [
+            { HostIp: "127.0.0.1", HostPort: config.hostPort ? String(config.hostPort) : "" },
+          ],
         },
       },
     });
@@ -1540,15 +1583,18 @@ export class DockerRuntime implements RuntimeAdapter {
     });
     const stateMap: Record<string, ContainerStatus> = {
       running: "running",
+      healthy: "running",
+      starting: "running",
       restarting: "running",
       exited: "stopped",
       paused: "stopped",
       created: "stopped",
       dead: "failed",
+      unhealthy: "failed",
     };
     return containers.map((c) => ({
       containerId: c.Id,
-      status: stateMap[c.State] ?? "stopped",
+      status: stateMap[(c.State ?? "").toLowerCase().trim()] ?? "stopped",
       serviceName: c.Labels?.["openship.service"],
     }));
   }
@@ -1684,7 +1730,7 @@ export class DockerRuntime implements RuntimeAdapter {
         names: (c.Names ?? []).map((n) => n.replace(/^\//, "")),
         image: c.Image,
         imageId: c.ImageID,
-        state: c.State,
+        state: (c.State ?? "").toLowerCase().trim(),
         status: c.Status,
         labels,
         ports: (c.Ports ?? []).map((p) => ({
@@ -1718,7 +1764,7 @@ export class DockerRuntime implements RuntimeAdapter {
       name: (data.Name ?? "").replace(/^\//, ""),
       image: data.Config?.Image ?? data.Image,
       imageId: data.Image,
-      state: data.State?.Status ?? "unknown",
+      state: (data.State?.Status ?? "").toLowerCase().trim() || "unknown",
       command: toStringArray(data.Config?.Cmd),
       entrypoint: toStringArray(data.Config?.Entrypoint),
       env: data.Config?.Env ?? [],
@@ -1850,11 +1896,14 @@ export class DockerRuntime implements RuntimeAdapter {
 
     const statusMap: Record<string, ContainerInfo["status"]> = {
       running: "running",
+      healthy: "running",
+      starting: "running",
+      restarting: "running",
       exited: "stopped",
       paused: "stopped",
-      restarting: "running",
-      dead: "failed",
       created: "stopped",
+      dead: "failed",
+      unhealthy: "failed",
     };
 
     const startedAt = data.State.StartedAt;
@@ -1864,9 +1913,19 @@ export class DockerRuntime implements RuntimeAdapter {
 
     const { ip, hostPort } = extractNetworkInfo(data);
 
+    let status: ContainerInfo["status"];
+    if (data.State.Running) {
+      status = "running";
+    } else if (data.State.Paused) {
+      status = "stopped";
+    } else {
+      const rawStatus = (data.State.Status ?? "").toLowerCase().trim();
+      status = statusMap[rawStatus] ?? "stopped";
+    }
+
     return {
       containerId,
-      status: statusMap[data.State.Status] ?? "stopped",
+      status,
       ip,
       hostPort,
       uptimeSeconds: uptimeSeconds && uptimeSeconds > 0 ? uptimeSeconds : undefined,
@@ -2350,6 +2409,53 @@ export class DockerRuntime implements RuntimeAdapter {
           console.warn(
             `[docker] reconcile connect failed for ${c.Id.slice(0, 12)} → ${networkId.slice(0, 12)}: ${msg}`,
           );
+        }
+      }
+    }
+  }
+
+  /**
+   * Attach every container of `projectId` to the given networks (by name) — for
+   * cross-project service links: a consumer joins a linked database app's
+   * `openship-<slug>` network so it resolves that app's service alias
+   * (`mongo:27017`) with no public port. Best-effort + idempotent; a network that
+   * doesn't exist (source not deployed) is skipped and nothing here ever throws —
+   * a link networking failure must never fail the consumer's deploy.
+   */
+  async attachToExternalNetworks(projectId: string, networkNames: string[]): Promise<void> {
+    if (networkNames.length === 0) return;
+    let containers: Awaited<ReturnType<typeof this.docker.listContainers>>;
+    try {
+      containers = await this.docker.listContainers({
+        all: true,
+        filters: { label: [`openship.project=${projectId}`] },
+      });
+    } catch {
+      return;
+    }
+    for (const name of networkNames) {
+      const network = this.docker.getNetwork(name);
+      let netId: string;
+      try {
+        const info = await network.inspect();
+        netId = info.Id;
+      } catch {
+        continue; // network absent (source app not deployed) — skip
+      }
+      for (const c of containers) {
+        const onNetwork = Object.values(c.NetworkSettings?.Networks ?? {}).some(
+          (n) => n?.NetworkID === netId,
+        );
+        if (onNetwork) continue;
+        try {
+          await network.connect({ Container: c.Id });
+        } catch (err) {
+          const msg = (err as { message?: string })?.message ?? "";
+          if (!/already exists|already connected/i.test(msg)) {
+            console.warn(
+              `[docker] link-connect failed for ${c.Id.slice(0, 12)} → ${name}: ${msg}`,
+            );
+          }
         }
       }
     }

@@ -31,12 +31,51 @@ export interface DiscoveredService {
   proxyKind?: "nginx" | "caddy" | "apache" | "traefik" | "haproxy" | "openresty";
   /** Host edge ports (80/443) it publishes — reserved for Openship's edge. */
   edgePorts?: number[];
+  /** A route the server's existing (foreign) reverse proxy already serves for
+   *  this container, matched by published host port. Absent = none detected. */
+  existingRoute?: {
+    domains: string[];
+    ssl: { enabled: boolean; certPath?: string; keyPath?: string };
+    source?: string;
+  };
   warnings: string[];
+}
+
+/** A service parsed from a LINKED repo's docker-compose (the map-step reference). */
+export interface ComposeRepoService {
+  name: string;
+  build?: string;
+  dockerfile?: string;
+  image?: string;
+  ports: string[];
 }
 
 export interface DiscoveredGroup {
   /** compose project name, or null for hand-run standalone containers. */
   project: string | null;
+  services: DiscoveredService[];
+}
+
+/** An Openship project recovered from the server (see api docker-reconcile.ts). */
+export interface OpenshipProjectGroup {
+  projectId: string;
+  suggestedName: string;
+  slug?: string;
+  domains?: string[];
+  source?: {
+    gitProvider?: string | null;
+    gitOwner?: string | null;
+    gitRepo?: string | null;
+    gitBranch?: string | null;
+  };
+  runtimeMode?: string | null;
+  /** true = already exists in this instance's DB (not re-importable, just counted). */
+  knownHere: boolean;
+  /** A full recovery snapshot exists → re-import restores it faithfully. */
+  hasSnapshot: boolean;
+  deploymentId?: string;
+  /** When last deployed (manifest updatedAt) — a "last seen" hint. */
+  updatedAt?: string;
   services: DiscoveredService[];
 }
 
@@ -49,7 +88,23 @@ export interface DiscoveredStack {
   networks: Array<{ name: string; driver: string }>;
   warnings: string[];
   adoptable: boolean;
+  /** Live containers already managed by a project in this instance's DB (count). */
   alreadyManaged: number;
+  /** Openship projects found on the server; `knownHere: false` are re-importable. */
+  openshipProjects: OpenshipProjectGroup[];
+}
+
+export interface ReimportResult {
+  success: boolean;
+  projectId: string;
+  slug: string;
+  reimported: string[];
+  /** Reconstructed/restored deployment id when the project came back live. */
+  deploymentId?: string;
+  /** True when the running containers were re-attached (project is immediately live). */
+  reattached: boolean;
+  /** True when restored faithfully from the server's full subgraph snapshot. */
+  restored?: boolean;
 }
 
 export interface AdoptResult {
@@ -124,10 +179,10 @@ export const dockerMigrationApi = {
    *  SSH connect + `docker inspect` across every container easily exceeds the
    *  client's 15s default (esp. through the same-origin proxy's extra hop under
    *  `openship up`), so give it real headroom like checkServer does. */
-  scan: (serverId: string) =>
+  scan: (serverId: string, opts: { flatDocker?: boolean } = {}) =>
     api.post<{ success: boolean; stack: DiscoveredStack }>(
       endpoints.dockerMigration.scan,
-      { serverId },
+      { serverId, flatDocker: opts.flatDocker === true },
       { timeout: 120_000 },
     ),
 
@@ -139,11 +194,13 @@ export const dockerMigrationApi = {
    */
   scanStream: (
     serverId: string,
-    opts: { onProgress?: (message: string) => void } = {},
+    opts: { onProgress?: (message: string) => void; flatDocker?: boolean } = {},
   ): Promise<DiscoveredStack> =>
     new Promise((resolve, reject) => {
       void (async () => {
-        const url = `${getApiBaseUrl()}${endpoints.dockerMigration.scanStream}?serverId=${encodeURIComponent(serverId)}`;
+        const url =
+          `${getApiBaseUrl()}${endpoints.dockerMigration.scanStream}?serverId=${encodeURIComponent(serverId)}` +
+          (opts.flatDocker ? "&flatDocker=1" : "");
         let res: Response;
         try {
           res = await fetch(url, {
@@ -204,6 +261,15 @@ export const dockerMigrationApi = {
   adopt: (input: { serverId: string; projectName: string; serviceNames: string[] }) =>
     api.post<AdoptResult>(endpoints.dockerMigration.adopt, input),
 
+  /** Re-import an orphaned Openship project (DR / cross-instance), preserving its id.
+   *  Records only — the user redeploys from the project to finalize live state. */
+  reimport: (input: {
+    serverId: string;
+    projectId: string;
+    projectName?: string;
+    serviceNames?: string[];
+  }) => api.post<ReimportResult>(endpoints.dockerMigration.reimport, input),
+
   /** Read-only preview of a full migration to a (possibly different) server. */
   preview: (input: {
     sourceServerId: string;
@@ -214,6 +280,14 @@ export const dockerMigrationApi = {
       endpoints.dockerMigration.preview,
       input,
       { timeout: 120_000 },
+    ),
+
+  /** Parse a linked repo's docker-compose (GitHub API, no clone) → its services,
+   *  for the map step. Empty list when the repo has no compose file. */
+  parseRepoCompose: (owner: string, repo: string, branch?: string) =>
+    api.post<{ success: boolean; services: ComposeRepoService[] }>(
+      endpoints.dockerMigration.repoCompose,
+      { owner, repo, branch },
     ),
 
   /** Start a full migration. Returns the run id + the cutover confirmation token. */
@@ -228,6 +302,15 @@ export const dockerMigrationApi = {
     /** Per-run override of the volume-transfer strategy (else the user's Settings default). */
     transferMode?: "auto" | "stream" | "direct" | "rsync";
     transferCompression?: "auto" | "zstd" | "gzip" | "none";
+    /** Optional project-level git repo to link (records source + push auto-deploy;
+     *  the running image is still reused — no rebuild during migrate). */
+    gitSource?: { provider: "github"; owner: string; repo: string; branch?: string };
+    /** serviceName → build subpath (rootDirectory) inside the linked repo. */
+    serviceSubpaths?: Record<string, string>;
+    /** serviceName → env override (edited in the wizard; else discovered env). */
+    serviceEnv?: Record<string, Record<string, string>>;
+    /** Adopt Openship-managed containers too (raw Docker) — must match the scan. */
+    flatDocker?: boolean;
   }) =>
     api.post<{ success: boolean; migrationId: string; confirmationToken: string }>(
       endpoints.dockerMigration.migrate,
