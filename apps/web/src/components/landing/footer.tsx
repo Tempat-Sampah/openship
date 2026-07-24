@@ -87,8 +87,8 @@ export function Footer() {
               className="inline-block h-[16px] w-[60px]"
               style={{
                 backgroundColor: "var(--th-text-heading)",
-                maskImage: "url(https://oblien.com/logo.svg)",
-                WebkitMaskImage: "url(https://oblien.com/logo.svg)",
+                maskImage: "url(/oblien.svg)",
+                WebkitMaskImage: "url(/oblien.svg)",
                 maskSize: "contain",
                 WebkitMaskSize: "contain",
                 maskRepeat: "no-repeat",
